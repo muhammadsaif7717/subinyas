@@ -11,6 +11,10 @@ import {
   ChevronDown,
   LayoutDashboard,
   ShieldCheck,
+  Layers,
+  Folder,
+  MessageSquare,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useCart } from '@/lib/cart-context';
@@ -140,18 +144,67 @@ export function Navbar() {
                     <div className="py-1">
                       <Link
                         href="/dashboard"
-                        className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-slate-900 font-bold"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 text-slate-900 font-bold"
                       >
                         <LayoutDashboard className="w-4 h-4 text-rose-600" />
                         <span>Admin Dashboard</span>
                       </Link>
 
-                      <button
-                        onClick={() => logout()}
-                        className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-rose-600 font-medium border-t border-slate-100 cursor-pointer text-left"
+                      <Link
+                        href="/dashboard?tab=orders"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 hover:text-slate-900 font-medium text-slate-700 text-xs"
                       >
-                        <LogOut className="w-4 h-4" />
-                        <span>Log Out</span>
+                        <Package className="w-3.5 h-3.5 text-rose-500" />
+                        <span>অর্ডার ম্যানেজমেন্ট</span>
+                      </Link>
+
+                      <Link
+                        href="/dashboard?tab=products"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 hover:text-slate-900 font-medium text-slate-700 text-xs"
+                      >
+                        <Layers className="w-3.5 h-3.5 text-teal-500" />
+                        <span>প্রোডাক্ট ও স্টক কন্ট্রোল</span>
+                      </Link>
+
+                      <Link
+                        href="/dashboard?tab=categories"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 hover:text-slate-900 font-medium text-slate-700 text-xs"
+                      >
+                        <Folder className="w-3.5 h-3.5 text-amber-500" />
+                        <span>ক্যাটাগরি সেটিংস</span>
+                      </Link>
+
+                      <Link
+                        href="/dashboard?tab=reviews"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 hover:text-slate-900 font-medium text-slate-700 text-xs"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5 text-purple-500" />
+                        <span>রিভিউ মডারেশন</span>
+                      </Link>
+
+                      <Link
+                        href="/dashboard?tab=settings"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 hover:text-slate-900 font-medium text-slate-700 text-xs"
+                      >
+                        <SettingsIcon className="w-3.5 h-3.5 text-blue-500" />
+                        <span>স্টোর ও মেটা পিক্সেল</span>
+                      </Link>
+
+                      <button
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          logout();
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-rose-600 font-semibold border-t border-slate-100 cursor-pointer text-left text-xs"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>লগআউট (Log Out)</span>
                       </button>
                     </div>
                   ) : (

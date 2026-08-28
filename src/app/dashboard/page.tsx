@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import Link from 'next/link';
@@ -33,19 +34,58 @@ import {
   CheckSquare,
   FolderPlus,
   Folder,
+  ChevronDown,
+  LayoutDashboard,
+  Shield,
 } from 'lucide-react';
 import { Order, OrderStatus, StoreSettings, Product, Review, ProductVariant, ComboOption } from '@/lib/types';
 import { CategoryItem } from '@/app/api/categories/route';
+import { useAuth } from '@/lib/auth-context';
 
-export default function AdminDashboardPage() {
+type TabType = 'orders' | 'products' | 'categories' | 'reviews' | 'settings';
+
+function DashboardContent() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'orders' | 'inventory' | 'reviews' | 'settings'>('orders');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { user, logout } = useAuth();
+
+  // URL Tab state with query param persistence
+  const tabFromUrl = (searchParams.get('tab') as TabType) || 'orders';
+  const [activeTab, setActiveTab] = useState<TabType>(tabFromUrl);
+
+  // Sync tab with URL
+  useEffect(() => {
+    const currentTabParam = searchParams.get('tab') as TabType;
+    if (currentTabParam && ['orders', 'products', 'categories', 'reviews', 'settings'].includes(currentTabParam)) {
+      setActiveTab(currentTabParam);
+    }
+  }, [searchParams]);
+
+  const switchTab = (tab: TabType) => {
+    setActiveTab(tab);
+    router.push(`/dashboard?tab=${tab}`, { scroll: false });
+  };
+
+  // Profile dropdown state
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setIsProfileDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [reviewStatusFilter, setReviewStatusFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Category Management Modal State
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  // Category Add / Form State
   const [newCatName, setNewCatName] = useState('');
   const [newCatNameBn, setNewCatNameBn] = useState('');
   const [catError, setCatError] = useState('');
@@ -536,17 +576,17 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 font-sans">
-      {/* Top Header */}
-      <header className="bg-slate-950/80 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-md">
+      {/* Sleek Admin Navbar with Profile Dropdown & Quick Route Controls */}
+      <header className="bg-slate-950/90 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm">
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm shadow-md shadow-rose-500/20">
                 স
               </div>
               <div>
                 <span className="font-extrabold text-white text-base">সুবিন্যাস</span>
-                <span className="text-xs text-rose-400 ml-1 font-semibold">Admin Dashboard</span>
+                <span className="text-xs text-rose-400 ml-1.5 font-semibold">Admin Panel</span>
               </div>
             </Link>
           </div>
@@ -555,10 +595,12 @@ export default function AdminDashboardPage() {
             <Link
               href="/"
               target="_blank"
-              className="text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 transition-colors"
+              className="text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 transition-colors hidden sm:inline-flex items-center gap-1"
             >
-              ওয়েবসাইট দেখুন ↗
+              <span>ওয়েবসাইট দেখুন</span>
+              <ExternalLink className="w-3 h-3" />
             </Link>
+
             <button
               onClick={() => {
                 refetchOrders();
@@ -571,13 +613,138 @@ export default function AdminDashboardPage() {
             >
               <RefreshCw className="w-4 h-4" />
             </button>
-            <Link
-              href="/login"
-              className="text-xs font-semibold text-rose-400 hover:text-rose-300 flex items-center gap-1 bg-rose-500/10 px-3 py-1.5 rounded-lg border border-rose-500/20"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>লগইন / আউট</span>
-            </Link>
+
+            {/* Admin Profile Dropdown */}
+            <div className="relative" ref={profileDropdownRef}>
+              <button
+                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                className="flex items-center gap-2 text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 py-1.5 px-3 rounded-full border border-slate-700 transition-all cursor-pointer shadow-xs"
+              >
+                {user?.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={user.avatar}
+                    alt={user.name || 'Admin'}
+                    className="w-5 h-5 rounded-full object-cover border border-rose-500/50"
+                  />
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px] font-bold">
+                    {user?.name ? user.name.slice(0, 1).toUpperCase() : 'A'}
+                  </div>
+                )}
+                <span className="max-w-[100px] truncate hidden sm:inline">{user?.name || 'Admin'}</span>
+                <span className="bg-rose-500/20 text-rose-300 text-[10px] font-bold px-1.5 py-0.2 rounded border border-rose-500/30">
+                  Admin
+                </span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              </button>
+
+              {/* Dropdown Menu */}
+              {isProfileDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-slate-950 rounded-2xl shadow-2xl border border-slate-800 py-2 text-xs text-slate-200 z-50 animate-in fade-in duration-150">
+                  {/* Admin Info Header */}
+                  <div className="px-4 py-2.5 border-b border-slate-800/80">
+                    <div className="flex items-center justify-between">
+                      <p className="font-bold text-white text-sm truncate">{user?.name || 'Store Admin'}</p>
+                      <span className="bg-rose-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                        Admin
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 font-mono truncate">{user?.email || 'admin@subinyas.shop'}</p>
+                  </div>
+
+                  {/* Navigation Links inside Dropdown */}
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        switchTab('orders');
+                        setIsProfileDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-900 transition-colors text-left cursor-pointer ${
+                        activeTab === 'orders' ? 'text-rose-400 font-bold bg-slate-900/50' : 'text-slate-300'
+                      }`}
+                    >
+                      <Package className="w-4 h-4 text-rose-400" />
+                      <span>অর্ডার ম্যানেজমেন্ট ({orders.length})</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        switchTab('products');
+                        setIsProfileDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-900 transition-colors text-left cursor-pointer ${
+                        activeTab === 'products' ? 'text-rose-400 font-bold bg-slate-900/50' : 'text-slate-300'
+                      }`}
+                    >
+                      <Layers className="w-4 h-4 text-teal-400" />
+                      <span>প্রোডাক্ট ও স্টক কন্ট্রোল ({products.length})</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        switchTab('categories');
+                        setIsProfileDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-900 transition-colors text-left cursor-pointer ${
+                        activeTab === 'categories' ? 'text-rose-400 font-bold bg-slate-900/50' : 'text-slate-300'
+                      }`}
+                    >
+                      <Folder className="w-4 h-4 text-amber-400" />
+                      <span>ক্যাটাগরি সেটিংস ({categories.length})</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        switchTab('reviews');
+                        setIsProfileDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-900 transition-colors text-left cursor-pointer ${
+                        activeTab === 'reviews' ? 'text-rose-400 font-bold bg-slate-900/50' : 'text-slate-300'
+                      }`}
+                    >
+                      <MessageSquare className="w-4 h-4 text-purple-400" />
+                      <span>রিভিউ মডারেশন ({reviews.length})</span>
+                      {pendingReviews > 0 && (
+                        <span className="ml-auto bg-amber-400 text-slate-950 text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+                          {pendingReviews}
+                        </span>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        switchTab('settings');
+                        setIsProfileDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-900 transition-colors text-left cursor-pointer ${
+                        activeTab === 'settings' ? 'text-rose-400 font-bold bg-slate-900/50' : 'text-slate-300'
+                      }`}
+                    >
+                      <SettingsIcon className="w-4 h-4 text-blue-400" />
+                      <span>স্টোর ও মেটা পিক্সেল কনফিগ</span>
+                    </button>
+
+                    <Link
+                      href="/"
+                      target="_blank"
+                      className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-900 text-slate-300 transition-colors"
+                    >
+                      <ExternalLink className="w-4 h-4 text-emerald-400" />
+                      <span>স্টোর ভিজিট করুন ↗</span>
+                    </Link>
+
+                    <button
+                      onClick={() => logout()}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-900 text-rose-400 font-semibold border-t border-slate-800 cursor-pointer text-left transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>লগআউট (Log Out)</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -622,10 +789,10 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Tab Navigation */}
+        {/* Tab Navigation (Synchronized with ?tab= query parameter) */}
         <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-3">
           <button
-            onClick={() => setActiveTab('orders')}
+            onClick={() => switchTab('orders')}
             className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'orders'
                 ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30'
@@ -637,9 +804,9 @@ export default function AdminDashboardPage() {
           </button>
 
           <button
-            onClick={() => setActiveTab('inventory')}
+            onClick={() => switchTab('products')}
             className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
-              activeTab === 'inventory'
+              activeTab === 'products'
                 ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30'
                 : 'bg-slate-800/80 text-slate-400 hover:text-slate-200'
             }`}
@@ -649,7 +816,19 @@ export default function AdminDashboardPage() {
           </button>
 
           <button
-            onClick={() => setActiveTab('reviews')}
+            onClick={() => switchTab('categories')}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
+              activeTab === 'categories'
+                ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30'
+                : 'bg-slate-800/80 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Folder className="w-4 h-4" />
+            <span>ক্যাটাগরি সেটিংস ({categories.length})</span>
+          </button>
+
+          <button
+            onClick={() => switchTab('reviews')}
             className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'reviews'
                 ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30'
@@ -666,7 +845,7 @@ export default function AdminDashboardPage() {
           </button>
 
           <button
-            onClick={() => setActiveTab('settings')}
+            onClick={() => switchTab('settings')}
             className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'settings'
                 ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30'
@@ -831,7 +1010,7 @@ export default function AdminDashboardPage() {
         )}
 
         {/* TAB 2: PRODUCTS & INVENTORY CONTROL */}
-        {activeTab === 'inventory' && (
+        {activeTab === 'products' && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-800/40 p-4 rounded-2xl border border-slate-700">
               <div>
@@ -841,7 +1020,7 @@ export default function AdminDashboardPage() {
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setIsCategoryModalOpen(true)}
+                  onClick={() => switchTab('categories')}
                   className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 border border-slate-700 transition-colors cursor-pointer"
                 >
                   <FolderPlus className="w-4 h-4 text-amber-400" />
@@ -988,7 +1167,118 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* TAB 3: REVIEW MODERATION */}
+        {/* TAB 3: CATEGORY SETTINGS */}
+        {activeTab === 'categories' && (
+          <div className="space-y-6">
+            <div className="bg-slate-800/40 p-5 rounded-2xl border border-slate-700 space-y-4">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Folder className="w-5 h-5 text-amber-400" />
+                  <span>ক্যাটাগরি ম্যানেজমেন্ট (MongoDB Categories)</span>
+                </h3>
+                <p className="text-xs text-slate-400">নতুন ক্যাটাগরি যুক্ত, আপডেট অথবা ডিলিট করুন</p>
+              </div>
+
+              {catError && (
+                <div className="bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs p-3.5 rounded-xl">
+                  ⚠️ {catError}
+                </div>
+              )}
+
+              {catSuccess && (
+                <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs p-3.5 rounded-xl">
+                  ✅ {catSuccess}
+                </div>
+              )}
+
+              {/* Add Category Inline Form */}
+              <form onSubmit={handleCreateCategory} className="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-3">
+                <h4 className="text-xs font-bold text-white">নতুন ক্যাটাগরি তৈরি করুন</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] text-slate-400 block mb-0.5">Category Name (English) *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newCatName}
+                      onChange={(e) => setNewCatName(e.target.value)}
+                      placeholder="e.g. Leather Wallets"
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-400 block mb-0.5">Category Name (বাংলা) *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newCatNameBn}
+                      onChange={(e) => setNewCatNameBn(e.target.value)}
+                      placeholder="যেমন: লেদার ওয়ালেট"
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={addCategoryMutation.isPending}
+                  className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{addCategoryMutation.isPending ? 'যোগ হচ্ছে...' : 'ক্যাটাগরি সংরক্ষণ করুন'}</span>
+                </button>
+              </form>
+            </div>
+
+            {/* Existing Categories Table */}
+            <div className="bg-slate-800/60 rounded-2xl border border-slate-700 overflow-hidden shadow-lg">
+              <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+                <h4 className="text-xs font-bold text-slate-300">সকল ক্যাটাগরি তালিকা ({categories.length})</h4>
+              </div>
+              {isCategoriesLoading ? (
+                <div className="p-12 text-center text-slate-400 text-sm">ক্যাটাগরি লোড হচ্ছে...</div>
+              ) : categories.length === 0 ? (
+                <div className="p-12 text-center text-slate-400 text-sm">কোনো ক্যাটাগরি পাওয়া যায়নি।</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs text-slate-300">
+                    <thead className="bg-slate-950/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-700">
+                      <tr>
+                        <th className="py-3 px-4">ক্যাটাগরি নাম (English)</th>
+                        <th className="py-3 px-4">ক্যাটাগরি নাম (বাংলা)</th>
+                        <th className="py-3 px-4">স্লাগ (Slug)</th>
+                        <th className="py-3 px-4 text-right">অ্যাকশন</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-700/60">
+                      {categories.map((cat) => (
+                        <tr key={cat.id || cat.slug} className="hover:bg-slate-800/40 transition-colors">
+                          <td className="py-4 px-4 font-bold text-white text-sm">{cat.name}</td>
+                          <td className="py-4 px-4 font-medium text-rose-300">{cat.nameBn}</td>
+                          <td className="py-4 px-4 font-mono text-[11px] text-slate-400">/category/{cat.slug}</td>
+                          <td className="py-4 px-4 text-right">
+                            <button
+                              onClick={() => {
+                                if (confirm(`Are you sure you want to delete category "${cat.name}"?`)) {
+                                  deleteCategoryMutation.mutate(cat.id || cat._id || cat.slug);
+                                }
+                              }}
+                              className="p-1.5 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+                              title="Delete Category"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: REVIEW MODERATION */}
         {activeTab === 'reviews' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between bg-slate-800/40 p-4 rounded-2xl border border-slate-700">
@@ -1113,7 +1403,7 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* TAB 4: SETTINGS */}
+        {/* TAB 5: SETTINGS */}
         {activeTab === 'settings' && (
           <div className="max-w-2xl bg-slate-800/60 p-6 rounded-2xl border border-slate-700 space-y-6">
             <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -1182,110 +1472,6 @@ export default function AdminDashboardPage() {
           </div>
         )}
       </main>
-
-      {/* CATEGORY MANAGEMENT MODAL */}
-      {isCategoryModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-xl p-6 sm:p-8 space-y-6 shadow-2xl animate-in fade-in duration-200">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Folder className="w-5 h-5 text-amber-400" />
-                <span>ক্যাটাগরি ম্যানেজমেন্ট (MongoDB Categories)</span>
-              </h2>
-              <button
-                onClick={() => setIsCategoryModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-white rounded-lg cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {catError && (
-              <div className="bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs p-3 rounded-xl">
-                ⚠️ {catError}
-              </div>
-            )}
-
-            {catSuccess && (
-              <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs p-3 rounded-xl">
-                ✅ {catSuccess}
-              </div>
-            )}
-
-            {/* Add New Category Form */}
-            <form onSubmit={handleCreateCategory} className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-3">
-              <h4 className="text-xs font-bold text-white">নতুন ক্যাটাগরি তৈরি করুন</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] text-slate-400 block mb-0.5">Name (English) *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newCatName}
-                    onChange={(e) => setNewCatName(e.target.value)}
-                    placeholder="e.g. Leather Wallets"
-                    className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-slate-400 block mb-0.5">Name (বাংলা) *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newCatNameBn}
-                    onChange={(e) => setNewCatNameBn(e.target.value)}
-                    placeholder="যেমন: লেদার ওয়ালেট"
-                    className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs"
-                  />
-                </div>
-              </div>
-              <button
-                type="submit"
-                disabled={addCategoryMutation.isPending}
-                className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>{addCategoryMutation.isPending ? 'যোগ হচ্ছে...' : 'ক্যাটাগরি যুক্ত করুন'}</span>
-              </button>
-            </form>
-
-            {/* Existing Categories List */}
-            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-              <h4 className="text-xs font-bold text-slate-400">বিদ্যমান ক্যাটাগরিসমূহ ({categories.length})</h4>
-              {isCategoriesLoading ? (
-                <div className="text-xs text-slate-500 py-4 text-center">ক্যাটাগরি লোড হচ্ছে...</div>
-              ) : categories.length === 0 ? (
-                <div className="text-xs text-slate-500 py-4 text-center">কোনো ক্যাটাগরি পাওয়া যায়নি।</div>
-              ) : (
-                categories.map((cat) => (
-                  <div
-                    key={cat.id || cat.slug}
-                    className="flex items-center justify-between p-3 bg-slate-950/40 rounded-xl border border-slate-800 text-xs"
-                  >
-                    <div>
-                      <span className="font-bold text-white">{cat.name}</span>
-                      <span className="text-slate-400 ml-2 font-medium">({cat.nameBn})</span>
-                      <span className="block text-[10px] font-mono text-slate-500">Slug: {cat.slug}</span>
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        if (confirm(`Are you sure you want to delete category "${cat.name}"?`)) {
-                          deleteCategoryMutation.mutate(cat.id || cat._id || cat.slug);
-                        }
-                      }}
-                      className="p-1.5 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer"
-                      title="Delete Category"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* FULL-FEATURED ADD / EDIT PRODUCT MODAL */}
       {isProductModalOpen && (
@@ -1377,10 +1563,10 @@ export default function AdminDashboardPage() {
                     <label className="text-slate-300 font-medium">Category *</label>
                     <button
                       type="button"
-                      onClick={() => setIsCategoryModalOpen(true)}
+                      onClick={() => switchTab('categories')}
                       className="text-[10px] text-amber-400 hover:underline cursor-pointer"
                     >
-                      + New
+                      + Manage
                     </button>
                   </div>
                   <select
@@ -1931,5 +2117,19 @@ export default function AdminDashboardPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminDashboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-900 text-slate-400 flex items-center justify-center text-sm">
+          ড্যাশবোর্ড লোড হচ্ছে...
+        </div>
+      }
+    >
+      <DashboardContent />
+    </Suspense>
   );
 }
