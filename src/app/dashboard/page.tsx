@@ -30,6 +30,8 @@ import {
   ExternalLink,
   Edit,
   Sparkles,
+  Info,
+  CheckSquare,
 } from 'lucide-react';
 import { Order, OrderStatus, StoreSettings, Product, Review, ProductVariant, ComboOption } from '@/lib/types';
 
@@ -49,7 +51,7 @@ export default function AdminDashboardPage() {
   const [productFormSuccess, setProductFormSuccess] = useState('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  // Form Fields
+  // Form Fields (100% MongoDB Product Schema Support)
   const [prodName, setProdName] = useState('');
   const [prodNameBn, setProdNameBn] = useState('');
   const [prodSlug, setProdSlug] = useState('');
@@ -59,9 +61,14 @@ export default function AdminDashboardPage() {
   const [prodBasePrice, setProdBasePrice] = useState<number>(499);
   const [prodOriginalPrice, setProdOriginalPrice] = useState<number>(800);
   const [prodIsFeatured, setProdIsFeatured] = useState<boolean>(true);
+  const [prodIsActive, setProdIsActive] = useState<boolean>(true);
   const [prodImages, setProdImages] = useState<string[]>([]);
   const [prodVariants, setProdVariants] = useState<ProductVariant[]>([]);
   const [prodCombos, setProdCombos] = useState<ComboOption[]>([]);
+  const [prodFeaturesBn, setProdFeaturesBn] = useState<{ icon: string; title: string; description: string }[]>([]);
+  const [prodSpecificationsBn, setProdSpecificationsBn] = useState<{ key: string; value: string }[]>([]);
+  const [prodRating, setProdRating] = useState<number>(5.0);
+  const [prodReviewCount, setProdReviewCount] = useState<number>(0);
 
   // Fetch orders
   const {
@@ -243,6 +250,9 @@ export default function AdminDashboardPage() {
     setProdBasePrice(499);
     setProdOriginalPrice(800);
     setProdIsFeatured(true);
+    setProdIsActive(true);
+    setProdRating(5.0);
+    setProdReviewCount(0);
     setProdImages(['/images/products/hello-kitty-pair.png']);
     setProdVariants([
       {
@@ -290,6 +300,15 @@ export default function AdminDashboardPage() {
         savingsBn: 'Save ৳701',
       },
     ]);
+    setProdFeaturesBn([
+      { icon: 'Layers', title: 'মাল্টি-কম্পার্টমেন্ট', description: 'সুসংগঠিত পার্টিশন ও স্পেস' },
+      { icon: 'ShieldCheck', title: 'প্রিমিয়াম কোয়ালিটি', description: 'টেকসই ও মার্জিত ফিনিশিং' },
+      { icon: 'Gift', title: 'উপহারের সেরা চয়েস', description: 'প্রিয়জনকে উপহার দেওয়ার জন্য পারফেক্ট' },
+    ]);
+    setProdSpecificationsBn([
+      { key: 'উপাদান', value: 'প্রিমিয়াম সিন্থেটিক লেদার ও সফট ভেলভেট' },
+      { key: 'সাইজ', value: 'কম্প্যাক্ট ট্রাভেল ফ্রেন্ডলি' },
+    ]);
     setIsProductModalOpen(true);
   };
 
@@ -307,6 +326,9 @@ export default function AdminDashboardPage() {
     setProdBasePrice(prod.basePrice || 499);
     setProdOriginalPrice(prod.originalPrice || 800);
     setProdIsFeatured(prod.isFeatured !== false);
+    setProdIsActive(prod.isActive !== false);
+    setProdRating(prod.rating || 5.0);
+    setProdReviewCount(prod.reviewCount || 0);
     setProdImages(prod.images?.length > 0 ? prod.images : ['/images/products/hello-kitty-pair.png']);
     setProdVariants(
       prod.variants?.length > 0
@@ -338,6 +360,22 @@ export default function AdminDashboardPage() {
               originalPrice: prod.originalPrice,
               savingsBn: `Save ৳${prod.originalPrice - prod.basePrice}`,
             },
+          ]
+    );
+    setProdFeaturesBn(
+      prod.featuresBn?.length > 0
+        ? prod.featuresBn
+        : [
+            { icon: 'Layers', title: 'মাল্টি-কম্পার্টমেন্ট', description: 'সুসংগঠিত পার্টিশন ও স্পেস' },
+            { icon: 'ShieldCheck', title: 'প্রিমিয়াম কোয়ালিটি', description: 'টেকসই ও মার্জিত ফিনিশিং' },
+          ]
+    );
+    setProdSpecificationsBn(
+      prod.specificationsBn?.length > 0
+        ? prod.specificationsBn
+        : [
+            { key: 'উপাদান', value: 'প্রিমিয়াম কোয়ালিটি' },
+            { key: 'সাইজ', value: 'স্ট্যান্ডার্ড' },
           ]
     );
     setIsProductModalOpen(true);
@@ -388,24 +426,17 @@ export default function AdminDashboardPage() {
       category: prodCategory.trim(),
       taglineBn: prodTaglineBn.trim() || prodNameBn.trim(),
       descriptionBn: prodDescriptionBn.trim() || prodNameBn.trim(),
-      rating: 5.0,
-      reviewCount: 0,
+      rating: prodRating || 5.0,
+      reviewCount: prodReviewCount || 0,
       basePrice: Number(prodBasePrice) || 499,
       originalPrice: Number(prodOriginalPrice) || 800,
       images: prodImages.length > 0 ? prodImages : ['/images/products/hello-kitty-pair.png'],
       variants: prodVariants,
       combos: prodCombos,
-      featuresBn: [
-        { icon: 'Layers', title: 'মাল্টি-কম্পার্টমেন্ট', description: 'সুসংগঠিত পার্টিশন ও স্পেস' },
-        { icon: 'ShieldCheck', title: 'প্রিমিয়াম কোয়ালিটি', description: 'টেকসই ও মার্জিত ফিনিশিং' },
-        { icon: 'Gift', title: 'উপহারের সেরা চয়েস', description: 'প্রিয়জনকে উপহার দেওয়ার জন্য পারফেক্ট' },
-      ],
-      specificationsBn: [
-        { key: 'উপাদান', value: 'প্রিমিয়াম সিন্থেটিক লেদার ও সফট ভেলভেট' },
-        { key: 'সাইজ', value: 'কম্প্যাক্ট ট্রাভেল ফ্রেন্ডলি' },
-      ],
+      featuresBn: prodFeaturesBn,
+      specificationsBn: prodSpecificationsBn,
       isFeatured: prodIsFeatured,
-      isActive: true,
+      isActive: prodIsActive,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -759,7 +790,7 @@ export default function AdminDashboardPage() {
                 <p>No products found in MongoDB database.</p>
                 <button
                   onClick={handleOpenAddProduct}
-                  className="bg-rose-600 text-white text-xs font-bold px-4 py-2 rounded-xl"
+                  className="bg-rose-600 text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer"
                 >
                   Create First Product
                 </button>
@@ -783,6 +814,11 @@ export default function AdminDashboardPage() {
                               <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
                                 <Sparkles className="w-3 h-3" />
                                 <span>Featured</span>
+                              </span>
+                            )}
+                            {!prod.isActive && (
+                              <span className="bg-slate-700 text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded">
+                                Draft / Hidden
                               </span>
                             )}
                           </div>
@@ -1071,14 +1107,14 @@ export default function AdminDashboardPage() {
         )}
       </main>
 
-      {/* ADD / EDIT PRODUCT MODAL */}
+      {/* FULL-FEATURED ADD / EDIT PRODUCT MODAL */}
       {isProductModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-3xl p-6 sm:p-8 space-y-6 shadow-2xl animate-in fade-in duration-200 max-h-[90vh] overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-4xl p-6 sm:p-8 space-y-6 shadow-2xl animate-in fade-in duration-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <Plus className="w-5 h-5 text-rose-500" />
-                <span>{editingProductSlug ? 'প্রোডাক্ট এডিট করুন (Edit Product)' : 'নতুন প্রোডাক্ট যুক্ত করুন (Add Product)'}</span>
+                <span>{editingProductSlug ? 'প্রোডাক্ট এডিট ও আপডেট করুন' : 'নতুন প্রোডাক্ট যুক্ত করুন (Add Product)'}</span>
               </h2>
               <button
                 onClick={() => setIsProductModalOpen(false)}
@@ -1193,21 +1229,39 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              {/* Featured Checkbox */}
-              <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
-                <div>
-                  <label className="font-bold text-white text-xs flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-amber-400" />
-                    <span>Featured Product (হোমপেজ ও হিরো স্লাইডারে প্রদর্শন করুন)</span>
-                  </label>
-                  <p className="text-[11px] text-slate-400">টিক দেওয়া থাকলে এই পণ্যটি হোমপেজের হিরো স্লাইডার ও কালেকশনে শো করবে</p>
+              {/* Status Toggles (isFeatured & isActive) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
+                  <div>
+                    <label className="font-bold text-white text-xs flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                      <span>Featured Product (হোমপেজ স্লাইডার)</span>
+                    </label>
+                    <p className="text-[10px] text-slate-400">হোমপেজের হিরো স্লাইডার ও কালেকশনে প্রদর্শন করবে</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={prodIsFeatured}
+                    onChange={(e) => setProdIsFeatured(e.target.checked)}
+                    className="w-5 h-5 accent-rose-500 rounded cursor-pointer"
+                  />
                 </div>
-                <input
-                  type="checkbox"
-                  checked={prodIsFeatured}
-                  onChange={(e) => setProdIsFeatured(e.target.checked)}
-                  className="w-5 h-5 accent-rose-500 rounded cursor-pointer"
-                />
+
+                <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
+                  <div>
+                    <label className="font-bold text-white text-xs flex items-center gap-1.5">
+                      <CheckSquare className="w-4 h-4 text-emerald-400" />
+                      <span>Is Active (ওয়েবসাইটে সক্রিয় রাখুন)</span>
+                    </label>
+                    <p className="text-[10px] text-slate-400">আনচেক করলে প্রোডাক্টটি ড্রাফট থাকবে</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={prodIsActive}
+                    onChange={(e) => setProdIsActive(e.target.checked)}
+                    className="w-5 h-5 accent-emerald-500 rounded cursor-pointer"
+                  />
+                </div>
               </div>
 
               {/* Tagline & Description */}
@@ -1271,7 +1325,6 @@ export default function AdminDashboardPage() {
                       key={v.id || idx}
                       className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 p-3 rounded-xl bg-slate-900 border border-slate-800 items-center"
                     >
-                      {/* Name */}
                       <div className="sm:col-span-5">
                         <label className="text-[10px] text-slate-400 block mb-0.5">কালারের নাম (বাংলা/ইংলিশ)</label>
                         <input
@@ -1307,7 +1360,6 @@ export default function AdminDashboardPage() {
                         />
                       </div>
 
-                      {/* Color Picker Swatch */}
                       <div className="sm:col-span-3">
                         <label className="text-[10px] text-slate-400 block mb-0.5">রঙের কোড (Color)</label>
                         <div className="flex items-center gap-1.5">
@@ -1321,7 +1373,6 @@ export default function AdminDashboardPage() {
                               );
                             }}
                             className="w-8 h-8 rounded-lg border border-slate-700 bg-transparent cursor-pointer p-0.5 shrink-0"
-                            title="কালার পিক করুন"
                           />
                           <input
                             type="text"
@@ -1337,7 +1388,6 @@ export default function AdminDashboardPage() {
                         </div>
                       </div>
 
-                      {/* Stock count */}
                       <div className="sm:col-span-2">
                         <label className="text-[10px] text-slate-400 block mb-0.5">স্টক সংখ্যা</label>
                         <input
@@ -1356,7 +1406,6 @@ export default function AdminDashboardPage() {
                         />
                       </div>
 
-                      {/* In Stock toggle & delete */}
                       <div className="sm:col-span-2 flex items-center justify-between gap-2 pt-3 sm:pt-0">
                         <label className="flex items-center gap-1 text-[11px] cursor-pointer text-slate-300">
                           <input
@@ -1378,7 +1427,6 @@ export default function AdminDashboardPage() {
                             type="button"
                             onClick={() => setProdVariants((prev) => prev.filter((_, i) => i !== idx))}
                             className="p-1.5 text-slate-500 hover:text-rose-400 transition-colors"
-                            title="মুছে ফেলুন"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1499,6 +1547,147 @@ export default function AdminDashboardPage() {
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Key Features Builder (featuresBn) */}
+              <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-white text-xs">প্রধান বৈশিষ্ট্যসমূহ (Features Bn)</h3>
+                    <p className="text-[11px] text-slate-400">প্রোডাক্টের হাইলাইটস ও আকর্ষণীয় বৈশিষ্ট্য যোগ করুন</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProdFeaturesBn((prev) => [
+                        ...prev,
+                        { icon: 'Sparkles', title: 'নতুন বৈশিষ্ট্য', description: 'বিস্তারিত বিবরণ' },
+                      ]);
+                    }}
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>➕ Add Feature</span>
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {prodFeaturesBn.map((feat, idx) => (
+                    <div
+                      key={idx}
+                      className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800 items-center text-xs"
+                    >
+                      <div className="sm:col-span-4">
+                        <label className="text-[10px] text-slate-400 block">শিরোনাম (Title)</label>
+                        <input
+                          type="text"
+                          value={feat.title}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setProdFeaturesBn((prev) =>
+                              prev.map((item, i) => (i === idx ? { ...item, title: val } : item))
+                            );
+                          }}
+                          className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-7">
+                        <label className="text-[10px] text-slate-400 block">বিবরণ (Description)</label>
+                        <input
+                          type="text"
+                          value={feat.description}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setProdFeaturesBn((prev) =>
+                              prev.map((item, i) => (i === idx ? { ...item, description: val } : item))
+                            );
+                          }}
+                          className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-1 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setProdFeaturesBn((prev) => prev.filter((_, i) => i !== idx))}
+                          className="p-1 text-slate-500 hover:text-rose-400 mt-2"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Specifications Builder (specificationsBn) */}
+              <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-white text-xs">স্পেসিফিকেশন (Specifications Bn)</h3>
+                    <p className="text-[11px] text-slate-400">উপাদান, সাইজ, ওজন ইত্যাদি কি-ভ্যালু তথ্য</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProdSpecificationsBn((prev) => [...prev, { key: 'নতুন তথ্য', value: 'মান' }]);
+                    }}
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>➕ Add Spec</span>
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {prodSpecificationsBn.map((spec, idx) => (
+                    <div
+                      key={idx}
+                      className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800 items-center text-xs"
+                    >
+                      <div className="sm:col-span-5">
+                        <label className="text-[10px] text-slate-400 block">কী (Key যেমন: উপাদান)</label>
+                        <input
+                          type="text"
+                          value={spec.key}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setProdSpecificationsBn((prev) =>
+                              prev.map((item, i) => (i === idx ? { ...item, key: val } : item))
+                            );
+                          }}
+                          className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-6">
+                        <label className="text-[10px] text-slate-400 block">ভ্যালু (Value যেমন: লেদার)</label>
+                        <input
+                          type="text"
+                          value={spec.value}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setProdSpecificationsBn((prev) =>
+                              prev.map((item, i) => (i === idx ? { ...item, value: val } : item))
+                            );
+                          }}
+                          className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-1 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setProdSpecificationsBn((prev) => prev.filter((_, i) => i !== idx))}
+                          className="p-1 text-slate-500 hover:text-rose-400 mt-2"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   ))}
