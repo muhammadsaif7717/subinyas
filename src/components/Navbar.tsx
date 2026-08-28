@@ -32,6 +32,10 @@ export function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const isAdmin =
+    user?.role?.toLowerCase() === 'admin' ||
+    user?.email?.toLowerCase() === 'admin@subinyas.shop';
+
   return (
     <header className="sticky top-0 z-40 bg-white/85 backdrop-blur-md border-b border-slate-100 transition-all">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -122,7 +126,7 @@ export function Navbar() {
                   <div className="px-4 py-2 border-b border-slate-100">
                     <div className="flex items-center justify-between">
                       <p className="font-bold text-slate-900 truncate">{user.name}</p>
-                      {user.role === 'admin' && (
+                      {isAdmin && (
                         <span className="bg-rose-50 text-rose-600 border border-rose-200 text-[10px] font-bold px-1.5 py-0.2 rounded">
                           Admin
                         </span>
@@ -132,7 +136,7 @@ export function Navbar() {
                   </div>
 
                   {/* ADMIN ROLE DROPDOWN ITEMS */}
-                  {user.role === 'admin' ? (
+                  {isAdmin ? (
                     <div className="py-1">
                       <Link
                         href="/dashboard"
