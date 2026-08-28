@@ -110,10 +110,10 @@ export function OrderReceiptModal({ order, onClose }: OrderReceiptModalProps) {
 
           {/* WhatsApp Direct Confirm Button */}
           <a
-            href={`https://wa.me/8801700000000?text=${whatsappConfirmMsg}`}
+            href={`https://wa.me/8801617492486?text=${whatsappConfirmMsg}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-2xl shadow-md shadow-emerald-200 transition-all text-xs sm:text-sm"
+            className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-4 rounded-xl shadow-xs transition-all text-xs"
           >
             <MessageCircle className="w-4 h-4" />
             <span>হোয়াটসঅ্যাপে দ্রুত কনফার্ম করুন</span>

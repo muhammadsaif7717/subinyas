@@ -120,11 +120,11 @@ export const INITIAL_JEWELRY_BOX_PRODUCT: Product = {
 export const INITIAL_SETTINGS: StoreSettings = {
   storeName: 'Subinyas',
   storeNameBn: 'সুবিন্যাস',
-  phone: '01700000000',
-  whatsappNumber: '8801700000000',
+  phone: '01617492486',
+  whatsappNumber: '8801617492486',
   metaPixelId: '1234567890123456',
   deliveryInsideDhaka: 70,
   deliveryOutsideDhaka: 130,
-  announcementTextBn: '🚚 সারাদেশে দ্রুত ক্যাশ অন ডেলিভারি সুবিধা! সীমিত সময়ের স্পেশাল ডিসকাউন্ট অফার!',
+  announcementTextBn: '🚚 সারাদেশে দ্রুত ক্যাশ অন ডেলিভারি সুবিধা!',
   isPixelActive: true,
 };

@@ -18,7 +18,7 @@ export function FloatingWhatsApp({ productName = 'জুয়েলারি ব�
     },
   });
 
-  const whatsappNumber = data?.whatsappNumber || '8801700000000';
+  const whatsappNumber = data?.whatsappNumber || '8801617492486';
   const defaultMessage = encodeURIComponent(
     `আসসালামু আলাইকুম! আমি সুবিন্যাস (subinyas.shop) থেকে ${productName} অর্ডার করতে চাই।`
   );
