@@ -16,7 +16,7 @@ import {
   ShoppingBag,
   Sparkles,
 } from 'lucide-react';
-import { Product } from '@/lib/types';
+import { Product, StoreSettings } from '@/lib/types';
 import { useCart } from '@/lib/cart-context';
 
 export default function HomePage() {
@@ -31,22 +31,38 @@ export default function HomePage() {
     },
   });
 
+  // Fetch store settings for hero banner selection
+  const { data: settingsData } = useQuery({
+    queryKey: ['store-settings'],
+    queryFn: async () => {
+      const res = await axios.get('/api/settings');
+      return res.data?.settings as StoreSettings;
+    },
+  });
+
   const products = productsData || [];
 
-  // Controlled Hero Slider Selection from Admin Dashboard (isHeroSlider & heroOrder)
+  // Controlled Hero Slider Selection from Admin Dashboard
   const slides = React.useMemo(() => {
     if (!products || products.length === 0) return [];
 
-    // 1. Products explicitly marked for Hero Slider in Dashboard
+    const activeSelectedSlugs = settingsData?.heroBannerSlugs || [];
+    if (activeSelectedSlugs.length > 0) {
+      const matched = activeSelectedSlugs
+        .map((slug) => products.find((p) => p.slug === slug && p.isActive !== false))
+        .filter(Boolean) as Product[];
+      if (matched.length > 0) return matched;
+    }
+
+    // Fallback: products with isHeroSlider === true
     const heroProducts = products.filter(
       (p) => p.isHeroSlider === true && p.isActive !== false
     );
-
     if (heroProducts.length > 0) {
       return [...heroProducts].sort((a, b) => (a.heroOrder || 1) - (b.heroOrder || 1));
     }
 
-    // 2. Fallback: featured products sorted by reviews & rating
+    // Fallback: featured products sorted by reviews & rating
     const featured = products.filter((p) => p.isFeatured !== false && p.isActive !== false);
     const sortedFeatured = [...featured].sort(
       (a, b) => (b.reviewCount || 0) - (a.reviewCount || 0) || (b.rating || 5) - (a.rating || 5)
@@ -56,12 +72,12 @@ export default function HomePage() {
       return sortedFeatured.slice(0, 4);
     }
 
-    // 3. Fallback: all active products
+    // Fallback: all active products
     const active = products.filter((p) => p.isActive !== false);
     return [...active]
       .sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0) || (b.rating || 5) - (a.rating || 5))
       .slice(0, 4);
-  }, [products]);
+  }, [products, settingsData?.heroBannerSlugs]);
 
   // Auto Slider State
   const [currentSlide, setCurrentSlide] = useState(0);

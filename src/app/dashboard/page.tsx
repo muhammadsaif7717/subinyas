@@ -1386,7 +1386,36 @@ function DashboardContent() {
             {/* TAB: MANAGE BANNERS / HERO SLIDER */}
             {activeTab === 'banners' && (() => {
               const heroEnabledProducts = products.filter((p) => p.isHeroSlider === true);
-              const activeHeroSlides = [...heroEnabledProducts].sort((a, b) => (a.heroOrder || 1) - (b.heroOrder || 1));
+              const selectedBannerSlugs: string[] =
+                settingsData?.heroBannerSlugs ?? heroEnabledProducts.slice(0, 4).map((p) => p.slug);
+
+              const activeHeroSlides = selectedBannerSlugs
+                .map((slug) => heroEnabledProducts.find((p) => p.slug === slug))
+                .filter(Boolean) as Product[];
+
+              const handleToggleSlideSelection = (prodSlug: string) => {
+                if (selectedBannerSlugs.includes(prodSlug)) {
+                  // Deselect slide from active list (keeps product in Hero Pool!)
+                  const newSlugs = selectedBannerSlugs.filter((s) => s !== prodSlug);
+                  saveSettingsMutation.mutate({ heroBannerSlugs: newSlugs });
+                } else {
+                  // Select slide (max 4)
+                  if (selectedBannerSlugs.length >= 4) {
+                    alert('You can select up to 4 active hero slides at a time.');
+                    return;
+                  }
+                  const newSlugs = [...selectedBannerSlugs, prodSlug];
+                  saveSettingsMutation.mutate({ heroBannerSlugs: newSlugs });
+                }
+              };
+
+              const handleReorderSlides = (fromIdx: number, toIdx: number) => {
+                if (toIdx < 0 || toIdx >= selectedBannerSlugs.length) return;
+                const newSlugs = [...selectedBannerSlugs];
+                const [moved] = newSlugs.splice(fromIdx, 1);
+                newSlugs.splice(toIdx, 0, moved);
+                saveSettingsMutation.mutate({ heroBannerSlugs: newSlugs });
+              };
 
               return (
                 <div className="space-y-7">
@@ -1429,7 +1458,7 @@ function DashboardContent() {
                           </span>
                         </h3>
                         <p className="text-xs text-[#8A7D97] mt-0.5">
-                          Click any card to toggle its presence on the homepage slider (Max 4 active slides)
+                          Click any card to select or unselect it for the active homepage slider (Max 4 active slides)
                         </p>
                       </div>
                     </div>
@@ -1439,42 +1468,21 @@ function DashboardContent() {
                         <div className="w-12 h-12 rounded-2xl bg-[#211C28] border border-[#2E2733] flex items-center justify-center mx-auto text-[#8A7D97]">
                           <ImageIcon className="w-6 h-6" />
                         </div>
-                        <h4 className="text-sm font-bold text-white">No Products Marked for Hero Slider</h4>
+                        <h4 className="text-sm font-bold text-white">No Products in Hero Pool</h4>
                         <p className="text-xs text-[#8A7D97] max-w-sm mx-auto">
-                          Go to the Products tab and turn on &quot;Hero Slider: Enable&quot; or choose from available products below.
+                          Choose products from below and click &quot;+ Add to Hero Pool&quot; to make them available for the banner slider.
                         </p>
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
                         {heroEnabledProducts.map((prod) => {
-                          const slideIndex = activeHeroSlides.findIndex((s) => s.slug === prod.slug);
+                          const slideIndex = selectedBannerSlugs.indexOf(prod.slug);
                           const isSelected = slideIndex !== -1;
 
                           return (
                             <div
                               key={prod.slug}
-                              onClick={() => {
-                                if (isSelected) {
-                                  // Deselect from slider
-                                  saveProductMutation.mutate({
-                                    ...prod,
-                                    isHeroSlider: false,
-                                    updatedAt: new Date().toISOString(),
-                                  });
-                                } else {
-                                  // Select for slider (max 4)
-                                  if (activeHeroSlides.length >= 4) {
-                                    alert('You can select up to 4 active hero slides at a time.');
-                                    return;
-                                  }
-                                  saveProductMutation.mutate({
-                                    ...prod,
-                                    isHeroSlider: true,
-                                    heroOrder: activeHeroSlides.length + 1,
-                                    updatedAt: new Date().toISOString(),
-                                  });
-                                }
-                              }}
+                              onClick={() => handleToggleSlideSelection(prod.slug)}
                               className={`p-3.5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${
                                 isSelected
                                   ? 'bg-[#C4587A]/12 border-[#C4587A] shadow-md shadow-[#C4587A]/20'
@@ -1490,7 +1498,7 @@ function DashboardContent() {
                                       : 'bg-[#211C28] text-[#8A7D97] border border-[#2E2733]'
                                   }`}
                                 >
-                                  {isSelected ? `✓ Slide #${slideIndex + 1}` : '+ Select'}
+                                  {isSelected ? `✓ Slide #${slideIndex + 1}` : '+ Click to Select'}
                                 </span>
                                 <span className="text-[10px] text-[#8A7D97] font-mono">৳{prod.basePrice}</span>
                               </div>
@@ -1530,7 +1538,6 @@ function DashboardContent() {
                                   saveProductMutation.mutate({
                                     ...prod,
                                     isHeroSlider: true,
-                                    heroOrder: activeHeroSlides.length + 1,
                                     updatedAt: new Date().toISOString(),
                                   });
                                 }}
@@ -1556,7 +1563,7 @@ function DashboardContent() {
                           </span>
                         </h3>
                         <p className="text-xs text-[#8A7D97] mt-0.5">
-                          Upload 16:9 banner visuals and preview dynamic &quot;Order Now&quot; actions for each slide
+                          Upload 16:9 banner visuals, choose layout orientation, and preview dynamic actions
                         </p>
                       </div>
                     </div>
@@ -1595,15 +1602,7 @@ function DashboardContent() {
                                   <button
                                     type="button"
                                     disabled={idx === 0}
-                                    onClick={() => {
-                                      if (idx > 0) {
-                                        const prevProd = arr[idx - 1];
-                                        const currOrder = prod.heroOrder || idx + 1;
-                                        const prevOrder = prevProd.heroOrder || idx;
-                                        saveProductMutation.mutate({ ...prod, heroOrder: prevOrder });
-                                        saveProductMutation.mutate({ ...prevProd, heroOrder: currOrder });
-                                      }
-                                    }}
+                                    onClick={() => handleReorderSlides(idx, idx - 1)}
                                     className="p-2 text-[#9C8FA8] hover:text-white hover:bg-[#211C28] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                                     title="Move Slide Up"
                                   >
@@ -1612,15 +1611,7 @@ function DashboardContent() {
                                   <button
                                     type="button"
                                     disabled={idx === arr.length - 1}
-                                    onClick={() => {
-                                      if (idx < arr.length - 1) {
-                                        const nextProd = arr[idx + 1];
-                                        const currOrder = prod.heroOrder || idx + 1;
-                                        const nextOrder = nextProd.heroOrder || idx + 2;
-                                        saveProductMutation.mutate({ ...prod, heroOrder: nextOrder });
-                                        saveProductMutation.mutate({ ...nextProd, heroOrder: currOrder });
-                                      }
-                                    }}
+                                    onClick={() => handleReorderSlides(idx, idx + 1)}
                                     className="p-2 text-[#9C8FA8] hover:text-white hover:bg-[#211C28] disabled:opacity-30 disabled:cursor-not-allowed transition-colors border-l border-[#2E2733]"
                                     title="Move Slide Down"
                                   >
@@ -1630,18 +1621,12 @@ function DashboardContent() {
 
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    saveProductMutation.mutate({
-                                      ...prod,
-                                      isHeroSlider: false,
-                                      updatedAt: new Date().toISOString(),
-                                    });
-                                  }}
-                                  className="px-3 py-2 bg-[#C1495A]/12 hover:bg-[#C1495A] text-[#DD8A94] hover:text-white text-xs font-semibold rounded-xl border border-[#C1495A]/25 flex items-center gap-1.5 transition-colors cursor-pointer"
-                                  title="Deselect this Slide"
+                                  onClick={() => handleToggleSlideSelection(prod.slug)}
+                                  className="px-3 py-2 bg-[#211C28] hover:bg-[#2E2733] text-[#D8CFE0] hover:text-white text-xs font-semibold rounded-xl border border-[#2E2733] flex items-center gap-1.5 transition-colors cursor-pointer"
+                                  title="Unselect this Slide"
                                 >
                                   <X className="w-3.5 h-3.5" />
-                                  <span>Deselect</span>
+                                  <span>Unselect Slide</span>
                                 </button>
                               </div>
                             </div>

@@ -140,6 +140,7 @@ export interface StoreSettings {
   deliveryOutsideDhaka: number;
   announcementTextBn: string;
   isPixelActive: boolean;
+  heroBannerSlugs?: string[];
   updatedAt?: string;
 }
 
