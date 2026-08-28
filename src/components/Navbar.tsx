@@ -129,20 +129,20 @@ export function Navbar() {
               )}
             </button>
 
-            {/* Right-Side Slide-Over Menu Toggle Button */}
-            <button
-              type="button"
-              onClick={() => setIsDrawerOpen((prev) => !prev)}
-              className={`flex items-center gap-2 pl-2.5 pr-3.5 py-1.5 rounded-full border transition-all cursor-pointer ${
-                isDrawerOpen
-                  ? 'bg-rose-50 border-rose-200 text-rose-600 shadow-xs'
-                  : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800'
-              }`}
-              title={isDrawerOpen ? 'Close Menu' : 'Open Navigation Menu'}
-            >
-              {user ? (
-                user.avatar ? (
-                  <div className="relative w-6 h-6 rounded-full overflow-hidden border border-slate-300 shrink-0">
+            {/* If User is Logged In: Show Profile Image + Menu Icon (No name text) */}
+            {user ? (
+              <button
+                type="button"
+                onClick={() => setIsDrawerOpen((prev) => !prev)}
+                className={`flex items-center gap-1.5 p-1 sm:pl-1 sm:pr-2.5 sm:py-1 rounded-full border transition-all cursor-pointer ${
+                  isDrawerOpen
+                    ? 'bg-rose-50 border-rose-200 text-rose-600 shadow-xs'
+                    : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800'
+                }`}
+                title={isDrawerOpen ? 'Close Menu' : 'Open Navigation Menu'}
+              >
+                {user.avatar ? (
+                  <div className="relative w-7 h-7 rounded-full overflow-hidden border border-slate-200 shrink-0">
                     <Image
                       src={user.avatar}
                       alt={user.name || 'User'}
@@ -152,26 +152,47 @@ export function Navbar() {
                     />
                   </div>
                 ) : (
-                  <div className="w-6 h-6 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                  <div className="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-bold shrink-0">
                     {user.name ? user.name.slice(0, 1).toUpperCase() : 'U'}
                   </div>
-                )
-              ) : (
-                <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center shrink-0">
-                  <UserIcon className="w-3.5 h-3.5" />
-                </div>
-              )}
+                )}
 
-              <span className="text-xs font-semibold max-w-[85px] truncate hidden sm:inline">
-                {user ? user.name.split(' ')[0] : 'Menu'}
-              </span>
+                {isDrawerOpen ? (
+                  <X className="w-4 h-4 text-rose-600 shrink-0" />
+                ) : (
+                  <Menu className="w-4 h-4 text-slate-600 shrink-0" />
+                )}
+              </button>
+            ) : (
+              /* If User is Logged Out: Show Login Action + Clean Menu Button */
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/login"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors"
+                  title="Sign In"
+                >
+                  <UserIcon className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Login</span>
+                </Link>
 
-              {isDrawerOpen ? (
-                <X className="w-4 h-4 text-rose-600 shrink-0" />
-              ) : (
-                <Menu className="w-4 h-4 text-slate-500 shrink-0" />
-              )}
-            </button>
+                <button
+                  type="button"
+                  onClick={() => setIsDrawerOpen((prev) => !prev)}
+                  className={`p-2 rounded-full border transition-all cursor-pointer ${
+                    isDrawerOpen
+                      ? 'bg-rose-50 border-rose-200 text-rose-600 shadow-xs'
+                      : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
+                  }`}
+                  title={isDrawerOpen ? 'Close Menu' : 'Navigation Menu'}
+                >
+                  {isDrawerOpen ? (
+                    <X className="w-4 h-4 text-rose-600" />
+                  ) : (
+                    <Menu className="w-4 h-4 text-slate-700" />
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
