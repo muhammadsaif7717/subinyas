@@ -500,10 +500,10 @@ function DashboardContent() {
       },
       {
         id: 'var-2',
-        name: 'Silver / White',
-        nameBn: 'Silver / White',
+        name: 'White',
+        nameBn: 'White',
         color: 'White',
-        colorHex: '#F1F5F9',
+        colorHex: '#F8FAFC',
         image: '/images/products/hello-kitty-open.png',
         inStock: true,
         stockCount: 30,
@@ -512,37 +512,36 @@ function DashboardContent() {
     setProdCombos([
       {
         id: 'combo-single',
-        title: '1 Piece Single Pack',
-        titleBn: '1 Piece Single Pack',
+        title: '1 Piece',
+        titleBn: '1 Piece',
         subtitleBn: 'Standard Package',
         quantity: 1,
         price: 499,
         originalPrice: 800,
+        badge: 'Popular',
+        isPopular: true,
         savingsBn: 'Save ৳301',
       },
       {
         id: 'combo-duo',
-        title: '2 Pieces Duo Pack',
-        titleBn: '2 Pieces Duo Pack (Best Deal)',
-        subtitleBn: 'Best Value Deal • Save More',
+        title: '2 Pieces',
+        titleBn: '2 Pieces',
+        subtitleBn: 'Best Value Package',
         quantity: 2,
         price: 899,
         originalPrice: 1600,
-        badge: 'Best Deal 🔥',
-        isPopular: true,
+        badge: '',
+        isPopular: false,
         savingsBn: 'Save ৳701',
       },
     ]);
     setProdFeaturesBn([
       { icon: 'ShieldCheck', title: '100% Genuine Quality', description: 'Durable, premium materials and long-lasting build' },
-      { icon: 'Sparkles', title: 'Modern & Elegant Design', description: 'Sleek aesthetics perfect for daily lifestyle and convenience' },
-      { icon: 'Truck', title: 'Fast Nationwide Delivery', description: 'Cash on delivery available all across Bangladesh' },
+      { icon: 'Truck', title: 'Cash on Delivery', description: 'Fast delivery across Bangladesh' },
     ]);
     setProdSpecificationsBn([
-      { key: 'Material / Build', value: 'Premium High-Grade Quality' },
+      { key: 'Material', value: 'Premium Grade' },
       { key: 'Warranty', value: '6 Months Replacement Warranty' },
-      { key: 'Condition', value: '100% Brand New & Authentic' },
-      { key: 'Delivery', value: 'Cash On Delivery Nationwide' },
     ]);
     setIsProductModalOpen(true);
   };
@@ -1765,6 +1764,7 @@ function DashboardContent() {
                     </button>
                   </div>
                   <select
+                    required
                     value={prodCategory}
                     onChange={(e) => setProdCategory(e.target.value)}
                     className={`${inputCls} cursor-pointer`}
@@ -1793,9 +1793,10 @@ function DashboardContent() {
                 </div>
 
                 <div>
-                  <label className={labelCls}>Original / Scratch Price (৳)</label>
+                  <label className={labelCls}>Original / Scratch Price (৳) *</label>
                   <input
                     type="number"
+                    required
                     value={prodOriginalPrice}
                     onChange={(e) => setProdOriginalPrice(Number(e.target.value))}
                     className={inputCls}
@@ -1872,9 +1873,10 @@ function DashboardContent() {
 
               {/* Tagline & Description */}
               <div>
-                <label className={labelCls}>Short Tagline / Subtitle</label>
+                <label className={labelCls}>Short Tagline / Subtitle *</label>
                 <input
                   type="text"
+                  required
                   value={prodTaglineBn}
                   onChange={(e) => setProdTaglineBn(e.target.value)}
                   placeholder="e.g. Modern multifunctional smart alarm clock with RGB ambient lighting"
@@ -1883,9 +1885,10 @@ function DashboardContent() {
               </div>
 
               <div>
-                <label className={labelCls}>Detailed Description</label>
+                <label className={labelCls}>Detailed Description *</label>
                 <textarea
                   rows={3}
+                  required
                   value={prodDescriptionBn}
                   onChange={(e) => setProdDescriptionBn(e.target.value)}
                   placeholder="Write full product description, key features, and package benefits..."
@@ -2134,9 +2137,10 @@ function DashboardContent() {
                       className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-[#1C1821] border border-[#2E2733] items-center text-xs"
                     >
                       <div className="sm:col-span-4">
-                        <label className="text-[10px] text-[#8A7D97] block">Combo Title</label>
+                        <label className="text-[10px] text-[#8A7D97] block">Combo Title *</label>
                         <input
                           type="text"
+                          required
                           value={c.title}
                           onChange={(e) => {
                             const val = e.target.value;
@@ -2149,9 +2153,11 @@ function DashboardContent() {
                       </div>
 
                       <div className="sm:col-span-2">
-                        <label className="text-[10px] text-[#8A7D97] block">Quantity (Qty)</label>
+                        <label className="text-[10px] text-[#8A7D97] block">Quantity (Qty) *</label>
                         <input
                           type="number"
+                          required
+                          min="1"
                           value={c.quantity}
                           onChange={(e) => {
                             const val = Number(e.target.value);
@@ -2164,9 +2170,10 @@ function DashboardContent() {
                       </div>
 
                       <div className="sm:col-span-3">
-                        <label className="text-[10px] text-[#8A7D97] block">Deal Price (৳)</label>
+                        <label className="text-[10px] text-[#8A7D97] block">Deal Price (৳) *</label>
                         <input
                           type="number"
+                          required
                           value={c.price}
                           onChange={(e) => {
                             const val = Number(e.target.value);
@@ -2179,12 +2186,12 @@ function DashboardContent() {
                       </div>
 
                       <div className="sm:col-span-3 flex items-center justify-between gap-1">
-                        <div>
-                          <label className="text-[10px] text-[#8A7D97] block">Badge (Optional)</label>
+                        <div className="flex-1">
+                          <label className="text-[10px] text-[#8A7D97] block">Badge</label>
                           <input
                             type="text"
                             value={c.badge || ''}
-                            placeholder="Best Deal"
+                            placeholder="e.g. Popular"
                             onChange={(e) => {
                               const val = e.target.value;
                               setProdCombos((prev) =>
@@ -2239,9 +2246,10 @@ function DashboardContent() {
                       className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-[#1C1821] border border-[#2E2733] items-center text-xs"
                     >
                       <div className="sm:col-span-4">
-                        <label className="text-[10px] text-[#8A7D97] block">Title</label>
+                        <label className="text-[10px] text-[#8A7D97] block">Title *</label>
                         <input
                           type="text"
+                          required
                           value={feat.title}
                           onChange={(e) => {
                             const val = e.target.value;
@@ -2255,9 +2263,10 @@ function DashboardContent() {
                       </div>
 
                       <div className="sm:col-span-7">
-                        <label className="text-[10px] text-[#8A7D97] block">Description</label>
+                        <label className="text-[10px] text-[#8A7D97] block">Description *</label>
                         <input
                           type="text"
+                          required
                           value={feat.description}
                           onChange={(e) => {
                             const val = e.target.value;
@@ -2310,9 +2319,10 @@ function DashboardContent() {
                       className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-[#1C1821] border border-[#2E2733] items-center text-xs"
                     >
                       <div className="sm:col-span-5">
-                        <label className="text-[10px] text-[#8A7D97] block">Key (e.g. Material / Battery)</label>
+                        <label className="text-[10px] text-[#8A7D97] block">Key (e.g. Material / Battery) *</label>
                         <input
                           type="text"
+                          required
                           value={spec.key}
                           onChange={(e) => {
                             const val = e.target.value;
@@ -2325,9 +2335,10 @@ function DashboardContent() {
                       </div>
 
                       <div className="sm:col-span-6">
-                        <label className="text-[10px] text-[#8A7D97] block">Value (e.g. Premium Aluminium)</label>
+                        <label className="text-[10px] text-[#8A7D97] block">Value (e.g. Premium Aluminium) *</label>
                         <input
                           type="text"
+                          required
                           value={spec.value}
                           onChange={(e) => {
                             const val = e.target.value;
