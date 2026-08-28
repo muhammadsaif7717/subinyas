@@ -677,12 +677,47 @@ function DashboardContent() {
     }
   };
 
-  // Handle 16:9 Dedicated Hero Banner Upload
+  // Handle 16:9 Dedicated Hero Banner Upload with Strict 16:9 Aspect Ratio Validation
   const [uploadingBannerSlug, setUploadingBannerSlug] = useState<string | null>(null);
 
   const handleHeroBannerUpload = async (prod: Product, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const targetInput = e.target;
+
+    // Step 1: Pre-validate Image Aspect Ratio (16:9 format)
+    const validateAspectRatio = (): Promise<{ valid: boolean; width: number; height: number; ratio: number }> => {
+      return new Promise((resolve) => {
+        const img = new window.Image();
+        const objectUrl = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(objectUrl);
+          const width = img.naturalWidth;
+          const height = img.naturalHeight;
+          const ratio = width / height;
+          const targetRatio = 16 / 9; // ~1.7778
+          // Allow reasonable tolerance (+/- 0.08) for minor rounding variations (e.g. 1920x1080, 1600x900, 1280x720)
+          const isValidRatio = Math.abs(ratio - targetRatio) <= 0.08;
+          resolve({ valid: isValidRatio, width, height, ratio });
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(objectUrl);
+          resolve({ valid: false, width: 0, height: 0, ratio: 0 });
+        };
+        img.src = objectUrl;
+      });
+    };
+
+    const validation = await validateAspectRatio();
+    if (!validation.valid) {
+      alert(
+        `⚠️ Invalid Image Aspect Ratio!\n\nদয়া করে ১৬:৯ (16:9) রেশিওর ব্যানার ইমেজ আপলোড করুন (যেমন: 1920x1080, 1600x900 বা 1280x720)।\n\nআপনার সিলেক্ট করা ইমেজের সাইজ: ${validation.width}x${validation.height} (Ratio: ${validation.ratio.toFixed(2)})`
+      );
+      if (targetInput) targetInput.value = '';
+      return;
+    }
+
     setUploadingBannerSlug(prod.slug);
 
     try {
@@ -703,6 +738,7 @@ function DashboardContent() {
       alert('Failed to upload 16:9 banner image.');
     } finally {
       setUploadingBannerSlug(null);
+      if (targetInput) targetInput.value = '';
     }
   };
 
