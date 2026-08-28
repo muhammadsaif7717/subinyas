@@ -15,15 +15,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, authenticated: false }, { status: 401 });
     }
 
-    let finalUser = {
+    let finalUser: Record<string, unknown> = {
       id: payload.userId,
       email: payload.email,
       name: payload.name,
       role: payload.role || 'customer',
       avatar: payload.avatar,
+      cart: [],
+      wishlist: [],
     };
 
-    // Check MongoDB for real-time role & profile sync
+    // Check MongoDB for real-time role, profile, cart & wishlist sync
     const db = await getDb();
     if (db && payload.email) {
       const dbUser = await db.collection('users').findOne({ email: payload.email.toLowerCase() });
@@ -34,13 +36,19 @@ export async function GET(request: NextRequest) {
           name: dbUser.name || payload.name,
           role: dbUser.role || payload.role || 'customer',
           avatar: dbUser.avatar || payload.avatar,
+          phone: dbUser.phone,
+          cart: Array.isArray(dbUser.cart) ? dbUser.cart : [],
+          wishlist: Array.isArray(dbUser.wishlist) ? dbUser.wishlist : [],
         };
       }
     }
 
     // If matches configured ADMIN_EMAIL, guarantee role is admin
     const adminEmail = (process.env.ADMIN_EMAIL || 'admin@subinyas.shop').toLowerCase();
-    if (finalUser.email?.toLowerCase() === adminEmail || finalUser.role?.toLowerCase() === 'admin') {
+    const userEmailStr = String(finalUser.email || '').toLowerCase();
+    const userRoleStr = String(finalUser.role || '').toLowerCase();
+
+    if (userEmailStr === adminEmail || userRoleStr === 'admin') {
       finalUser.role = 'admin';
     }
 

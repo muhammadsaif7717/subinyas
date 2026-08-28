@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { CartItem, WishlistItem } from './types';
 import { useAuth } from './auth-context';
@@ -27,13 +27,13 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const pathname = usePathname();
   const { user } = useAuth();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initialize from localStorage
+  // 1. Initial Load from localStorage
   useEffect(() => {
     try {
       const savedCart = localStorage.getItem('subinyas_cart');
@@ -46,31 +46,62 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Save to localStorage whenever changed
+  // 2. Sync from MongoDB Database when user is logged in
   useEffect(() => {
+    let isMounted = true;
+
+    if (user?.id || user?.email) {
+      // Restore from user session object immediately if available
+      if (Array.isArray(user.cart) && user.cart.length > 0) {
+        setCart(user.cart);
+      }
+      if (Array.isArray(user.wishlist) && user.wishlist.length > 0) {
+        setWishlist(user.wishlist);
+      }
+
+      // Fetch fresh cart & wishlist from MongoDB database
+      axios
+        .get('/api/user/sync')
+        .then((res) => {
+          if (isMounted && res.data?.success) {
+            if (Array.isArray(res.data.cart)) {
+              setCart(res.data.cart);
+            }
+            if (Array.isArray(res.data.wishlist)) {
+              setWishlist(res.data.wishlist);
+            }
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (isMounted) setIsInitialized(true);
+        });
+    } else {
+      setIsInitialized(true);
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, user?.email]);
+
+  // 3. Persist to localStorage & MongoDB on changes (only after initialized)
+  useEffect(() => {
+    if (!isInitialized) return;
+
     try {
       localStorage.setItem('subinyas_cart', JSON.stringify(cart));
-    } catch {
-      // ignore
-    }
-  }, [cart]);
-
-  useEffect(() => {
-    try {
       localStorage.setItem('subinyas_wishlist', JSON.stringify(wishlist));
     } catch {
       // ignore
     }
-  }, [wishlist]);
 
-  // Sync with user's MongoDB profile if logged in
-  useEffect(() => {
-    if (user?.id) {
+    if (user?.id || user?.email) {
       axios.post('/api/user/sync', { cart, wishlist }).catch(() => {});
     }
-  }, [cart, wishlist, user?.id]);
+  }, [cart, wishlist, isInitialized, user?.id, user?.email]);
 
-  // Direct internal add item without auth check (used for restore & logged-in users)
+  // Direct internal add item without auth check
   const executeAddToCart = useCallback((newItem: Omit<CartItem, 'id'>) => {
     setCart((prev) => {
       const existingIndex = prev.findIndex(
@@ -101,7 +132,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   // Check and execute pending action on user login
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id || user?.email) {
       try {
         const rawPending = sessionStorage.getItem('subinyas_pending_action');
         if (rawPending) {
@@ -120,7 +151,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         // ignore
       }
     }
-  }, [user?.id, executeAddToCart, executeAddToWishlist]);
+  }, [user?.id, user?.email, executeAddToCart, executeAddToWishlist]);
 
   // Public addToCart with Login Requirement
   const addToCart = (newItem: Omit<CartItem, 'id'>, redirectIfLoggedOut = true): boolean => {
