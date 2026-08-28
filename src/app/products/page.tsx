@@ -17,7 +17,7 @@ export default function ProductsPage() {
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'rating'>('featured');
   const [maxPrice, setMaxPrice] = useState<number>(2000);
 
-  // Fetch all products from API (with initial fallback data)
+  // Fetch all products from API
   const { data: productsData, isLoading } = useQuery<Product[]>({
     queryKey: ['products'],
     queryFn: async () => {
@@ -27,16 +27,28 @@ export default function ProductsPage() {
     initialData: [INITIAL_JEWELRY_BOX_PRODUCT],
   });
 
+  // Fetch categories from API
+  const { data: categoriesData } = useQuery<{ success: boolean; categories: { name: string; nameBn: string }[] }>({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const res = await axios.get('/api/categories');
+      return res.data;
+    },
+  });
+
   const products = productsData && productsData.length > 0 ? productsData : [INITIAL_JEWELRY_BOX_PRODUCT];
 
-  // Extract unique categories
+  // Extract categories dynamically
   const categories = useMemo(() => {
     const set = new Set<string>(['All']);
+    if (categoriesData?.categories) {
+      categoriesData.categories.forEach((c) => set.add(c.name));
+    }
     products.forEach((p) => {
       if (p.category) set.add(p.category);
     });
     return Array.from(set);
-  }, [products]);
+  }, [categoriesData, products]);
 
   // Filter & Sort Products
   const filteredProducts = useMemo(() => {

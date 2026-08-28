@@ -30,12 +30,12 @@ import {
   ExternalLink,
   Edit,
   Sparkles,
-  Info,
   CheckSquare,
+  FolderPlus,
+  Folder,
 } from 'lucide-react';
 import { Order, OrderStatus, StoreSettings, Product, Review, ProductVariant, ComboOption } from '@/lib/types';
-
-const CATEGORY_OPTIONS = ['Organizers', 'Jewelry Box', 'Pouches', 'Travel', 'Accessories', 'Bags', 'Gifts'];
+import { CategoryItem } from '@/app/api/categories/route';
 
 export default function AdminDashboardPage() {
   const queryClient = useQueryClient();
@@ -43,6 +43,13 @@ export default function AdminDashboardPage() {
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [reviewStatusFilter, setReviewStatusFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Category Management Modal State
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatNameBn, setNewCatNameBn] = useState('');
+  const [catError, setCatError] = useState('');
+  const [catSuccess, setCatSuccess] = useState('');
 
   // Add / Edit Product Modal State
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -91,6 +98,20 @@ export default function AdminDashboardPage() {
       return res.data?.products as Product[];
     },
   });
+
+  // Fetch categories from MongoDB
+  const { data: categoriesData, isLoading: isCategoriesLoading, refetch: refetchCategories } = useQuery<{
+    success: boolean;
+    categories: CategoryItem[];
+  }>({
+    queryKey: ['admin-categories'],
+    queryFn: async () => {
+      const res = await axios.get('/api/categories');
+      return res.data;
+    },
+  });
+
+  const categories = categoriesData?.categories || [];
 
   // Fetch reviews for moderation
   const { data: reviewsData, isLoading: isReviewsLoading, refetch: refetchReviews } = useQuery<Review[]>({
@@ -162,6 +183,39 @@ export default function AdminDashboardPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-reviews'] });
+    },
+  });
+
+  // Category Add Mutation
+  const addCategoryMutation = useMutation({
+    mutationFn: async ({ name, nameBn }: { name: string; nameBn: string }) => {
+      const res = await axios.post('/api/categories', { name, nameBn });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      setNewCatName('');
+      setNewCatNameBn('');
+      setCatSuccess('ক্যাটাগরি সফলভাবে যুক্ত হয়েছে!');
+      setTimeout(() => setCatSuccess(''), 3000);
+    },
+    onError: (err: unknown) => {
+      const msg =
+        axios.isAxiosError(err) && err.response?.data?.message
+          ? err.response.data.message
+          : 'ক্যাটাগরি যুক্ত করতে সমস্যা হয়েছে।';
+      setCatError(msg);
+    },
+  });
+
+  // Category Delete Mutation
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (catId: string) => {
+      const res = await axios.delete(`/api/categories?id=${catId}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
     },
   });
 
@@ -244,7 +298,7 @@ export default function AdminDashboardPage() {
     setProdName('');
     setProdNameBn('');
     setProdSlug('');
-    setProdCategory('Organizers');
+    setProdCategory(categories[0]?.name || 'Organizers');
     setProdTaglineBn('');
     setProdDescriptionBn('');
     setProdBasePrice(499);
@@ -444,6 +498,17 @@ export default function AdminDashboardPage() {
     saveProductMutation.mutate(fullProduct);
   };
 
+  // Handle Add Category
+  const handleCreateCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCatError('');
+    if (!newCatName.trim()) {
+      setCatError('ইংরেজি ক্যাটাগরির নাম দিন।');
+      return;
+    }
+    addCategoryMutation.mutate({ name: newCatName.trim(), nameBn: newCatNameBn.trim() || newCatName.trim() });
+  };
+
   const orders = ordersData || [];
   const totalRevenue = orders.reduce((sum, o) => (o.status !== 'Cancelled' && o.status !== 'Returned' ? sum + o.totalAmount : sum), 0);
   const pendingOrders = orders.filter((o) => o.status === 'Pending').length;
@@ -499,6 +564,7 @@ export default function AdminDashboardPage() {
                 refetchOrders();
                 refetchReviews();
                 refetchProducts();
+                refetchCategories();
               }}
               className="p-2 text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 rounded-lg border border-slate-700 cursor-pointer"
               title="রিফ্রেশ করুন"
@@ -552,7 +618,7 @@ export default function AdminDashboardPage() {
               <Layers className="w-4 h-4 text-teal-400" />
             </div>
             <div className="text-2xl sm:text-3xl font-black text-teal-400">{products.length} টি</div>
-            <span className="text-[11px] text-slate-400 mt-1 block">ডেলিভার্ড: {deliveredOrders} টি</span>
+            <span className="text-[11px] text-slate-400 mt-1 block">ক্যাটাগরি: {categories.length} টি</span>
           </div>
         </div>
 
@@ -770,16 +836,26 @@ export default function AdminDashboardPage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-800/40 p-4 rounded-2xl border border-slate-700">
               <div>
                 <h3 className="text-base font-bold text-white">Products Management</h3>
-                <p className="text-xs text-slate-400">Manage products, pricing, featured status, variants, and live inventory in MongoDB</p>
+                <p className="text-xs text-slate-400">Manage products, dynamic categories, pricing, variants, and live inventory in MongoDB</p>
               </div>
 
-              <button
-                onClick={handleOpenAddProduct}
-                className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-rose-600/20 transition-all cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add New Product</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsCategoryModalOpen(true)}
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 border border-slate-700 transition-colors cursor-pointer"
+                >
+                  <FolderPlus className="w-4 h-4 text-amber-400" />
+                  <span>ক্যাটাগরি ম্যানেজমেন্ট ({categories.length})</span>
+                </button>
+
+                <button
+                  onClick={handleOpenAddProduct}
+                  className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-rose-600/20 transition-all cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add New Product</span>
+                </button>
+              </div>
             </div>
 
             {isProductsLoading ? (
@@ -1107,6 +1183,110 @@ export default function AdminDashboardPage() {
         )}
       </main>
 
+      {/* CATEGORY MANAGEMENT MODAL */}
+      {isCategoryModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-xl p-6 sm:p-8 space-y-6 shadow-2xl animate-in fade-in duration-200">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Folder className="w-5 h-5 text-amber-400" />
+                <span>ক্যাটাগরি ম্যানেজমেন্ট (MongoDB Categories)</span>
+              </h2>
+              <button
+                onClick={() => setIsCategoryModalOpen(false)}
+                className="p-1 text-slate-400 hover:text-white rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {catError && (
+              <div className="bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs p-3 rounded-xl">
+                ⚠️ {catError}
+              </div>
+            )}
+
+            {catSuccess && (
+              <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs p-3 rounded-xl">
+                ✅ {catSuccess}
+              </div>
+            )}
+
+            {/* Add New Category Form */}
+            <form onSubmit={handleCreateCategory} className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-3">
+              <h4 className="text-xs font-bold text-white">নতুন ক্যাটাগরি তৈরি করুন</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-0.5">Name (English) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newCatName}
+                    onChange={(e) => setNewCatName(e.target.value)}
+                    placeholder="e.g. Leather Wallets"
+                    className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-0.5">Name (বাংলা) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newCatNameBn}
+                    onChange={(e) => setNewCatNameBn(e.target.value)}
+                    placeholder="যেমন: লেদার ওয়ালেট"
+                    className="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs"
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={addCategoryMutation.isPending}
+                className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>{addCategoryMutation.isPending ? 'যোগ হচ্ছে...' : 'ক্যাটাগরি যুক্ত করুন'}</span>
+              </button>
+            </form>
+
+            {/* Existing Categories List */}
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+              <h4 className="text-xs font-bold text-slate-400">বিদ্যমান ক্যাটাগরিসমূহ ({categories.length})</h4>
+              {isCategoriesLoading ? (
+                <div className="text-xs text-slate-500 py-4 text-center">ক্যাটাগরি লোড হচ্ছে...</div>
+              ) : categories.length === 0 ? (
+                <div className="text-xs text-slate-500 py-4 text-center">কোনো ক্যাটাগরি পাওয়া যায়নি।</div>
+              ) : (
+                categories.map((cat) => (
+                  <div
+                    key={cat.id || cat.slug}
+                    className="flex items-center justify-between p-3 bg-slate-950/40 rounded-xl border border-slate-800 text-xs"
+                  >
+                    <div>
+                      <span className="font-bold text-white">{cat.name}</span>
+                      <span className="text-slate-400 ml-2 font-medium">({cat.nameBn})</span>
+                      <span className="block text-[10px] font-mono text-slate-500">Slug: {cat.slug}</span>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        if (confirm(`Are you sure you want to delete category "${cat.name}"?`)) {
+                          deleteCategoryMutation.mutate(cat.id || cat._id || cat.slug);
+                        }
+                      }}
+                      className="p-1.5 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer"
+                      title="Delete Category"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* FULL-FEATURED ADD / EDIT PRODUCT MODAL */}
       {isProductModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -1193,15 +1373,24 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1">Category *</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-slate-300 font-medium">Category *</label>
+                    <button
+                      type="button"
+                      onClick={() => setIsCategoryModalOpen(true)}
+                      className="text-[10px] text-amber-400 hover:underline cursor-pointer"
+                    >
+                      + New
+                    </button>
+                  </div>
                   <select
                     value={prodCategory}
                     onChange={(e) => setProdCategory(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500 cursor-pointer"
                   >
-                    {CATEGORY_OPTIONS.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
+                    {categories.map((cat) => (
+                      <option key={cat.id || cat.slug} value={cat.name}>
+                        {cat.name} ({cat.nameBn})
                       </option>
                     ))}
                   </select>
@@ -1427,6 +1616,7 @@ export default function AdminDashboardPage() {
                             type="button"
                             onClick={() => setProdVariants((prev) => prev.filter((_, i) => i !== idx))}
                             className="p-1.5 text-slate-500 hover:text-rose-400 transition-colors"
+                            title="মুছে ফেলুন"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
