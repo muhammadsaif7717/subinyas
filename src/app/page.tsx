@@ -28,13 +28,20 @@ export default function HomePage() {
                 সুবিন্যাস নিয়ে এলো নান্দনিক ট্রাভেল জুয়েলারি বক্স ও উপহারের কালেকশন। যেকোনো স্থানে নিজের শখের অনুষঙ্গগুলো রাখুন পরিপাটি।
               </p>
 
-              <div className="pt-2">
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <Link
+                  href="/products"
+                  className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm py-3 px-6 rounded-xl transition-all shadow-xs"
+                >
+                  <span>Browse All Products</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+
                 <Link
                   href="/products/jewelry-box"
-                  className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm py-3.5 px-7 rounded-xl transition-all shadow-xs"
+                  className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium text-sm py-3 px-6 rounded-xl transition-all"
                 >
-                  <span>জুয়েলারি বক্স দেখুন</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span>Featured Jewelry Box</span>
                 </Link>
               </div>
             </div>
