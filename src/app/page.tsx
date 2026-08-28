@@ -72,7 +72,7 @@ export default function HomePage() {
     if (isPaused || slides.length <= 1) return;
     const interval = setInterval(() => {
       nextSlide();
-    }, 4500);
+    }, 2800);
     return () => clearInterval(interval);
   }, [isPaused, nextSlide, slides.length]);
 
