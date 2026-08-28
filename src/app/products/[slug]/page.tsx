@@ -18,6 +18,7 @@ import {
   ArrowRight,
   Share2,
   ChevronRight,
+  ChevronLeft,
   Sparkles,
   Plus,
   Minus,
@@ -25,6 +26,11 @@ import {
   RefreshCw,
   Award,
   AlertCircle,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  RotateCcw,
+  X,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useCart } from '@/lib/cart-context';
@@ -69,6 +75,113 @@ export default function ProductDetailPage() {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [selectedCombo, setSelectedCombo] = useState<ComboOption | null>(null);
 
+  // Interactive In-Place Zoom & Drag Panning State
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [panPosition, setPanPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  // Fullscreen Lightbox Modal State
+  const [isLightboxOpen, setIsLightboxOpen] = useState<boolean>(false);
+  const [lightboxZoom, setLightboxZoom] = useState<number>(1);
+  const [lightboxPan, setLightboxPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isLightboxDragging, setIsLightboxDragging] = useState<boolean>(false);
+  const [lightboxDragStart, setLightboxDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  const handleZoomIn = () => {
+    setZoomLevel((prev) => Math.min(Number((prev + 0.5).toFixed(1)), 3));
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel((prev) => {
+      const next = Math.max(Number((prev - 0.5).toFixed(1)), 1);
+      if (next === 1) setPanPosition({ x: 0, y: 0 });
+      return next;
+    });
+  };
+
+  const handleResetZoom = () => {
+    setZoomLevel(1);
+    setPanPosition({ x: 0, y: 0 });
+  };
+
+  // Mouse pan handlers for zoomed main image
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (zoomLevel <= 1) return;
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - panPosition.x, y: e.clientY - panPosition.y });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || zoomLevel <= 1) return;
+    const maxPan = (zoomLevel - 1) * 160;
+    const newX = Math.max(-maxPan, Math.min(maxPan, e.clientX - dragStart.x));
+    const newY = Math.max(-maxPan, Math.min(maxPan, e.clientY - dragStart.y));
+    setPanPosition({ x: newX, y: newY });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  // Touch pan handlers for mobile
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (zoomLevel <= 1 || e.touches.length !== 1) return;
+    setIsDragging(true);
+    setDragStart({
+      x: e.touches[0].clientX - panPosition.x,
+      y: e.touches[0].clientY - panPosition.y,
+    });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || zoomLevel <= 1 || e.touches.length !== 1) return;
+    const maxPan = (zoomLevel - 1) * 160;
+    const newX = Math.max(-maxPan, Math.min(maxPan, e.touches[0].clientX - dragStart.x));
+    const newY = Math.max(-maxPan, Math.min(maxPan, e.touches[0].clientY - dragStart.y));
+    setPanPosition({ x: newX, y: newY });
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+  };
+
+  // Lightbox Zoom handlers
+  const handleLightboxZoomIn = () => {
+    setLightboxZoom((prev) => Math.min(Number((prev + 0.5).toFixed(1)), 3.5));
+  };
+
+  const handleLightboxZoomOut = () => {
+    setLightboxZoom((prev) => {
+      const next = Math.max(Number((prev - 0.5).toFixed(1)), 1);
+      if (next === 1) setLightboxPan({ x: 0, y: 0 });
+      return next;
+    });
+  };
+
+  const handleLightboxResetZoom = () => {
+    setLightboxZoom(1);
+    setLightboxPan({ x: 0, y: 0 });
+  };
+
+  const handleLightboxMouseDown = (e: React.MouseEvent) => {
+    if (lightboxZoom <= 1) return;
+    setIsLightboxDragging(true);
+    setLightboxDragStart({ x: e.clientX - lightboxPan.x, y: e.clientY - lightboxPan.y });
+  };
+
+  const handleLightboxMouseMove = (e: React.MouseEvent) => {
+    if (!isLightboxDragging || lightboxZoom <= 1) return;
+    const maxPan = (lightboxZoom - 1) * 260;
+    const newX = Math.max(-maxPan, Math.min(maxPan, e.clientX - lightboxDragStart.x));
+    const newY = Math.max(-maxPan, Math.min(maxPan, e.clientY - lightboxDragStart.y));
+    setLightboxPan({ x: newX, y: newY });
+  };
+
+  const handleLightboxMouseUp = () => {
+    setIsLightboxDragging(false);
+  };
+
   useEffect(() => {
     if (product) {
       if (product.variants?.length > 0) {
@@ -88,6 +201,23 @@ export default function ProductDetailPage() {
       trackViewContent(product.nameBn, product.category, product.basePrice);
     }
   }, [product]);
+
+  // Reset zoom when image changes
+  useEffect(() => {
+    handleResetZoom();
+    handleLightboxResetZoom();
+  }, [selectedImage]);
+
+  // Close lightbox on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsLightboxOpen(false);
+    };
+    if (isLightboxOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isLightboxOpen]);
 
   // Combined gallery images (includes general product images + variant-specific images)
   const galleryImages = useMemo(() => {
@@ -229,18 +359,38 @@ export default function ProductDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* Left Column: Image Gallery */}
           <div className="lg:col-span-6 space-y-4">
-            {/* Primary Main Image Frame */}
-            <div className="relative aspect-square rounded-3xl overflow-hidden bg-slate-50 border border-slate-200 shadow-sm group">
-              <Image
-                src={selectedImage || product.images[0] || '/images/products/hello-kitty-pair.png'}
-                alt={product.nameBn}
-                fill
-                priority
-                className="object-cover transition-all duration-300 group-hover:scale-105"
-              />
+            {/* Primary Main Image Frame with Zoom & Pan */}
+            <div
+              className={`relative aspect-square rounded-3xl overflow-hidden bg-slate-50 border border-slate-200 shadow-sm select-none ${
+                zoomLevel > 1 ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : 'group'
+              }`}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              <div
+                className="w-full h-full relative origin-center"
+                style={{
+                  transform: `scale(${zoomLevel}) translate(${panPosition.x / zoomLevel}px, ${panPosition.y / zoomLevel}px)`,
+                  transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+                }}
+              >
+                <Image
+                  src={selectedImage || product.images[0] || '/images/products/hello-kitty-pair.png'}
+                  alt={product.name}
+                  fill
+                  priority
+                  draggable={false}
+                  className="object-cover pointer-events-none"
+                />
+              </div>
 
               {/* Discount / Hot Badges */}
-              <div className="absolute top-4 left-4 flex flex-col gap-1.5 z-10">
+              <div className="absolute top-4 left-4 flex flex-col gap-1.5 z-10 pointer-events-none">
                 {discountPercent > 0 && (
                   <span className="bg-rose-600 text-white text-[11px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider shadow-md">
                     -{discountPercent}% OFF
@@ -277,6 +427,65 @@ export default function ProductDetailPage() {
                   }`}
                 />
               </button>
+
+              {/* Floating Bottom-Right Zoom & Pan Controls Pill */}
+              <div className="absolute bottom-3.5 right-3.5 z-10 flex items-center gap-1 bg-white/95 backdrop-blur-md px-2 py-1.5 rounded-2xl shadow-lg border border-slate-200/80">
+                {/* Zoom Out Button (-) */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleZoomOut();
+                  }}
+                  disabled={zoomLevel <= 1}
+                  className="w-7 h-7 flex items-center justify-center rounded-xl text-slate-700 hover:bg-slate-100 disabled:opacity-35 disabled:cursor-not-allowed transition-colors"
+                  title="Zoom Out"
+                >
+                  <Minus className="w-3.5 h-3.5" strokeWidth={2.5} />
+                </button>
+
+                {/* Current Zoom Level / Reset Indicator */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleResetZoom();
+                  }}
+                  className="px-2 py-1 text-[11px] font-mono font-bold text-slate-800 hover:text-orange-600 rounded-lg transition-colors cursor-pointer"
+                  title="Click to reset zoom (100%)"
+                >
+                  {Math.round(zoomLevel * 100)}%
+                </button>
+
+                {/* Zoom In Button (+) */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleZoomIn();
+                  }}
+                  disabled={zoomLevel >= 3}
+                  className="w-7 h-7 flex items-center justify-center rounded-xl text-slate-700 hover:bg-slate-100 disabled:opacity-35 disabled:cursor-not-allowed transition-colors"
+                  title="Zoom In"
+                >
+                  <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+                </button>
+
+                <div className="w-px h-4 bg-slate-200 mx-0.5" />
+
+                {/* Fullscreen Expand / Lightbox Button */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsLightboxOpen(true);
+                  }}
+                  className="w-7 h-7 flex items-center justify-center rounded-xl text-slate-700 hover:text-orange-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                  title="Fullscreen High-Res View"
+                >
+                  <Maximize2 className="w-3.5 h-3.5" strokeWidth={2} />
+                </button>
+              </div>
             </div>
 
             {/* Thumbnail Strip */}
@@ -654,6 +863,147 @@ export default function ProductDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Fullscreen High-Res Image Lightbox Modal */}
+      {isLightboxOpen && (
+        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col justify-between animate-in fade-in duration-200">
+          {/* Top Bar Header */}
+          <div className="flex items-center justify-between px-4 sm:px-8 py-4 z-20 bg-gradient-to-b from-black/80 to-transparent">
+            <div className="flex items-center gap-3">
+              <span className="text-white text-xs font-mono font-bold bg-white/10 px-3 py-1 rounded-full border border-white/15">
+                {Math.max(1, galleryImages.indexOf(selectedImage) + 1)} / {galleryImages.length}
+              </span>
+              <span className="text-slate-300 text-xs font-semibold hidden sm:inline truncate max-w-sm">
+                {product.name}
+              </span>
+            </div>
+
+            {/* Lightbox Zoom Controls & Close Button */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-xl border border-white/15">
+                <button
+                  type="button"
+                  onClick={handleLightboxZoomOut}
+                  disabled={lightboxZoom <= 1}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-white hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                  title="Zoom Out"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLightboxResetZoom}
+                  className="px-2 py-0.5 text-xs font-mono font-bold text-slate-200 hover:text-white cursor-pointer"
+                  title="Reset Zoom"
+                >
+                  {Math.round(lightboxZoom * 100)}%
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLightboxZoomIn}
+                  disabled={lightboxZoom >= 3.5}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-white hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                  title="Zoom In"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsLightboxOpen(false)}
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-rose-600 text-white transition-colors cursor-pointer border border-white/15"
+                title="Close (Esc)"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Main Centered Zoomable Stage */}
+          <div
+            className={`relative flex-1 w-full flex items-center justify-center overflow-hidden px-4 select-none ${
+              lightboxZoom > 1 ? (isLightboxDragging ? 'cursor-grabbing' : 'cursor-grab') : ''
+            }`}
+            onMouseDown={handleLightboxMouseDown}
+            onMouseMove={handleLightboxMouseMove}
+            onMouseUp={handleLightboxMouseUp}
+            onMouseLeave={handleLightboxMouseUp}
+          >
+            {/* Previous Arrow Button */}
+            {galleryImages.length > 1 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const idx = galleryImages.indexOf(selectedImage);
+                  const prevIdx = (idx - 1 + galleryImages.length) % galleryImages.length;
+                  setSelectedImage(galleryImages[prevIdx]);
+                }}
+                className="absolute left-4 sm:left-8 z-20 w-11 h-11 flex items-center justify-center rounded-full bg-white/10 hover:bg-white text-white hover:text-slate-900 transition-all border border-white/15 backdrop-blur-md active:scale-95 cursor-pointer shadow-xl"
+                title="Previous Image"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+            )}
+
+            {/* Zoomable / Pannable Image */}
+            <div
+              className="relative w-full max-w-2xl aspect-square flex items-center justify-center"
+              style={{
+                transform: `scale(${lightboxZoom}) translate(${lightboxPan.x / lightboxZoom}px, ${lightboxPan.y / lightboxZoom}px)`,
+                transition: isLightboxDragging ? 'none' : 'transform 0.2s ease-out',
+              }}
+            >
+              <Image
+                src={selectedImage || product.images[0] || '/images/products/hello-kitty-pair.png'}
+                alt={product.name}
+                fill
+                priority
+                draggable={false}
+                className="object-contain pointer-events-none"
+              />
+            </div>
+
+            {/* Next Arrow Button */}
+            {galleryImages.length > 1 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const idx = galleryImages.indexOf(selectedImage);
+                  const nextIdx = (idx + 1) % galleryImages.length;
+                  setSelectedImage(galleryImages[nextIdx]);
+                }}
+                className="absolute right-4 sm:right-8 z-20 w-11 h-11 flex items-center justify-center rounded-full bg-white/10 hover:bg-white text-white hover:text-slate-900 transition-all border border-white/15 backdrop-blur-md active:scale-95 cursor-pointer shadow-xl"
+                title="Next Image"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            )}
+          </div>
+
+          {/* Bottom Thumbnails Navigation Strip */}
+          {galleryImages.length > 1 && (
+            <div className="z-20 py-4 px-4 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-center gap-2.5 overflow-x-auto">
+              {galleryImages.map((img, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setSelectedImage(img)}
+                  className={`relative w-14 h-14 rounded-xl overflow-hidden border-2 transition-all shrink-0 cursor-pointer ${
+                    selectedImage === img
+                      ? 'border-orange-500 ring-2 ring-orange-500/50 scale-105 opacity-100'
+                      : 'border-white/20 opacity-50 hover:opacity-100'
+                  }`}
+                >
+                  <Image src={img} alt={`Thumb ${idx + 1}`} fill className="object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
