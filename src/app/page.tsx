@@ -107,129 +107,161 @@ export default function HomePage() {
 
   return (
     <div className="w-full bg-white text-slate-900">
-      {/* Dynamic Hero Auto Slider from MongoDB Featured Products */}
+      {/* Dynamic Hero Auto Slider from MongoDB with Full-Bleed 16:9 Background Banner */}
       {activeProduct && (
         <section
-          className="border-b border-slate-100 py-12 sm:py-20 relative overflow-hidden bg-gradient-to-b from-slate-50/50 to-white"
+          className="relative overflow-hidden w-full min-h-[480px] sm:min-h-[540px] lg:min-h-[580px] flex items-center bg-slate-950 border-b border-slate-800 select-none"
           onMouseEnter={() => setIsPaused(true)}
           onMouseLeave={() => setIsPaused(false)}
         >
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 relative">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center min-h-[420px]">
-              {/* Text & Content Block */}
+          {/* Full Banner Background Image */}
+          <div className="absolute inset-0 z-0">
+            <Image
+              key={activeProduct.slug}
+              src={
+                activeProduct.heroBannerImage ||
+                activeProduct.images[0] ||
+                '/images/products/hello-kitty-pair.png'
+              }
+              alt={activeProduct.name}
+              fill
+              priority
+              className="object-cover object-center transition-opacity duration-700 animate-in fade-in"
+            />
+
+            {/* Smart Gradient Overlay based on text_left vs text_right */}
+            <div
+              className={`absolute inset-0 transition-all duration-500 ${
+                activeProduct.heroLayout === 'text_right'
+                  ? 'bg-gradient-to-t sm:bg-gradient-to-l from-black/95 via-black/75 to-black/35 sm:to-transparent'
+                  : 'bg-gradient-to-t sm:bg-gradient-to-r from-black/95 via-black/75 to-black/35 sm:to-transparent'
+              }`}
+            />
+          </div>
+
+          {/* Foreground Dynamic Content Container */}
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10 w-full py-12 sm:py-20">
+            <div
+              className={`max-w-xl space-y-6 ${
+                activeProduct.heroLayout === 'text_right'
+                  ? 'sm:ml-auto text-left sm:text-right'
+                  : 'sm:mr-auto text-left'
+              }`}
+            >
+              {/* Badges */}
               <div
-                className={`space-y-6 ${
+                className={`flex flex-wrap items-center gap-2 ${
                   activeProduct.heroLayout === 'text_right'
-                    ? 'lg:col-span-7 lg:order-2'
-                    : 'lg:col-span-7 lg:order-1'
+                    ? 'justify-start sm:justify-end'
+                    : 'justify-start'
                 }`}
               >
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-rose-600 bg-rose-50 px-3 py-1 rounded-md border border-rose-100">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Featured Deal • Save ৳{activeProduct.originalPrice - activeProduct.basePrice}</span>
-                  </span>
-                  <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
-                    {activeProduct.category || 'Organizers'}
-                  </span>
-                  {activeProduct.reviewCount > 0 && (
-                    <div className="flex items-center gap-1 text-xs text-amber-600 font-bold bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200">
-                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                      <span>{activeProduct.rating?.toFixed(1) || '5.0'}</span>
-                      <span className="text-slate-400 font-normal">({activeProduct.reviewCount})</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-slate-900 leading-tight">
-                    {activeProduct.name || activeProduct.nameBn}
-                  </h1>
-                </div>
-
-                <p className="text-sm sm:text-base text-slate-600 max-w-lg leading-relaxed">
-                  {activeProduct.taglineBn || activeProduct.descriptionBn}
-                </p>
-
-                {/* Price & CTAs */}
-                <div className="space-y-4">
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-3xl font-extrabold text-slate-900">৳{activeProduct.basePrice}</span>
-                    <span className="text-sm line-through text-slate-400">৳{activeProduct.originalPrice}</span>
-                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                      Save ৳{activeProduct.originalPrice - activeProduct.basePrice}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-3 pt-1">
-                    <Link
-                      href={`/products/${activeProduct.slug}`}
-                      className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm py-3.5 px-6 rounded-xl transition-all shadow-xs"
-                    >
-                      <span>Order Now</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-
-                    <Link
-                      href="/products"
-                      className="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm py-3.5 px-6 rounded-xl border border-slate-300 transition-all"
-                    >
-                      <span>Browse All Products ({products.length})</span>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-
-              {/* Visual Banner Frame */}
-              <div
-                className={`relative ${
-                  activeProduct.heroLayout === 'text_right'
-                    ? 'lg:col-span-5 lg:order-1'
-                    : 'lg:col-span-5 lg:order-2'
-                }`}
-              >
-                <div className="relative aspect-square rounded-3xl overflow-hidden bg-slate-50 border border-slate-200 shadow-sm">
-                  <Image
-                    key={activeProduct.slug}
-                    src={activeProduct.heroBannerImage || activeProduct.images[0] || '/images/products/hello-kitty-pair.png'}
-                    alt={activeProduct.name}
-                    fill
-                    priority
-                    className="object-cover transition-opacity duration-500 animate-in fade-in"
-                  />
-                </div>
-
-                {/* Slider Arrows (only if multiple slides) */}
-                {slides.length > 1 && (
-                  <div className="absolute -bottom-4 right-4 flex items-center gap-2">
-                    <button
-                      onClick={prevSlide}
-                      className="w-9 h-9 rounded-full bg-white/90 border border-slate-200 shadow-xs flex items-center justify-center text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
-                      title="Previous Slide"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={nextSlide}
-                      className="w-9 h-9 rounded-full bg-white/90 border border-slate-200 shadow-xs flex items-center justify-center text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
-                      title="Next Slide"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-rose-300 bg-rose-950/70 backdrop-blur-md px-3.5 py-1 rounded-full border border-rose-500/30">
+                  <Sparkles className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Featured Deal • Save ৳{activeProduct.originalPrice - activeProduct.basePrice}</span>
+                </span>
+                <span className="text-[11px] font-bold text-white/90 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+                  {activeProduct.category || 'Organizers'}
+                </span>
+                {activeProduct.reviewCount > 0 && (
+                  <div className="flex items-center gap-1 text-xs text-amber-300 font-bold bg-amber-950/70 backdrop-blur-md px-3 py-1 rounded-full border border-amber-500/30">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    <span>{activeProduct.rating?.toFixed(1) || '5.0'}</span>
+                    <span className="text-white/60 font-normal">({activeProduct.reviewCount})</span>
                   </div>
                 )}
               </div>
+
+              {/* Product Title */}
+              <div className="space-y-2">
+                <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight drop-shadow-md">
+                  {activeProduct.name || activeProduct.nameBn}
+                </h1>
+              </div>
+
+              {/* Tagline / Description */}
+              <p className="text-sm sm:text-base text-slate-200 leading-relaxed max-w-lg drop-shadow">
+                {activeProduct.taglineBn || activeProduct.descriptionBn}
+              </p>
+
+              {/* Price & Action Buttons */}
+              <div className="space-y-4 pt-1">
+                <div
+                  className={`flex items-baseline gap-3 ${
+                    activeProduct.heroLayout === 'text_right'
+                      ? 'justify-start sm:justify-end'
+                      : 'justify-start'
+                  }`}
+                >
+                  <span className="text-3xl sm:text-4xl font-extrabold text-white font-mono drop-shadow">
+                    ৳{activeProduct.basePrice}
+                  </span>
+                  {activeProduct.originalPrice > activeProduct.basePrice && (
+                    <span className="text-sm sm:text-base line-through text-slate-400 font-mono">
+                      ৳{activeProduct.originalPrice}
+                    </span>
+                  )}
+                  <span className="text-xs font-bold text-emerald-400 bg-emerald-950/70 backdrop-blur-md px-3 py-1 rounded-full border border-emerald-500/30">
+                    Save ৳{activeProduct.originalPrice - activeProduct.basePrice}
+                  </span>
+                </div>
+
+                <div
+                  className={`flex flex-wrap items-center gap-3 pt-2 ${
+                    activeProduct.heroLayout === 'text_right'
+                      ? 'justify-start sm:justify-end'
+                      : 'justify-start'
+                  }`}
+                >
+                  <Link
+                    href={`/products/${activeProduct.slug}`}
+                    className="inline-flex items-center gap-2 bg-[#C4587A] hover:bg-[#B24A6B] text-white font-bold text-sm sm:text-base py-3.5 px-7 rounded-2xl shadow-xl shadow-[#C4587A]/35 transition-all cursor-pointer"
+                  >
+                    <span>Order Now</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+
+                  <Link
+                    href="/products"
+                    className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white font-semibold text-sm sm:text-base py-3.5 px-6 rounded-2xl border border-white/20 transition-all cursor-pointer"
+                  >
+                    <span>Browse All Products ({products.length})</span>
+                  </Link>
+                </div>
+              </div>
             </div>
 
-            {/* Dots Indicator */}
+            {/* Slider Navigation Arrows (only if multiple slides) */}
             {slides.length > 1 && (
-              <div className="flex items-center justify-center gap-2 pt-8">
+              <>
+                <button
+                  onClick={prevSlide}
+                  className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md border border-white/20 shadow-lg flex items-center justify-center text-white transition-all cursor-pointer z-20"
+                  title="Previous Banner"
+                >
+                  <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
+                <button
+                  onClick={nextSlide}
+                  className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md border border-white/20 shadow-lg flex items-center justify-center text-white transition-all cursor-pointer z-20"
+                  title="Next Banner"
+                >
+                  <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
+              </>
+            )}
+
+            {/* Bottom Dots Indicator */}
+            {slides.length > 1 && (
+              <div className="flex items-center justify-center gap-2 pt-10 sm:pt-14 relative z-20">
                 {slides.map((s, idx) => (
                   <button
                     key={s.slug || idx}
                     onClick={() => setCurrentSlide(idx)}
                     className={`transition-all duration-300 rounded-full cursor-pointer ${
-                      currentSlide === idx ? 'w-8 h-2 bg-slate-900' : 'w-2 h-2 bg-slate-300 hover:bg-slate-400'
+                      currentSlide === idx
+                        ? 'w-9 h-2 bg-[#C4587A] shadow-md shadow-[#C4587A]/40'
+                        : 'w-2.5 h-2 bg-white/40 hover:bg-white/70'
                     }`}
                     title={`Slide ${idx + 1}: ${s.name}`}
                   />
