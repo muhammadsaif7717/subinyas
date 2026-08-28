@@ -86,16 +86,18 @@ export interface Order {
   address: string;
   deliveryArea: DeliveryArea;
   deliveryCharge: number;
-  productSlug: string;
-  productNameBn: string;
-  comboId: string;
-  comboTitleBn: string;
-  quantity: number;
-  selectedVariants: string[];
+  items?: CartItem[];
+  productSlug?: string;
+  productNameBn?: string;
+  comboId?: string;
+  comboTitleBn?: string;
+  quantity?: number;
+  selectedVariants?: string[];
   subtotal: number;
   totalAmount: number;
   status: OrderStatus;
   notes?: string;
+  paymentMethod?: 'cod' | 'sslcommerz' | 'bkash' | 'nagad';
   advancePaid?: number;
   transactionId?: string;
   createdAt: string;
@@ -122,7 +124,7 @@ export interface WishlistItem {
   productNameBn: string;
   image: string;
   price: number;
-  rating: number;
+  rating?: number;
 }
 
 export interface StoreSettings {

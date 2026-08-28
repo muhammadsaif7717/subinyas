@@ -58,12 +58,27 @@ export function OrderReceiptModal({ order, onClose }: OrderReceiptModalProps) {
               <span>পণ্যের বিবরণ</span>
             </div>
             <div className="text-xs space-y-1.5 text-slate-600">
-              <div className="flex justify-between font-medium text-slate-800">
-                <span>{order.productNameBn}</span>
-                <span>৳{order.subtotal}</span>
-              </div>
-              <div className="text-rose-600 font-medium">প্যাকেজ: {order.comboTitleBn}</div>
-              <div className="text-slate-500">কালার/ডিজাইন: {order.selectedVariants.join(', ')}</div>
+              {order.items && order.items.length > 0 ? (
+                <div className="space-y-2 pb-2">
+                  {order.items.map((item, idx) => (
+                    <div key={idx} className="flex justify-between font-medium text-slate-800">
+                      <span>{item.productNameBn || item.productName} ({item.quantity}x)</span>
+                      <span>৳{item.price * item.quantity}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between font-medium text-slate-800">
+                    <span>{order.productNameBn}</span>
+                    <span>৳{order.subtotal}</span>
+                  </div>
+                  {order.comboTitleBn && <div className="text-rose-600 font-medium">প্যাকেজ: {order.comboTitleBn}</div>}
+                  {order.selectedVariants && order.selectedVariants.length > 0 && (
+                    <div className="text-slate-500">কালার/ডিজাইন: {order.selectedVariants.join(', ')}</div>
+                  )}
+                </>
+              )}
               <div className="flex justify-between pt-2 border-t border-rose-200/60 text-slate-700">
                 <span>ডেলিভারি চার্জ ({order.deliveryArea === 'inside_dhaka' ? 'ঢাকার ভেতরে' : 'ঢাকার বাইরে'}):</span>
                 <span>৳{order.deliveryCharge}</span>

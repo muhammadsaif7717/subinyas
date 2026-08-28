@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import axios from 'axios';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
   Star,
   ShieldCheck,
@@ -11,530 +12,609 @@ import {
   Check,
   Layers,
   Gift,
-  Loader2,
   ShoppingBag,
   Heart,
+  Eye,
+  ArrowRight,
+  Share2,
+  ChevronRight,
+  Sparkles,
+  Plus,
+  Minus,
+  CheckCircle2,
+  RefreshCw,
+  Award,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useCart } from '@/lib/cart-context';
 import { ProductReviews } from '@/components/ProductReviews';
-import { OrderReceiptModal } from '@/components/OrderReceiptModal';
 import { INITIAL_JEWELRY_BOX_PRODUCT } from '@/lib/constants';
-import { Order, DeliveryArea, Product } from '@/lib/types';
-import { trackViewContent, trackInitiateCheckout, trackPurchase } from '@/lib/pixel';
+import { Product, ProductVariant, ComboOption } from '@/lib/types';
+import { trackViewContent, trackAddToCart, trackInitiateCheckout } from '@/lib/pixel';
 
-export default function DynamicProductPage() {
+export default function ProductDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const slug = (params?.slug as string) || 'jewelry-box';
-  const { addToCart, addToWishlist, removeFromWishlist, isInWishlist } = useCart();
+  const { addToCart, addToWishlist, removeFromWishlist, isInWishlist, setIsCartOpen } = useCart();
 
+  // Active Tab for details
+  const [activeTab, setActiveTab] = useState<'description' | 'features' | 'specifications' | 'reviews' | 'shipping'>('description');
+  const [quantity, setQuantity] = useState<number>(1);
+  const [addedToast, setAddedToast] = useState(false);
+
+  // Fetch product data
   const { data: dynamicProduct, isLoading } = useQuery<Product>({
     queryKey: ['product', slug],
     queryFn: async () => {
       const res = await axios.get(`/api/products?slug=${slug}`);
       return res.data?.product;
     },
-    initialData: slug === 'jewelry-box' ? INITIAL_JEWELRY_BOX_PRODUCT : undefined,
   });
 
-  const product = dynamicProduct || INITIAL_JEWELRY_BOX_PRODUCT;
+  // Fetch all products for Related items
+  const { data: allProductsData } = useQuery<Product[]>({
+    queryKey: ['products'],
+    queryFn: async () => {
+      const res = await axios.get('/api/products');
+      return res.data?.products || [];
+    },
+  });
 
-  // Selected state
-  const [selectedImage, setSelectedImage] = useState(product.images[0] || '/images/products/hello-kitty-pair.png');
-  const [selectedCombo, setSelectedCombo] = useState(product.combos[1] || product.combos[0]);
-  const [selectedVariants, setSelectedVariants] = useState<string[]>([
-    product.variants[0]?.nameBn || 'Default',
-    product.variants[1]?.nameBn || 'Default',
-  ]);
-  const [deliveryArea, setDeliveryArea] = useState<DeliveryArea>('inside_dhaka');
+  const product = dynamicProduct || (slug === 'jewelry-box' ? INITIAL_JEWELRY_BOX_PRODUCT : dynamicProduct);
 
-  // Sync state when product loads
+  // Selected State
+  const [selectedImage, setSelectedImage] = useState<string>('');
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+  const [selectedCombo, setSelectedCombo] = useState<ComboOption | null>(null);
+
   useEffect(() => {
     if (product) {
-      setSelectedImage(product.images[0]);
-      setSelectedCombo(product.combos[1] || product.combos[0]);
-      const initialVars: string[] = [];
-      const qty = product.combos[1]?.quantity || 1;
-      for (let i = 0; i < qty; i++) {
-        initialVars.push(product.variants[i % product.variants.length]?.nameBn || 'Default');
+      setSelectedImage(product.images?.[0] || '/images/products/hello-kitty-pair.png');
+      if (product.variants?.length > 0) {
+        setSelectedVariant(product.variants[0]);
       }
-      setSelectedVariants(initialVars);
+      if (product.combos?.length > 0) {
+        setSelectedCombo(product.combos[0]);
+      }
       trackViewContent(product.nameBn, product.category, product.basePrice);
     }
   }, [product]);
 
-  // Form inputs
-  const [customerName, setCustomerName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [notes, setNotes] = useState('');
-  const [formError, setFormError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
+  // Related products
+  const relatedProducts = useMemo(() => {
+    if (!allProductsData || !product) return [];
+    return allProductsData
+      .filter((p) => p.slug !== product.slug && p.isActive !== false)
+      .slice(0, 4);
+  }, [allProductsData, product]);
 
-  const handleComboSelect = (combo: typeof product.combos[0]) => {
-    setSelectedCombo(combo);
-    const newVariants: string[] = [];
-    for (let i = 0; i < combo.quantity; i++) {
-      const v = product.variants[i % product.variants.length];
-      newVariants.push(v?.nameBn || 'Default');
-    }
-    setSelectedVariants(newVariants);
-  };
-
-  const handleVariantChange = (index: number, variantName: string) => {
-    const updated = [...selectedVariants];
-    updated[index] = variantName;
-    setSelectedVariants(updated);
-
-    const matchedVariant = product.variants.find((v) => v.nameBn === variantName);
-    if (matchedVariant) {
-      setSelectedImage(matchedVariant.image);
-    }
-  };
-
-  const deliveryFee = deliveryArea === 'outside_dhaka' ? 130 : 70;
-  const currentPrice = selectedCombo?.price || product.basePrice;
-  const totalAmount = currentPrice + deliveryFee;
-
-  const handlePhoneFocus = () => {
-    trackInitiateCheckout(totalAmount, selectedCombo?.quantity || 1);
-  };
-
-  const handleSubmitOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError('');
-
-    if (!customerName.trim()) {
-      setFormError('আপনার পুরো নাম লিখুন।');
-      return;
-    }
-
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
-    if (!cleanPhone || cleanPhone.length !== 11 || !cleanPhone.startsWith('01')) {
-      setFormError('সঠিক ১১ ডিজিটের মোবাইল নাম্বার দিন (যেমন: 017XXXXXXXX)।');
-      return;
-    }
-
-    if (!address.trim() || address.trim().length < 8) {
-      setFormError('সম্পূর্ণ ঠিকানা লিখুন (বাসা/রোড/এলাকা/জেলা)।');
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const response = await axios.post('/api/orders', {
-        customerName: customerName.trim(),
-        phone: cleanPhone,
-        address: address.trim(),
-        deliveryArea,
-        productSlug: product.slug,
-        productNameBn: product.nameBn,
-        comboId: selectedCombo?.id || 'combo-single',
-        comboTitleBn: selectedCombo?.titleBn || '১টি বক্স',
-        quantity: selectedCombo?.quantity || 1,
-        selectedVariants,
-        subtotal: currentPrice,
-        notes,
-      });
-
-      if (response.data?.success) {
-        const order = response.data.order;
-        setCompletedOrder(order);
-        trackPurchase(order.orderId, order.totalAmount, order.quantity, order.productNameBn);
-
-        setCustomerName('');
-        setPhone('');
-        setAddress('');
-        setNotes('');
-      } else {
-        setFormError(response.data?.message || 'অর্ডার সম্পন্ন হয়নি।');
-      }
-    } catch (err: unknown) {
-      const msg =
-        axios.isAxiosError(err) && err.response?.data?.message
-          ? err.response.data.message
-          : 'সার্ভারে সংযোগে সমস্যা হয়েছে। আবার চেষ্টা করুন।';
-      setFormError(msg);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (isLoading && !dynamicProduct) {
-    return <div className="py-24 text-center text-slate-400">Loading product details...</div>;
+  if (isLoading || !product) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-rose-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-semibold text-slate-500">Loading product details...</p>
+        </div>
+      </div>
+    );
   }
 
+  const currentPrice = selectedCombo?.price || product.basePrice;
+  const currentOriginalPrice = selectedCombo?.originalPrice || product.originalPrice;
+  const savings = Math.max(0, currentOriginalPrice - currentPrice);
+  const discountPercent = Math.round(((currentOriginalPrice - currentPrice) / currentOriginalPrice) * 100);
+  const inWish = isInWishlist(product.slug);
+
+  const handleVariantSelect = (variant: ProductVariant) => {
+    setSelectedVariant(variant);
+    if (variant.image) {
+      setSelectedImage(variant.image);
+    }
+  };
+
+  const handleAddToCart = () => {
+    addToCart({
+      productSlug: product.slug,
+      productName: product.name,
+      productNameBn: product.nameBn,
+      image: selectedImage || product.images[0],
+      comboId: selectedCombo?.id || 'standard',
+      comboTitleBn: selectedCombo?.titleBn || 'Single Pack',
+      selectedVariants: selectedVariant ? [selectedVariant.nameBn] : ['Standard'],
+      price: currentPrice,
+      quantity,
+    });
+
+    trackAddToCart(product.nameBn, currentPrice * quantity);
+    setAddedToast(true);
+    setTimeout(() => setAddedToast(false), 3000);
+  };
+
+  const handleBuyNow = () => {
+    addToCart({
+      productSlug: product.slug,
+      productName: product.name,
+      productNameBn: product.nameBn,
+      image: selectedImage || product.images[0],
+      comboId: selectedCombo?.id || 'standard',
+      comboTitleBn: selectedCombo?.titleBn || 'Single Pack',
+      selectedVariants: selectedVariant ? [selectedVariant.nameBn] : ['Standard'],
+      price: currentPrice,
+      quantity,
+    });
+
+    trackInitiateCheckout(1, currentPrice * quantity);
+    router.push('/checkout');
+  };
+
   return (
-    <div className="w-full bg-white text-slate-900">
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-16">
-        {/* Product Hero Grid */}
+    <div className="min-h-screen bg-white text-slate-900 font-sans pb-16">
+      {/* Toast Notification when item is added */}
+      {addedToast && (
+        <div className="fixed top-20 right-4 sm:right-8 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700 animate-in slide-in-from-top duration-200">
+          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+          <div>
+            <p className="text-xs font-bold">কার্টে যোগ করা হয়েছে!</p>
+            <p className="text-[10px] text-slate-400">চেকআউট করতে ভিউ কার্ট বাটনে ক্লিক করুন</p>
+          </div>
+          <Link
+            href="/checkout"
+            className="ml-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
+          >
+            Checkout
+          </Link>
+        </div>
+      )}
+
+      {/* Breadcrumb Navigation */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 border-b border-slate-100">
+        <nav className="flex items-center gap-2 text-xs text-slate-500">
+          <Link href="/" className="hover:text-slate-900 transition-colors">
+            Home
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+          <Link href="/products" className="hover:text-slate-900 transition-colors">
+            {product.category || 'Products'}
+          </Link>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+          <span className="text-slate-900 font-medium truncate max-w-[200px] sm:max-w-md">
+            {product.name}
+          </span>
+        </nav>
+      </div>
+
+      {/* Main Showcase Section */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-          {/* Left Column: Visual Gallery */}
+          {/* Left Column: Image Gallery */}
           <div className="lg:col-span-6 space-y-4">
-            <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-slate-50 border border-slate-200">
+            {/* Primary Main Image Frame */}
+            <div className="relative aspect-square rounded-3xl overflow-hidden bg-slate-50 border border-slate-200 shadow-sm group">
               <Image
-                src={selectedImage}
+                src={selectedImage || product.images[0] || '/images/products/hello-kitty-pair.png'}
                 alt={product.nameBn}
                 fill
                 priority
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover transition-all duration-300 group-hover:scale-105"
               />
+
+              {/* Discount / Hot Badges */}
+              <div className="absolute top-4 left-4 flex flex-col gap-1.5">
+                {discountPercent > 0 && (
+                  <span className="bg-rose-600 text-white text-[11px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider shadow-md">
+                    -{discountPercent}% OFF
+                  </span>
+                )}
+                {product.isFeatured && (
+                  <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm">
+                    HOT
+                  </span>
+                )}
+              </div>
             </div>
 
-            {/* Thumbnails */}
-            {product.images?.length > 1 && (
-              <div className="grid grid-cols-4 gap-3">
+            {/* Thumbnail Strip */}
+            {product.images && product.images.length > 1 && (
+              <div className="flex items-center gap-3 overflow-x-auto pb-2">
                 {product.images.map((img, idx) => (
                   <button
                     key={idx}
+                    type="button"
                     onClick={() => setSelectedImage(img)}
-                    className={`relative aspect-square rounded-xl overflow-hidden border transition-all cursor-pointer ${
+                    className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-slate-50 border-2 transition-all shrink-0 cursor-pointer ${
                       selectedImage === img
-                        ? 'border-slate-900 ring-1 ring-slate-900'
-                        : 'border-slate-200 opacity-60 hover:opacity-100'
+                        ? 'border-orange-500 ring-2 ring-orange-500/20 shadow-xs'
+                        : 'border-slate-200 hover:border-slate-400 opacity-80 hover:opacity-100'
                     }`}
                   >
-                    <Image src={img} alt={`Thumb ${idx + 1}`} fill className="object-cover" sizes="100px" />
+                    <Image src={img} alt={`Thumbnail ${idx + 1}`} fill className="object-cover" />
                   </button>
                 ))}
               </div>
             )}
-
-            {/* Subtle Trust Line */}
-            <div className="flex items-center justify-between text-xs text-slate-500 pt-2 px-1">
-              <div className="flex items-center gap-1.5">
-                <Truck className="w-4 h-4 text-slate-700" />
-                <span>সারাদেশে ক্যাশ অন ডেলিভারি</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-slate-700" />
-                <span>৭ দিনের রিপ্লেসমেন্ট</span>
-              </div>
-            </div>
           </div>
 
-          {/* Right Column: Information & Checkout */}
+          {/* Right Column: Details, Variants & Direct Actions */}
           <div className="lg:col-span-6 space-y-6">
-            {/* Header */}
             <div>
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-2">
-                <div className="flex items-center text-amber-500">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-3.5 h-3.5 fill-amber-500" />
-                  ))}
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-md border border-orange-200/60 uppercase tracking-wider">
+                  {product.category || 'Exclusive'}
+                </span>
+
+                {/* Rating & Reviews */}
+                <div className="flex items-center gap-1.5 text-xs text-amber-500 font-bold bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200/60">
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <span>{product.rating?.toFixed(1) || '5.0'}</span>
+                  <button
+                    onClick={() => setActiveTab('reviews')}
+                    className="text-slate-400 font-normal hover:underline cursor-pointer"
+                  >
+                    ({product.reviewCount || 0} reviews)
+                  </button>
                 </div>
-                <span className="font-semibold text-slate-800">{product.rating}</span>
-                <span>({product.reviewCount} রিভিউ)</span>
               </div>
 
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-3">
                 {product.nameBn}
               </h1>
-              <p className="text-sm text-slate-600 mt-2 leading-relaxed">
-                {product.descriptionBn}
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mt-0.5">
+                {product.name}
               </p>
             </div>
 
-            {/* Price Header */}
-            <div className="flex items-baseline gap-3 pb-4 border-b border-slate-100">
-              <span className="text-3xl font-bold text-slate-900">৳{selectedCombo?.price || product.basePrice}</span>
-              <span className="text-sm line-through text-slate-400">৳{selectedCombo?.originalPrice || product.originalPrice}</span>
-              {selectedCombo?.savingsBn && (
-                <span className="text-xs font-semibold text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-md">
-                  {selectedCombo.savingsBn}
+            {/* Price & Savings */}
+            <div className="flex items-baseline gap-3 pt-2 border-t border-slate-100">
+              <span className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-mono">
+                ৳{currentPrice}
+              </span>
+              {currentOriginalPrice > currentPrice && (
+                <span className="text-base sm:text-lg line-through text-slate-400 font-mono">
+                  ৳{currentOriginalPrice}
+                </span>
+              )}
+              {savings > 0 && (
+                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200/60">
+                  Save ৳{savings}
                 </span>
               )}
             </div>
 
-            {/* 1. Combo Selector */}
-            {product.combos?.length > 0 && (
-              <div className="space-y-3">
-                <label className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                  প্যাকেজ নির্বাচন করুন:
+            {/* Live Watching / Urgency Badge */}
+            <div className="flex items-center gap-2 p-3 bg-orange-50/60 rounded-xl border border-orange-200/60 text-xs text-slate-700">
+              <Eye className="w-4 h-4 text-orange-600 shrink-0 animate-pulse" />
+              <span>
+                <strong>১২+ জন গ্রাহক</strong> বর্তমানে এই পণ্যটি দেখছেন!
+              </span>
+            </div>
+
+            {/* Color / Variant Selection */}
+            {product.variants && product.variants.length > 0 && (
+              <div className="space-y-2.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  কালার / ভ্যারিয়েন্ট নির্বাচন করুন:{' '}
+                  <span className="text-slate-900 font-bold ml-1">
+                    {selectedVariant?.nameBn || selectedVariant?.name}
+                  </span>
                 </label>
-
-                <div className="grid grid-cols-1 gap-2.5">
-                  {product.combos.map((combo) => {
-                    const isSelected = selectedCombo?.id === combo.id;
-                    return (
-                      <button
-                        key={combo.id}
-                        type="button"
-                        onClick={() => handleComboSelect(combo)}
-                        className={`p-3.5 rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
-                          isSelected
-                            ? 'border-slate-900 bg-slate-50'
-                            : 'border-slate-200 hover:border-slate-300 bg-white'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                              isSelected ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-300 bg-white'
-                            }`}
-                          >
-                            {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                          </div>
-                          <div>
-                            <div className="text-sm font-semibold text-slate-900">{combo.titleBn}</div>
-                            <div className="text-xs text-slate-500">{combo.subtitleBn}</div>
-                          </div>
-                        </div>
-
-                        <div className="text-right">
-                          <div className="text-sm font-bold text-slate-900">৳{combo.price}</div>
-                          <div className="text-[11px] line-through text-slate-400">৳{combo.originalPrice}</div>
-                        </div>
-                      </button>
-                    );
-                  })}
+                <div className="flex flex-wrap gap-2.5">
+                  {product.variants.map((v) => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => handleVariantSelect(v)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                        selectedVariant?.id === v.id
+                          ? 'border-orange-500 bg-orange-50 text-orange-950 ring-1 ring-orange-500'
+                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                      }`}
+                    >
+                      <span
+                        className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-2xs"
+                        style={{ backgroundColor: v.colorHex || '#ddd' }}
+                      />
+                      <span>{v.nameBn || v.name}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
 
-            {/* 2. Color Selection */}
-            {product.variants?.length > 0 && (
-              <div className="space-y-3">
-                <label className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                  কালার ও ডিজাইন ({selectedCombo?.quantity || 1} টি বক্স):
+            {/* Combo / Package Deals */}
+            {product.combos && product.combos.length > 1 && (
+              <div className="space-y-2.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  অফার প্যাকেজ নির্বাচন করুন:
                 </label>
-
-                <div className="space-y-2">
-                  {selectedVariants.map((currentVariantName, idx) => (
-                    <div key={idx} className="flex items-center gap-3 bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs">
-                      <span className="font-semibold text-slate-600 shrink-0">বক্স {idx + 1}:</span>
-                      <select
-                        value={currentVariantName}
-                        onChange={(e) => handleVariantChange(idx, e.target.value)}
-                        className="w-full bg-white text-slate-800 py-1.5 px-3 rounded-lg border border-slate-200 focus:outline-none focus:border-slate-800 cursor-pointer"
-                      >
-                        {product.variants.map((v) => (
-                          <option key={v.id} value={v.nameBn}>
-                            {v.nameBn}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {product.combos.map((combo) => (
+                    <button
+                      key={combo.id}
+                      type="button"
+                      onClick={() => setSelectedCombo(combo)}
+                      className={`p-3 rounded-2xl text-left border transition-all cursor-pointer ${
+                        selectedCombo?.id === combo.id
+                          ? 'border-orange-500 bg-orange-50/50 ring-1 ring-orange-500'
+                          : 'border-slate-200 bg-white hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-bold text-slate-900">{combo.titleBn}</span>
+                        {combo.isPopular && (
+                          <span className="bg-rose-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                            জনপ্রিয়
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-baseline gap-2 mt-1">
+                        <span className="text-sm font-extrabold text-slate-900 font-mono">
+                          ৳{combo.price}
+                        </span>
+                        <span className="text-[10px] text-emerald-600 font-bold">{combo.savingsBn}</span>
+                      </div>
+                    </button>
                   ))}
                 </div>
+              </div>
+            )}
 
-                {/* Quick Cart / Wishlist Action Row */}
-                <div className="flex gap-2.5 pt-2">
+            {/* Quantity Stepper & Main Action Buttons (Add to Cart & Buy Now) */}
+            <div className="space-y-3.5 pt-2">
+              <div className="flex items-center gap-3">
+                {/* Quantity Stepper */}
+                <div className="flex items-center border border-slate-200 rounded-xl bg-slate-50 overflow-hidden shadow-2xs h-12">
                   <button
                     type="button"
-                    onClick={() => {
-                      addToCart({
+                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    className="px-3.5 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <span className="px-3 text-sm font-mono font-bold text-slate-900 min-w-[28px] text-center">
+                    {quantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((q) => q + 1)}
+                    className="px-3.5 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Add To Cart Button */}
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  className="flex-1 h-12 bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs sm:text-sm px-4 rounded-xl transition-all shadow-md shadow-orange-500/20 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  <span>Add To Cart</span>
+                </button>
+
+                {/* Buy Now Button (Instant Checkout) */}
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
+                  className="flex-1 h-12 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-extrabold text-xs sm:text-sm px-4 rounded-xl transition-all shadow-md shadow-orange-600/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                >
+                  <span>Buy Now (এখনই কিনুন)</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Wishlist Button */}
+              <div className="flex items-center justify-between pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (inWish) removeFromWishlist(product.slug);
+                    else
+                      addToWishlist({
+                        id: `wish-${Date.now()}`,
                         productSlug: product.slug,
                         productName: product.name,
                         productNameBn: product.nameBn,
-                        image: selectedImage,
-                        comboId: selectedCombo?.id || 'combo-single',
-                        comboTitleBn: selectedCombo?.titleBn || '১টি বক্স',
-                        selectedVariants,
+                        image: selectedImage || product.images[0],
                         price: currentPrice,
-                        quantity: 1,
                       });
-                    }}
-                    className="flex-1 bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-semibold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                  >
-                    <ShoppingBag className="w-4 h-4" />
-                    <span>Add to Cart</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (isInWishlist(product.slug)) {
-                        removeFromWishlist(product.slug);
-                      } else {
-                        addToWishlist({
-                          id: product.id,
-                          productSlug: product.slug,
-                          productName: product.name,
-                          productNameBn: product.nameBn,
-                          image: product.images[0],
-                          price: product.basePrice,
-                          rating: product.rating,
-                        });
-                      }
-                    }}
-                    className={`p-2.5 rounded-xl border transition-colors cursor-pointer ${
-                      isInWishlist(product.slug)
-                        ? 'bg-rose-50 border-rose-200 text-rose-600'
-                        : 'bg-white border-slate-300 text-slate-600 hover:text-rose-600'
-                    }`}
-                    title="Wishlist"
-                  >
-                    <Heart className={`w-4 h-4 ${isInWishlist(product.slug) ? 'fill-rose-500 text-rose-500' : ''}`} />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* 3. Clean Order Form */}
-            <div id="order-section" className="bg-slate-50 rounded-2xl p-5 sm:p-6 border border-slate-200 space-y-4">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">
-                ডেলিভারি তথ্য ও ক্যাশ অন ডেলিভারি অর্ডার
-              </h3>
-
-              {formError && (
-                <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs p-3 rounded-lg font-medium">
-                  {formError}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmitOrder} className="space-y-3.5 text-xs sm:text-sm">
-                <div>
-                  <label className="block font-medium text-slate-700 mb-1">আপনার নাম *</label>
-                  <input
-                    type="text"
-                    required
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="নাম লিখুন"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:border-slate-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-medium text-slate-700 mb-1">মোবাইল নাম্বার (১১ ডিজিট) *</label>
-                  <input
-                    type="tel"
-                    required
-                    value={phone}
-                    onFocus={handlePhoneFocus}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="017XXXXXXXX"
-                    maxLength={11}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:border-slate-900 font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-medium text-slate-700 mb-1">সম্পূর্ণ ঠিকানা *</label>
-                  <textarea
-                    required
-                    rows={2}
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="বাসা, রোড, এলাকা, জেলা"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:border-slate-900 resize-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-medium text-slate-700 mb-1.5">ডেলিভারি এরিয়া *</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setDeliveryArea('inside_dhaka')}
-                      className={`p-3 rounded-xl border text-left transition-all ${
-                        deliveryArea === 'inside_dhaka'
-                          ? 'border-slate-900 bg-white shadow-xs font-semibold'
-                          : 'border-slate-200 bg-slate-100 text-slate-500'
-                      }`}
-                    >
-                      <div className="text-xs text-slate-600">ঢাকার ভিতরে</div>
-                      <div className="text-sm font-bold text-slate-900 mt-0.5">৳৭০</div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setDeliveryArea('outside_dhaka')}
-                      className={`p-3 rounded-xl border text-left transition-all ${
-                        deliveryArea === 'outside_dhaka'
-                          ? 'border-slate-900 bg-white shadow-xs font-semibold'
-                          : 'border-slate-200 bg-slate-100 text-slate-500'
-                      }`}
-                    >
-                      <div className="text-xs text-slate-600">ঢাকার বাইরে</div>
-                      <div className="text-sm font-bold text-slate-900 mt-0.5">৳১৩০</div>
-                    </button>
-                  </div>
-                </div>
-
-                {deliveryArea === 'outside_dhaka' && (
-                  <p className="text-[11px] text-slate-500 leading-relaxed bg-white p-2.5 rounded-lg border border-slate-200">
-                    ℹ️ ঢাকার বাইরে অহেতুক ফেক অর্ডার এড়াতে ডেলিভারি চার্জ (৳১৩০) অগ্রিম বিকাশ/নগদ প্রযোজ্য, বাকি টাকা পণ্য হাতে পেয়ে পরিশোধ করবেন।
-                  </p>
-                )}
-
-                {/* Total Summary */}
-                <div className="pt-3 border-t border-slate-200 space-y-1 text-xs">
-                  <div className="flex justify-between text-slate-500">
-                    <span>পণ্য মূল্য:</span>
-                    <span>৳{currentPrice}</span>
-                  </div>
-                  <div className="flex justify-between text-slate-500">
-                    <span>ডেলিভারি চার্জ:</span>
-                    <span>৳{deliveryFee}</span>
-                  </div>
-                  <div className="flex justify-between pt-2 border-t border-slate-200 text-sm font-bold text-slate-900">
-                    <span>সর্বমোট:</span>
-                    <span>৳{totalAmount}</span>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3.5 px-4 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                  }}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-rose-600 transition-colors cursor-pointer"
                 >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>প্রসেস হচ্ছে...</span>
-                    </>
-                  ) : (
-                    <span>অর্ডার কনফার্ম করুন (৳{totalAmount})</span>
-                  )}
+                  <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
+                  <span>{inWish ? 'Saved in Wishlist' : 'Add to wishlist'}</span>
                 </button>
-              </form>
+
+                <span className="text-xs text-slate-400">
+                  ক্যাটাগরি: <strong className="text-slate-700">{product.category}</strong>
+                </span>
+              </div>
+            </div>
+
+            {/* Assurance / Trust Points */}
+            <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
+              <div className="flex items-center gap-2.5 text-xs text-slate-600">
+                <Truck className="w-4 h-4 text-orange-500 shrink-0" />
+                <span>সারা দেশে ক্যাশ অন ডেলিভারি</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-xs text-slate-600">
+                <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>১০০% আসল প্রোডাক্টের নিশ্চয়তা</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-xs text-slate-600">
+                <RefreshCw className="w-4 h-4 text-blue-500 shrink-0" />
+                <span>৭ দিনের সহজ রিটার্ন পলিসি</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-xs text-slate-600">
+                <Award className="w-4 h-4 text-amber-500 shrink-0" />
+                <span>প্রিমিয়াম কোয়ালিটি গ্যারান্টি</span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Features Section */}
-        {product.featuresBn?.length > 0 && (
-          <div className="pt-12 border-t border-slate-100 space-y-8">
-            <div className="text-center max-w-xl mx-auto">
-              <h2 className="text-xl sm:text-2xl font-bold text-slate-900">পণ্যের বিশেষত্ব</h2>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                {product.taglineBn}
-              </p>
+        {/* Structured Tabs (Description, Features, Specs, Reviews, Shipping) */}
+        <div className="mt-16 pt-8 border-t border-slate-200">
+          <div className="flex items-center gap-2 border-b border-slate-200 overflow-x-auto pb-px">
+            {[
+              { key: 'description', label: 'DESCRIPTION' },
+              { key: 'features', label: `FEATURES (${product.featuresBn?.length || 0})` },
+              { key: 'specifications', label: `SPECIFICATIONS (${product.specificationsBn?.length || 0})` },
+              { key: 'reviews', label: `REVIEWS (${product.reviewCount || 0})` },
+              { key: 'shipping', label: 'SHIPPING & DELIVERY' },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key as typeof activeTab)}
+                className={`px-5 py-3 text-xs font-extrabold tracking-wider uppercase transition-all whitespace-nowrap border-b-2 cursor-pointer ${
+                  activeTab === tab.key
+                    ? 'border-orange-500 text-orange-600'
+                    : 'border-transparent text-slate-400 hover:text-slate-700'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="py-8">
+            {/* Tab 1: Description */}
+            {activeTab === 'description' && (
+              <div className="max-w-3xl space-y-4 text-slate-700 leading-relaxed text-sm">
+                <p className="text-base font-semibold text-slate-900">{product.taglineBn}</p>
+                <div className="whitespace-pre-line">{product.descriptionBn}</div>
+              </div>
+            )}
+
+            {/* Tab 2: Features */}
+            {activeTab === 'features' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {product.featuresBn && product.featuresBn.length > 0 ? (
+                  product.featuresBn.map((f, i) => (
+                    <div key={i} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                      <div className="w-8 h-8 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <h4 className="text-xs font-bold text-slate-900">{f.title}</h4>
+                      <p className="text-xs text-slate-600">{f.description}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-slate-400">কোনো ফিচার সংরক্ষিত নেই।</p>
+                )}
+              </div>
+            )}
+
+            {/* Tab 3: Specifications */}
+            {activeTab === 'specifications' && (
+              <div className="max-w-xl bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden text-xs">
+                {product.specificationsBn && product.specificationsBn.length > 0 ? (
+                  <table className="w-full text-left">
+                    <tbody>
+                      {product.specificationsBn.map((spec, i) => (
+                        <tr key={i} className="border-b border-slate-200 last:border-0">
+                          <td className="py-3 px-4 font-bold text-slate-700 bg-slate-100/70 w-1/3">
+                            {spec.key}
+                          </td>
+                          <td className="py-3 px-4 text-slate-900">{spec.value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="p-4 text-slate-400">কোনো স্পেসিফিকেশন সংরক্ষিত নেই।</div>
+                )}
+              </div>
+            )}
+
+            {/* Tab 4: Reviews */}
+            {activeTab === 'reviews' && (
+              <div className="max-w-4xl">
+                <ProductReviews productSlug={product.slug} productId={product._id} />
+              </div>
+            )}
+
+            {/* Tab 5: Shipping & Delivery Policy */}
+            {activeTab === 'shipping' && (
+              <div className="max-w-2xl bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-4 text-xs text-slate-700">
+                <h3 className="text-sm font-bold text-slate-900">ডেলিভারি সংক্রান্ত নিয়মাবলী</h3>
+                <ul className="space-y-2 list-disc list-inside leading-relaxed">
+                  <li>
+                    <strong>ঢাকা সিটির ভেতরে:</strong> ডেলিভারি চার্জ ৳৭০ (২৪ থেকে ৪৮ ঘণ্টার মধ্যে ডেলিভারি)।
+                  </li>
+                  <li>
+                    <strong>ঢাকা সিটির বাইরে:</strong> ডেলিভারি চার্জ ৳১৩০ (২ থেকে ৪ কার্যদিবসের মধ্যে ডেলিভারি)।
+                  </li>
+                  <li>
+                    <strong>পেমেন্ট পদ্ধতি:</strong> সারা দেশে সম্পূর্ণ ক্যাশ অন ডেলিভারি (Cash on Delivery)। প্রোডাক্ট হাতে পেয়ে চেক করে মূল্য পরিশোধ করবেন।
+                  </li>
+                  <li>
+                    <strong>রিটার্ন পলিসি:</strong> প্রোডাক্টে কোনো ত্রুটি থাকলে ডেলিভারি ম্যানের সামনেই চেক করে রিটার্ন করতে পারবেন অথবা আমাদের কাস্টমার সার্ভিসে যোগাযোগ করতে পারবেন।
+                  </li>
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Related / Recommended Products */}
+        {relatedProducts.length > 0 && (
+          <div className="mt-16 pt-12 border-t border-slate-200">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg sm:text-xl font-extrabold text-slate-900">Related Products</h3>
+                <p className="text-xs text-slate-400">You might also like these popular items</p>
+              </div>
+              <Link
+                href="/products"
+                className="text-xs font-bold text-orange-600 hover:text-orange-700 flex items-center gap-1"
+              >
+                <span>View All</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              {product.featuresBn.slice(0, 3).map((f, i) => (
-                <div key={i} className="p-5 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
-                  {i === 0 && <Layers className="w-5 h-5 text-slate-800" />}
-                  {i === 1 && <ShieldCheck className="w-5 h-5 text-slate-800" />}
-                  {i === 2 && <Gift className="w-5 h-5 text-slate-800" />}
-                  <h3 className="text-sm font-bold text-slate-900">{f.title}</h3>
-                  <p className="text-xs text-slate-600 leading-relaxed">{f.description}</p>
-                </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+              {relatedProducts.map((rel) => (
+                <Link
+                  key={rel.slug}
+                  href={`/products/${rel.slug}`}
+                  className="group bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col"
+                >
+                  <div className="relative aspect-square bg-slate-50 overflow-hidden">
+                    <Image
+                      src={rel.images[0] || '/images/products/hello-kitty-pair.png'}
+                      alt={rel.nameBn}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                  <div className="p-3.5 space-y-1.5 flex-1 flex flex-col justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold text-orange-600 uppercase">
+                        {rel.category}
+                      </span>
+                      <h4 className="text-xs font-bold text-slate-900 line-clamp-2 mt-0.5">
+                        {rel.nameBn}
+                      </h4>
+                    </div>
+                    <div className="flex items-baseline gap-2 pt-1">
+                      <span className="text-sm font-extrabold text-slate-900 font-mono">
+                        ৳{rel.basePrice}
+                      </span>
+                      <span className="text-[11px] line-through text-slate-400 font-mono">
+                        ৳{rel.originalPrice}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
               ))}
             </div>
           </div>
         )}
-
-        {/* Customer Reviews & Ratings */}
-        <ProductReviews
-          productSlug={product.slug}
-          productNameBn={product.nameBn}
-        />
-      </main>
-
-      {/* Order Celebration Receipt Modal */}
-      {completedOrder && (
-        <OrderReceiptModal
-          order={completedOrder}
-          onClose={() => setCompletedOrder(null)}
-        />
-      )}
+      </div>
     </div>
   );
 }

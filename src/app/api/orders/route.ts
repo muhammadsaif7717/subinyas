@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrders, createOrder, getStoreSettings } from '@/lib/data-store';
-import { DeliveryArea } from '@/lib/types';
+import { DeliveryArea, CartItem } from '@/lib/types';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, count: orders.length, orders });
   } catch (error) {
     console.error('Error fetching orders:', error);
-    return NextResponse.json({ success: false, message: 'অর্ডার লোড করতে সমস্যা হয়েছে' }, { status: 500 });
+    return NextResponse.json({ success: false, message: 'Failed to load orders' }, { status: 500 });
   }
 }
 
@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
       phone,
       address,
       deliveryArea,
+      items, // Multi-item cart from checkout
       productSlug,
       productNameBn,
       comboId,
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
       selectedVariants,
       subtotal,
       notes,
+      paymentMethod,
     } = body;
 
     // Validation
@@ -51,7 +53,16 @@ export async function POST(request: NextRequest) {
     const settings = await getStoreSettings();
     const area: DeliveryArea = deliveryArea === 'outside_dhaka' ? 'outside_dhaka' : 'inside_dhaka';
     const deliveryCharge = area === 'outside_dhaka' ? settings.deliveryOutsideDhaka : settings.deliveryInsideDhaka;
-    const calculatedSubtotal = Number(subtotal) || 499;
+
+    let calculatedSubtotal = Number(subtotal) || 0;
+    const cartItems: CartItem[] = Array.isArray(items) ? items : [];
+
+    if (cartItems.length > 0) {
+      calculatedSubtotal = cartItems.reduce((acc, it) => acc + (it.price * (it.quantity || 1)), 0);
+    } else if (!calculatedSubtotal) {
+      calculatedSubtotal = 499;
+    }
+
     const totalAmount = calculatedSubtotal + deliveryCharge;
 
     const newOrder = await createOrder({
@@ -60,15 +71,19 @@ export async function POST(request: NextRequest) {
       address: address.trim(),
       deliveryArea: area,
       deliveryCharge,
-      productSlug: productSlug || 'jewelry-box',
-      productNameBn: productNameBn || 'প্রিমিয়াম মিনি পোর্টেবল ট্রাভেল জুয়েলারি বক্স',
-      comboId: comboId || 'combo-single',
-      comboTitleBn: comboTitleBn || '১টি বক্স',
-      quantity: Number(quantity) || 1,
-      selectedVariants: Array.isArray(selectedVariants) && selectedVariants.length > 0 ? selectedVariants : ['Hello Kitty Soft Pink'],
+      items: cartItems.length > 0 ? cartItems : undefined,
+      productSlug: productSlug || (cartItems[0]?.productSlug ?? 'general-item'),
+      productNameBn: productNameBn || (cartItems[0]?.productNameBn ?? cartItems[0]?.productName ?? 'অর্ডারকৃত আইটেম'),
+      comboId: comboId || (cartItems[0]?.comboId ?? 'standard'),
+      comboTitleBn: comboTitleBn || (cartItems[0]?.comboTitleBn ?? `${cartItems.length || 1}টি আইটেম`),
+      quantity: Number(quantity) || (cartItems.reduce((sum, it) => sum + (it.quantity || 1), 0) || 1),
+      selectedVariants: Array.isArray(selectedVariants) && selectedVariants.length > 0
+        ? selectedVariants
+        : (cartItems[0]?.selectedVariants ?? ['Standard']),
       subtotal: calculatedSubtotal,
       totalAmount,
       notes: notes || '',
+      paymentMethod: paymentMethod || 'cod',
     });
 
     return NextResponse.json({

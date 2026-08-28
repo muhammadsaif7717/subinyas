@@ -42,11 +42,11 @@ export function CartDrawer() {
                 <ShoppingBag className="w-12 h-12 mx-auto stroke-1 text-slate-300" />
                 <p className="text-sm font-medium text-slate-600">Your cart is currently empty</p>
                 <Link
-                  href="/products/jewelry-box"
+                  href="/products"
                   onClick={() => setIsCartOpen(false)}
-                  className="inline-block text-xs font-semibold text-rose-600 hover:underline"
+                  className="inline-block text-xs font-semibold text-orange-600 hover:underline"
                 >
-                  Browse Jewelry Box Deals →
+                  Browse Products Catalog →
                 </Link>
               </div>
             ) : (
@@ -116,11 +116,11 @@ export function CartDrawer() {
               </p>
 
               <Link
-                href="/products/jewelry-box#order-section"
+                href="/checkout"
                 onClick={() => setIsCartOpen(false)}
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 px-4 rounded-xl text-center flex items-center justify-center gap-2 text-sm shadow-sm transition-all"
+                className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-extrabold py-3.5 px-4 rounded-2xl text-center flex items-center justify-center gap-2 text-sm shadow-md shadow-orange-500/20 transition-all"
               >
-                <span>Checkout Now</span>
+                <span>Proceed to Checkout</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>

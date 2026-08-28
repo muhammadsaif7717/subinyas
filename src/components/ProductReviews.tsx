@@ -11,7 +11,8 @@ import { Review } from '@/lib/types';
 
 interface ProductReviewsProps {
   productSlug: string;
-  productNameBn: string;
+  productNameBn?: string;
+  productId?: string;
 }
 
 export function ProductReviews({ productSlug, productNameBn }: ProductReviewsProps) {
