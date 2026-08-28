@@ -21,6 +21,8 @@ import {
   Palette,
   Percent,
   Info,
+  Star,
+  CheckSquare,
 } from 'lucide-react';
 import { Product, ProductVariant, ComboOption } from '@/lib/types';
 import { CategoryItem } from '@/app/api/categories/route';
@@ -31,6 +33,9 @@ const TABS: TabType[] = ['general', 'media', 'variants', 'combos', 'features'];
 export default function ProductsPage() {
   const queryClient = useQueryClient();
   const cardCls = 'bg-[#211C28] rounded-2xl border border-[#2E2733]';
+  const labelCls = 'text-[#B7ACC4] font-medium text-xs block mb-1.5';
+  const inputCls =
+    'w-full px-3.5 py-2.5 bg-[#191520] border border-[#2E2733] rounded-xl text-white placeholder:text-[#6E6278] focus:border-[#C4587A] focus:outline-none transition-colors text-xs sm:text-sm';
 
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
@@ -44,9 +49,8 @@ export default function ProductsPage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadingVariantIdx, setUploadingVariantIdx] = useState<number | null>(null);
 
-  // Form Fields
+  // Form Fields (Clean unified schema as previously configured)
   const [prodName, setProdName] = useState('');
-  const [prodNameBn, setProdNameBn] = useState('');
   const [prodSlug, setProdSlug] = useState('');
   const [prodCategory, setProdCategory] = useState('Organizers');
   const [prodTaglineBn, setProdTaglineBn] = useState('');
@@ -55,6 +59,7 @@ export default function ProductsPage() {
   const [prodOriginalPrice, setProdOriginalPrice] = useState<number>(800);
   const [prodIsFeatured, setProdIsFeatured] = useState<boolean>(true);
   const [prodIsHeroSlider, setProdIsHeroSlider] = useState<boolean>(false);
+  const [prodHeroOrder, setProdHeroOrder] = useState<number>(1);
   const [prodIsActive, setProdIsActive] = useState<boolean>(true);
   const [prodImages, setProdImages] = useState<string[]>([]);
   const [prodVariants, setProdVariants] = useState<ProductVariant[]>([]);
@@ -110,14 +115,30 @@ export default function ProductsPage() {
     },
   });
 
-  // Reset / Open Modal for New Product
+  // Auto-detect color Hex from color name
+  const detectColorHex = (name: string, fallbackHex = '#3B82F6') => {
+    const lower = name.toLowerCase().trim();
+    if (lower.includes('pink') || lower.includes('rose') || lower.includes('গোলাপি')) return '#F9A8D4';
+    if (lower.includes('white') || lower.includes('pearl') || lower.includes('সাদা')) return '#F8FAFC';
+    if (lower.includes('black') || lower.includes('matte') || lower.includes('কালো')) return '#1E293B';
+    if (lower.includes('red') || lower.includes('লাল')) return '#EF4444';
+    if (lower.includes('blue') || lower.includes('নীল')) return '#3B82F6';
+    if (lower.includes('green') || lower.includes('সবুজ')) return '#10B981';
+    if (lower.includes('yellow') || lower.includes('হলুদ')) return '#EAB308';
+    if (lower.includes('purple') || lower.includes('বেগুনী')) return '#8B5CF6';
+    if (lower.includes('gold') || lower.includes('সোনালী')) return '#D97706';
+    if (lower.includes('vintage') || lower.includes('cork') || lower.includes('mandala')) return '#D97706';
+    if (lower.includes('gray') || lower.includes('grey') || lower.includes('ধূসর')) return '#64748B';
+    return fallbackHex;
+  };
+
+  // Open Modal for New Product
   const openNewProductModal = () => {
     setEditingSlug(null);
     setActiveTab('general');
     setFormError('');
     setFormSuccess('');
     setProdName('');
-    setProdNameBn('');
     setProdSlug('');
     setProdCategory(categories[0]?.name || 'Organizers');
     setProdTaglineBn('শখের গহনা ও প্রসাধন সুরক্ষিত রাখুন নিখুঁত পরিপাটীভাবে — যেকোনো ভ্রমণের সেরা সঙ্গী!');
@@ -126,15 +147,16 @@ export default function ProductsPage() {
     setProdOriginalPrice(800);
     setProdIsFeatured(true);
     setProdIsHeroSlider(false);
+    setProdHeroOrder(1);
     setProdIsActive(true);
     setProdImages(['/images/products/hello-kitty-pair.png', '/images/products/hello-kitty-open.png']);
     setProdVariants([
       {
         id: 'var-1',
         name: 'Soft Pink',
-        nameBn: 'সফট পিঙ্ক (Baby Pink)',
+        nameBn: 'Soft Pink',
         color: 'Baby Pink',
-        colorHex: '#f9a8d4',
+        colorHex: '#F9A8D4',
         image: '/images/products/hello-kitty-pair.png',
         inStock: true,
         stockCount: 50,
@@ -144,9 +166,9 @@ export default function ProductsPage() {
       {
         id: 'var-2',
         name: 'Pearl White',
-        nameBn: 'পার্ল হোয়াইট (Pearl White)',
+        nameBn: 'Pearl White',
         color: 'Pearl White',
-        colorHex: '#f8fafc',
+        colorHex: '#F8FAFC',
         image: '/images/products/hello-kitty-open.png',
         inStock: true,
         stockCount: 40,
@@ -158,7 +180,7 @@ export default function ProductsPage() {
       {
         id: 'combo-single',
         title: 'Single Box (1 Piece)',
-        titleBn: '১টি জুয়েলারি বক্স (সিঙ্গেল প্যাক)',
+        titleBn: 'Single Box (1 Piece)',
         subtitleBn: 'নিজের জন্য বা ছোট উপহারের জন্য',
         quantity: 1,
         price: 499,
@@ -169,24 +191,24 @@ export default function ProductsPage() {
       {
         id: 'combo-duo',
         title: 'Bestie Combo (2 Pieces)',
-        titleBn: '২টি বক্স বেস্টি কম্বো (Best Deal)',
+        titleBn: 'Bestie Combo (2 Pieces)',
         subtitleBn: '১টি আপনার জন্য + ১টি প্রিয় বান্ধবীর জন্য',
         quantity: 2,
         price: 899,
         originalPrice: 1600,
-        badge: '🔥 সর্বাধিক বিক্রিত অফার (Save ৳১০০ Extra)',
-        savingsBn: 'Save ৳701 (সেরা ডিল)',
+        badge: '🔥 Best Deal',
+        savingsBn: 'Save ৳701',
         isPopular: true,
       },
       {
         id: 'combo-trio',
         title: 'Mega Gift Pack (3 Pieces)',
-        titleBn: '৩টি বক্স মেগা ফ্যামিলি প্যাক',
+        titleBn: 'Mega Gift Pack (3 Pieces)',
         subtitleBn: 'গিফটিং ও ট্রাভেলের সেরা প্যাকেজ',
         quantity: 3,
         price: 1249,
         originalPrice: 2400,
-        badge: '🎁 মেগা সেভিংস অফার',
+        badge: '🎁 Mega Offer',
         savingsBn: 'Save ৳1,151',
         isPopular: false,
       },
@@ -212,8 +234,7 @@ export default function ProductsPage() {
     setActiveTab('general');
     setFormError('');
     setFormSuccess('');
-    setProdName(p.name || '');
-    setProdNameBn(p.nameBn || '');
+    setProdName(p.name || p.nameBn || '');
     setProdSlug(p.slug || '');
     setProdCategory(p.category || 'Organizers');
     setProdTaglineBn(p.taglineBn || '');
@@ -222,6 +243,7 @@ export default function ProductsPage() {
     setProdOriginalPrice(p.originalPrice || 800);
     setProdIsFeatured(p.isFeatured !== false);
     setProdIsHeroSlider(p.isHeroSlider === true);
+    setProdHeroOrder(p.heroOrder || 1);
     setProdIsActive(p.isActive !== false);
     setProdImages(p.images && p.images.length > 0 ? p.images : ['/images/products/hello-kitty-pair.png']);
     setProdVariants(
@@ -231,7 +253,7 @@ export default function ProductsPage() {
             {
               id: 'var-1',
               name: 'Standard',
-              nameBn: 'স্ট্যান্ডার্ড',
+              nameBn: 'Standard',
               image: p.images?.[0] || '/images/products/hello-kitty-pair.png',
               inStock: true,
               stockCount: 50,
@@ -246,12 +268,12 @@ export default function ProductsPage() {
             {
               id: 'combo-single',
               title: 'Single Pack',
-              titleBn: '১টি বক্স (সিঙ্গেল প্যাক)',
-              subtitleBn: 'স্ট্যান্ডার্ড প্যাক',
+              titleBn: 'Single Pack',
+              subtitleBn: 'Standard Package',
               quantity: 1,
               price: p.basePrice || 499,
               originalPrice: p.originalPrice || 800,
-              savingsBn: 'Save ৳301',
+              savingsBn: `Save ৳${(p.originalPrice || 800) - (p.basePrice || 499)}`,
             },
           ]
     );
@@ -268,7 +290,7 @@ export default function ProductsPage() {
     setIsModalOpen(true);
   };
 
-  // Image Upload
+  // Image Upload handler
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, variantIdx?: number) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -310,25 +332,47 @@ export default function ProductsPage() {
     setFormError('');
 
     if (!prodName.trim() || !prodSlug.trim()) {
-      setFormError('Product Name and Slug are required.');
+      setFormError('Product Title and Slug are required.');
       return;
     }
 
+    const cleanSlug = prodSlug.toLowerCase().trim().replace(/[^a-z0-9-_]/g, '-');
+    const parsedBasePrice = Number(prodBasePrice) || 499;
+    const parsedOrigPrice = Number(prodOriginalPrice) || 800;
+    const finalName = prodName.trim();
+
+    // Auto-sync base price into the single pack combo if matching
+    const syncedCombos = prodCombos.map((c) => {
+      if (c.quantity === 1 || c.id === 'combo-single') {
+        return {
+          ...c,
+          price: parsedBasePrice,
+          originalPrice: parsedOrigPrice,
+          savingsBn: `Save ৳${Math.max(0, parsedOrigPrice - parsedBasePrice)}`,
+        };
+      }
+      return c;
+    });
+
+    const variantImages = prodVariants.map((v) => v.image).filter(Boolean) as string[];
+    const combinedImages = Array.from(new Set([...prodImages, ...variantImages])).filter(Boolean);
+
     const payload: Partial<Product> = {
-      name: prodName.trim(),
-      nameBn: prodNameBn.trim() || prodName.trim(),
-      slug: prodSlug.toLowerCase().trim().replace(/[^a-z0-9-_]/g, '-'),
-      category: prodCategory,
-      taglineBn: prodTaglineBn.trim(),
-      descriptionBn: prodDescriptionBn.trim(),
-      basePrice: Number(prodBasePrice) || 499,
-      originalPrice: Number(prodOriginalPrice) || 800,
+      name: finalName,
+      nameBn: finalName,
+      slug: cleanSlug,
+      category: prodCategory.trim(),
+      taglineBn: prodTaglineBn.trim() || finalName,
+      descriptionBn: prodDescriptionBn.trim() || finalName,
+      basePrice: parsedBasePrice,
+      originalPrice: parsedOrigPrice,
       isFeatured: prodIsFeatured,
       isHeroSlider: prodIsHeroSlider,
+      heroOrder: Number(prodHeroOrder) || 1,
       isActive: prodIsActive,
-      images: prodImages.length > 0 ? prodImages : ['/images/products/hello-kitty-pair.png'],
+      images: combinedImages.length > 0 ? combinedImages : ['/images/products/hello-kitty-pair.png'],
       variants: prodVariants,
-      combos: prodCombos,
+      combos: syncedCombos,
       featuresBn: prodFeaturesBn,
       specificationsBn: prodSpecificationsBn,
       updatedAt: new Date().toISOString(),
@@ -407,7 +451,7 @@ export default function ProductsPage() {
           <Search className="w-4 h-4 text-[#8A7D97] absolute left-3.5 top-3" />
           <input
             type="text"
-            placeholder="Search by product name, Bengali title, or slug..."
+            placeholder="Search by product name, category, or slug..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-[#191520] border border-[#2E2733] focus:border-[#C4587A] text-white rounded-xl pl-10 pr-4 py-2.5 outline-none"
@@ -422,7 +466,7 @@ export default function ProductsPage() {
           >
             <option value="All">All Categories ({products.length})</option>
             {categories.map((c) => (
-              <option key={c.id} value={c.name}>
+              <option key={c.id || c._id} value={c.name}>
                 {c.name}
               </option>
             ))}
@@ -463,7 +507,7 @@ export default function ProductsPage() {
 
                   return (
                     <tr key={p.slug} className="hover:bg-[#2A2332]/50 transition-colors">
-                      {/* Product Thumbnail & Names */}
+                      {/* Product Thumbnail & Name */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
                           <div className="relative w-12 h-12 rounded-xl bg-[#191520] border border-[#2E2733] overflow-hidden shrink-0">
@@ -475,8 +519,7 @@ export default function ProductsPage() {
                             />
                           </div>
                           <div>
-                            <p className="font-bold text-white text-sm">{p.name}</p>
-                            {p.nameBn && <p className="text-xs text-[#E39BB4] font-medium">{p.nameBn}</p>}
+                            <p className="font-bold text-white text-sm">{p.name || p.nameBn}</p>
                             <span className="font-mono text-[10px] text-[#8A7D97]">/{p.slug}</span>
                           </div>
                         </div>
@@ -512,12 +555,12 @@ export default function ProductsPage() {
                             {totalStock} in stock
                           </span>
                           <p className="text-[10px] text-[#8A7D97]">
-                            {p.variants?.length || 1} variant(s) • {p.combos?.length || 1} combo(s)
+                            {p.variants?.length || 1} variant(s) • {p.combos?.length || 1} package(s)
                           </p>
                         </div>
                       </td>
 
-                      {/* Flags */}
+                      {/* Badges */}
                       <td className="py-3.5 px-4 space-x-1.5">
                         {p.isHeroSlider && (
                           <span className="text-[10px] font-bold bg-[#D3A45E]/15 text-[#E4BC79] px-2 py-0.5 rounded border border-[#D3A45E]/25">
@@ -580,7 +623,7 @@ export default function ProductsPage() {
         )}
       </div>
 
-      {/* FULL-FEATURED MODAL (General, Media, Variants, Combos, Features) */}
+      {/* FULL-FEATURED MODAL WITH TABBED STRUCTURE & PREVIOUS UNIFIED FIELDS */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
           <div className={`${cardCls} w-full max-w-4xl p-5 sm:p-7 border border-[#2E2733] space-y-5 max-h-[94vh] flex flex-col`}>
@@ -591,7 +634,7 @@ export default function ProductsPage() {
                   {editingSlug ? `Edit Product: ${prodName || editingSlug}` : 'Create New Product'}
                 </h3>
                 <p className="text-xs text-[#8A7D97]">
-                  Configure product details, gallery images, variants, discount packages, and features
+                  Configure product details, gallery photos, color stock variants, combo packages, and specs
                 </p>
               </div>
               <button
@@ -615,7 +658,7 @@ export default function ProductsPage() {
                 }`}
               >
                 <Info className="w-3.5 h-3.5" />
-                <span>General Info & Pricing</span>
+                <span>General & Pricing</span>
               </button>
 
               <button
@@ -628,7 +671,7 @@ export default function ProductsPage() {
                 }`}
               >
                 <Camera className="w-3.5 h-3.5" />
-                <span>Gallery Images ({prodImages.length})</span>
+                <span>Gallery Photos ({prodImages.length})</span>
               </button>
 
               <button
@@ -641,7 +684,7 @@ export default function ProductsPage() {
                 }`}
               >
                 <Palette className="w-3.5 h-3.5" />
-                <span>Color Variants ({prodVariants.length})</span>
+                <span>Variants & Stock ({prodVariants.length})</span>
               </button>
 
               <button
@@ -654,7 +697,7 @@ export default function ProductsPage() {
                 }`}
               >
                 <Percent className="w-3.5 h-3.5" />
-                <span>Combo Offers ({prodCombos.length})</span>
+                <span>Packages / Combos ({prodCombos.length})</span>
               </button>
 
               <button
@@ -671,7 +714,7 @@ export default function ProductsPage() {
               </button>
             </div>
 
-            {/* Error / Success Notifications */}
+            {/* Notifications */}
             {formError && (
               <div className="p-3 rounded-xl bg-[#C1495A]/15 border border-[#C1495A]/30 text-xs text-[#DD8A94] shrink-0">
                 ⚠️ {formError}
@@ -683,164 +726,167 @@ export default function ProductsPage() {
               </div>
             )}
 
-            {/* Form Content Body (Scrollable) */}
+            {/* Scrollable Form Body */}
             <form onSubmit={handleSaveProduct} className="flex-1 overflow-y-auto pr-1 space-y-6">
               {/* TAB 1: GENERAL INFO */}
               {activeTab === 'general' && (
                 <div className="space-y-4 animate-in fade-in">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-white">
-                        Product Name (English) <span className="text-[#C4587A]">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={prodName}
-                        onChange={(e) => {
-                          setProdName(e.target.value);
-                          if (!editingSlug) {
-                            setProdSlug(e.target.value.toLowerCase().trim().replace(/[^a-z0-9]/g, '-'));
-                          }
-                        }}
-                        placeholder="e.g. Mini Portable Travel Jewelry Box"
-                        className="w-full bg-[#191520] border border-[#2E2733] focus:border-[#C4587A] text-xs text-white rounded-xl px-3.5 py-2.5 outline-none"
-                      />
-                    </div>
+                  {/* Product Name */}
+                  <div>
+                    <label className={labelCls}>Product Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={prodName}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setProdName(val);
+                        if (!editingSlug) {
+                          const autoSlug = val
+                            .toLowerCase()
+                            .trim()
+                            .replace(/[^\w\s-]/g, '')
+                            .replace(/[\s_-]+/g, '-')
+                            .replace(/^-+|-+$/g, '');
+                          setProdSlug(autoSlug);
+                        }
+                      }}
+                      placeholder="e.g. Portable Mini Travel Jewelry Box"
+                      className={inputCls}
+                    />
+                  </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-white">
-                        Product Name (Bengali) <span className="text-[#C4587A]">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={prodNameBn}
-                        onChange={(e) => setProdNameBn(e.target.value)}
-                        placeholder="e.g. প্রিমিয়াম মিনি পোর্টেবল ট্রাভেল জুয়েলারি বক্স"
-                        className="w-full bg-[#191520] border border-[#2E2733] focus:border-[#C4587A] text-xs text-white rounded-xl px-3.5 py-2.5 outline-none"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-white">
-                        Product Slug (URL Path) <span className="text-[#C4587A]">*</span>
-                      </label>
+                  {/* Slug, Category, Pricing */}
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <div>
+                      <label className={labelCls}>Slug (URL Path) *</label>
                       <input
                         type="text"
                         required
                         value={prodSlug}
                         onChange={(e) => setProdSlug(e.target.value)}
-                        placeholder="e.g. jewelry-box"
-                        className="w-full bg-[#191520] border border-[#2E2733] focus:border-[#C4587A] text-xs text-white rounded-xl px-3.5 py-2.5 outline-none font-mono"
+                        placeholder="jewelry-box"
+                        className={`${inputCls} text-[#E39BB4] font-mono text-xs font-semibold`}
                       />
                     </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-white">
-                        Category <span className="text-[#C4587A]">*</span>
-                      </label>
+                    <div>
+                      <label className={labelCls}>Category *</label>
                       <select
                         required
                         value={prodCategory}
                         onChange={(e) => setProdCategory(e.target.value)}
-                        className="w-full bg-[#191520] border border-[#2E2733] focus:border-[#C4587A] text-xs text-white rounded-xl px-3.5 py-2.5 outline-none cursor-pointer"
+                        className={`${inputCls} cursor-pointer`}
                       >
-                        {categories.map((c) => (
-                          <option key={c.id} value={c.name}>
-                            {c.name}
-                          </option>
-                        ))}
+                        {categories.length === 0 ? (
+                          <option value="">No categories (Create one first)</option>
+                        ) : (
+                          categories.map((cat, i) => (
+                            <option key={cat.id || cat._id || i} value={cat.name}>
+                              {cat.name}
+                            </option>
+                          ))
+                        )}
                       </select>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-white">
-                        Base Price (৳ Offer Price) <span className="text-[#C4587A]">*</span>
-                      </label>
+                    <div>
+                      <label className={labelCls}>Base Price (৳) *</label>
                       <input
                         type="number"
                         required
                         value={prodBasePrice}
                         onChange={(e) => setProdBasePrice(Number(e.target.value))}
-                        className="w-full bg-[#191520] border border-[#2E2733] focus:border-[#C4587A] text-xs text-white rounded-xl px-3.5 py-2.5 outline-none font-mono"
+                        className={`${inputCls} font-mono`}
                       />
                     </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-white">
-                        Original Price (৳ Regular Price) <span className="text-[#C4587A]">*</span>
-                      </label>
+                    <div>
+                      <label className={labelCls}>Original Price (৳) *</label>
                       <input
                         type="number"
                         required
                         value={prodOriginalPrice}
                         onChange={(e) => setProdOriginalPrice(Number(e.target.value))}
-                        className="w-full bg-[#191520] border border-[#2E2733] focus:border-[#C4587A] text-xs text-white rounded-xl px-3.5 py-2.5 outline-none font-mono"
+                        className={`${inputCls} font-mono`}
                       />
                     </div>
                   </div>
 
-                  {/* Bengali Tagline & Description */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-white">
-                      Subtitle / Tagline (Bengali) <span className="text-[#C4587A]">*</span>
-                    </label>
+                  {/* Status Toggles */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-[#14111A] p-3.5 rounded-xl border border-[#2E2733] flex items-center justify-between">
+                      <div>
+                        <label className="font-bold text-white text-xs flex items-center gap-1.5">
+                          <Star className="w-4 h-4 text-[#E39BB4]" />
+                          <span>Featured</span>
+                        </label>
+                        <p className="text-[10px] text-[#8A7D97]">Enable or Disable</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={prodIsFeatured}
+                        onChange={(e) => setProdIsFeatured(e.target.checked)}
+                        className="w-5 h-5 accent-[#C4587A] rounded cursor-pointer"
+                      />
+                    </div>
+
+                    <div className="bg-[#14111A] p-3.5 rounded-xl border border-[#2E2733] flex items-center justify-between">
+                      <div>
+                        <label className="font-bold text-white text-xs flex items-center gap-1.5">
+                          <Sparkles className="w-4 h-4 text-[#D3A45E]" />
+                          <span>Hero Slider Pool</span>
+                        </label>
+                        <p className="text-[10px] text-[#8A7D97]">Enable or Disable</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={prodIsHeroSlider}
+                        onChange={(e) => setProdIsHeroSlider(e.target.checked)}
+                        className="w-5 h-5 accent-[#D3A45E] rounded cursor-pointer"
+                      />
+                    </div>
+
+                    <div className="bg-[#14111A] p-3.5 rounded-xl border border-[#2E2733] flex items-center justify-between">
+                      <div>
+                        <label className="font-bold text-white text-xs flex items-center gap-1.5">
+                          <CheckSquare className="w-4 h-4 text-[#8FC7A9]" />
+                          <span>Is Active</span>
+                        </label>
+                        <p className="text-[10px] text-[#8A7D97]">Enable or Disable</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={prodIsActive}
+                        onChange={(e) => setProdIsActive(e.target.checked)}
+                        className="w-5 h-5 accent-[#6FAE8C] rounded cursor-pointer"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Subtitle & Description */}
+                  <div>
+                    <label className={labelCls}>Subtitle / Tagline *</label>
                     <input
                       type="text"
                       required
                       value={prodTaglineBn}
                       onChange={(e) => setProdTaglineBn(e.target.value)}
-                      placeholder="e.g. শখের গহনা ও প্রসাধন সুরক্ষিত রাখুন নিখুঁত পরিপাটীভাবে"
-                      className="w-full bg-[#191520] border border-[#2E2733] focus:border-[#C4587A] text-xs text-white rounded-xl px-3.5 py-2.5 outline-none"
+                      placeholder="e.g. শখের গহনা ও প্রসাধন সুরক্ষিত রাখুন নিখুঁত পরিপাটীভাবে — যেকোনো ভ্রমণের সেরা সঙ্গী!"
+                      className={inputCls}
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-white">
-                      Full Product Description (Bengali) <span className="text-[#C4587A]">*</span>
-                    </label>
+                  <div>
+                    <label className={labelCls}>Description *</label>
                     <textarea
                       rows={4}
                       required
                       value={prodDescriptionBn}
                       onChange={(e) => setProdDescriptionBn(e.target.value)}
-                      placeholder="বিস্তারিত পণ্যের বিবরণ লিখুন..."
-                      className="w-full bg-[#191520] border border-[#2E2733] focus:border-[#C4587A] text-xs text-white rounded-xl px-3.5 py-2.5 outline-none resize-none leading-relaxed"
+                      placeholder="Write full product description, key features, and package benefits..."
+                      className={`${inputCls} resize-none leading-relaxed`}
                     />
-                  </div>
-
-                  {/* Visibility Toggles */}
-                  <div className="p-4 bg-[#191520] rounded-xl border border-[#2E2733] grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer text-xs text-white">
-                      <input
-                        type="checkbox"
-                        checked={prodIsFeatured}
-                        onChange={(e) => setProdIsFeatured(e.target.checked)}
-                        className="rounded accent-[#C4587A] w-4 h-4"
-                      />
-                      <span>Featured Product</span>
-                    </label>
-
-                    <label className="flex items-center gap-2 cursor-pointer text-xs text-white">
-                      <input
-                        type="checkbox"
-                        checked={prodIsHeroSlider}
-                        onChange={(e) => setProdIsHeroSlider(e.target.checked)}
-                        className="rounded accent-[#C4587A] w-4 h-4"
-                      />
-                      <span>Hero Slider Pool</span>
-                    </label>
-
-                    <label className="flex items-center gap-2 cursor-pointer text-xs text-white">
-                      <input
-                        type="checkbox"
-                        checked={prodIsActive}
-                        onChange={(e) => setProdIsActive(e.target.checked)}
-                        className="rounded accent-[#C4587A] w-4 h-4"
-                      />
-                      <span>Active in Live Store</span>
-                    </label>
                   </div>
                 </div>
               )}
@@ -850,13 +896,13 @@ export default function ProductsPage() {
                 <div className="space-y-4 animate-in fade-in">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-xs font-bold text-white">Product Image Gallery</h4>
-                      <p className="text-[11px] text-[#8A7D97]">Upload high resolution images. First image is the main thumbnail.</p>
+                      <h4 className="text-xs font-bold text-white">Product Photos Gallery</h4>
+                      <p className="text-[11px] text-[#8A7D97]">Upload high-res product photos. The first image is the primary storefront thumbnail.</p>
                     </div>
 
                     <label className="bg-[#C4587A] hover:bg-[#B24A6B] text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
                       {isUploadingImage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
-                      <span>Upload Image</span>
+                      <span>+ Upload Photo</span>
                       <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e)} />
                     </label>
                   </div>
@@ -864,9 +910,9 @@ export default function ProductsPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {prodImages.map((img, idx) => (
                       <div key={idx} className="relative aspect-square rounded-xl bg-[#191520] border border-[#2E2733] overflow-hidden group">
-                        <Image src={img} alt={`Product ${idx}`} fill className="object-cover" />
+                        <Image src={img} alt={`Product photo ${idx}`} fill className="object-cover" />
                         {idx === 0 && (
-                          <span className="absolute top-2 left-2 bg-[#C4587A] text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                          <span className="absolute top-2 left-2 bg-[#C4587A] text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow">
                             Primary
                           </span>
                         )}
@@ -874,6 +920,7 @@ export default function ProductsPage() {
                           type="button"
                           onClick={() => setProdImages(prodImages.filter((_, i) => i !== idx))}
                           className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/70 text-rose-400 hover:text-white hover:bg-rose-600 transition-colors cursor-pointer"
+                          title="Remove Photo"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -883,134 +930,193 @@ export default function ProductsPage() {
                 </div>
               )}
 
-              {/* TAB 3: COLOR VARIANTS */}
+              {/* TAB 3: VARIANTS & STOCK */}
               {activeTab === 'variants' && (
                 <div className="space-y-4 animate-in fade-in">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-xs font-bold text-white">Color & Style Variants</h4>
-                      <p className="text-[11px] text-[#8A7D97]">Manage colors, stock quantities, and variant images</p>
+                      <h4 className="text-xs font-bold text-white">Variants & Stock</h4>
+                      <p className="text-[11px] text-[#8A7D97]">Add color variants, hex colors, and individual stock counts</p>
                     </div>
 
                     <button
                       type="button"
-                      onClick={() =>
-                        setProdVariants([
-                          ...prodVariants,
+                      onClick={() => {
+                        const newId = `var-${Date.now()}`;
+                        setProdVariants((prev) => [
+                          ...prev,
                           {
-                            id: `var-${Date.now()}`,
+                            id: newId,
                             name: 'New Color',
-                            nameBn: 'নতুন কালার',
-                            color: 'Pink',
-                            colorHex: '#f9a8d4',
+                            nameBn: 'New Color',
+                            color: 'Custom',
+                            colorHex: '#3B82F6',
                             image: prodImages[0] || '/images/products/hello-kitty-pair.png',
                             inStock: true,
                             stockCount: 20,
                             stock: 20,
                           },
-                        ])
-                      }
-                      className="bg-[#2E2733] hover:bg-[#3E3447] text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer"
+                        ]);
+                      }}
+                      className="bg-[#C4587A]/15 hover:bg-[#C4587A] text-[#E39BB4] hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-[#C4587A]/25"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>Add Variant</span>
+                      <span>Add Color</span>
                     </button>
                   </div>
 
                   <div className="space-y-3">
-                    {prodVariants.map((v, vIdx) => (
-                      <div key={v.id || vIdx} className="p-3.5 bg-[#191520] rounded-xl border border-[#2E2733] flex flex-col sm:flex-row items-center gap-3">
-                        {/* Variant Image Preview + Upload */}
-                        <div className="relative w-14 h-14 rounded-xl bg-[#211C28] border border-[#2E2733] overflow-hidden shrink-0 group">
-                          <Image src={v.image || '/images/products/hello-kitty-pair.png'} alt={v.name} fill className="object-cover" />
-                          <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
-                            {uploadingVariantIdx === vIdx ? (
-                              <Loader2 className="w-4 h-4 text-white animate-spin" />
-                            ) : (
-                              <Camera className="w-4 h-4 text-white" />
+                    {prodVariants.map((v, idx) => (
+                      <div
+                        key={v.id || idx}
+                        className="grid grid-cols-1 sm:grid-cols-12 gap-3 p-3.5 rounded-xl bg-[#1C1821] border border-[#2E2733] items-center"
+                      >
+                        {/* 1. Color Photo Upload */}
+                        <div className="sm:col-span-2">
+                          <label className="text-[10px] text-[#8A7D97] block mb-1">Color Photo</label>
+                          <div className="flex items-center gap-2">
+                            <label className="relative w-11 h-11 rounded-xl overflow-hidden border border-[#332B3D] bg-[#14111A] hover:border-[#C4587A] flex items-center justify-center cursor-pointer group shrink-0 transition-colors">
+                              {uploadingVariantIdx === idx ? (
+                                <Loader2 className="w-4 h-4 animate-spin text-[#C4587A]" />
+                              ) : v.image ? (
+                                <>
+                                  <Image src={v.image} alt={v.name} fill className="object-cover" />
+                                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                    <Camera className="w-3.5 h-3.5 text-white" />
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="flex flex-col items-center justify-center text-[9px] text-[#8A7D97] group-hover:text-[#E39BB4]">
+                                  <Camera className="w-3.5 h-3.5 mb-0.5" />
+                                  <span>+ Photo</span>
+                                </div>
+                              )}
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleImageUpload(e, idx)}
+                                className="hidden"
+                              />
+                            </label>
+
+                            {v.image && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setProdVariants((prev) =>
+                                    prev.map((item, i) => (i === idx ? { ...item, image: '' } : item))
+                                  )
+                                }
+                                className="text-[10px] text-[#DD8A94] hover:underline"
+                              >
+                                Remove
+                              </button>
                             )}
-                            <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, vIdx)} />
-                          </label>
+                          </div>
                         </div>
 
-                        {/* Variant Names */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1 w-full">
+                        {/* 2. Color Name with auto hex detection */}
+                        <div className="sm:col-span-3">
+                          <label className="text-[10px] text-[#8A7D97] block mb-1">Color Name</label>
                           <input
                             type="text"
-                            placeholder="Variant Name (En)"
+                            required
                             value={v.name}
                             onChange={(e) => {
-                              const updated = [...prodVariants];
-                              updated[vIdx].name = e.target.value;
-                              setProdVariants(updated);
+                              const val = e.target.value;
+                              setProdVariants((prev) =>
+                                prev.map((item, i) =>
+                                  i === idx
+                                    ? {
+                                        ...item,
+                                        name: val,
+                                        nameBn: val,
+                                        colorHex: detectColorHex(val, item.colorHex),
+                                      }
+                                    : item
+                                )
+                              );
                             }}
-                            className="bg-[#211C28] border border-[#2E2733] text-xs text-white rounded-lg px-2.5 py-1.5 outline-none"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Variant Name (Bn)"
-                            value={v.nameBn || ''}
-                            onChange={(e) => {
-                              const updated = [...prodVariants];
-                              updated[vIdx].nameBn = e.target.value;
-                              setProdVariants(updated);
-                            }}
-                            className="bg-[#211C28] border border-[#2E2733] text-xs text-white rounded-lg px-2.5 py-1.5 outline-none"
+                            placeholder="e.g. Soft Pink"
+                            className="w-full px-2.5 py-1.5 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs"
                           />
                         </div>
 
-                        {/* Color Hex & Stock Count */}
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
-                          <input
-                            type="color"
-                            value={v.colorHex || '#f9a8d4'}
-                            onChange={(e) => {
-                              const updated = [...prodVariants];
-                              updated[vIdx].colorHex = e.target.value;
-                              setProdVariants(updated);
-                            }}
-                            className="w-8 h-8 rounded border-none bg-transparent cursor-pointer"
-                            title="Pick Color"
-                          />
-
-                          <div className="flex items-center gap-1">
-                            <span className="text-[10px] text-[#8A7D97]">Stock:</span>
+                        {/* 3. Color Hex */}
+                        <div className="sm:col-span-3">
+                          <label className="text-[10px] text-[#8A7D97] block mb-1">Color Hex</label>
+                          <div className="flex items-center gap-1.5">
                             <input
-                              type="number"
-                              value={v.stockCount ?? v.stock ?? 0}
+                              type="color"
+                              value={v.colorHex || '#F9A8D4'}
                               onChange={(e) => {
-                                const updated = [...prodVariants];
-                                const cnt = Number(e.target.value);
-                                updated[vIdx].stockCount = cnt;
-                                updated[vIdx].stock = cnt;
-                                updated[vIdx].inStock = cnt > 0;
-                                setProdVariants(updated);
+                                const hex = e.target.value;
+                                setProdVariants((prev) =>
+                                  prev.map((item, i) => (i === idx ? { ...item, colorHex: hex } : item))
+                                );
                               }}
-                              className="w-16 bg-[#211C28] border border-[#2E2733] text-xs text-white rounded-lg px-2 py-1 outline-none font-mono text-center"
+                              className="w-8 h-8 rounded-lg border border-[#3A323F] bg-transparent cursor-pointer p-0.5 shrink-0"
+                            />
+                            <input
+                              type="text"
+                              value={v.colorHex}
+                              onChange={(e) => {
+                                const hex = e.target.value;
+                                setProdVariants((prev) =>
+                                  prev.map((item, i) => (i === idx ? { ...item, colorHex: hex } : item))
+                                );
+                              }}
+                              className="w-full px-2 py-1.5 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-[11px] font-mono"
                             />
                           </div>
+                        </div>
 
-                          <label className="flex items-center gap-1 cursor-pointer text-[11px] text-white">
+                        {/* 4. Stock Count */}
+                        <div className="sm:col-span-2">
+                          <label className="text-[10px] text-[#8A7D97] block mb-1">Stock Count</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={v.stockCount ?? v.stock ?? 0}
+                            onChange={(e) => {
+                              const cnt = Number(e.target.value);
+                              setProdVariants((prev) =>
+                                prev.map((item, i) =>
+                                  i === idx ? { ...item, stockCount: cnt, stock: cnt, inStock: cnt > 0 } : item
+                                )
+                              );
+                            }}
+                            className="w-full px-2 py-1.5 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs font-mono font-bold"
+                          />
+                        </div>
+
+                        {/* 5. In Stock Checkbox & Delete */}
+                        <div className="sm:col-span-2 flex items-center justify-between gap-2 pt-3 sm:pt-0">
+                          <label className="flex items-center gap-1 text-[11px] cursor-pointer text-[#D8CFE0]">
                             <input
                               type="checkbox"
                               checked={v.inStock !== false}
                               onChange={(e) => {
-                                const updated = [...prodVariants];
-                                updated[vIdx].inStock = e.target.checked;
-                                setProdVariants(updated);
+                                const chk = e.target.checked;
+                                setProdVariants((prev) =>
+                                  prev.map((item, i) => (i === idx ? { ...item, inStock: chk } : item))
+                                );
                               }}
-                              className="accent-[#C4587A]"
+                              className="accent-[#C4587A] rounded"
                             />
-                            <span>In Stock</span>
+                            <span>{v.inStock !== false ? 'In Stock' : 'Out'}</span>
                           </label>
 
-                          <button
-                            type="button"
-                            onClick={() => setProdVariants(prodVariants.filter((_, i) => i !== vIdx))}
-                            className="p-1.5 text-[#8A7D97] hover:text-rose-400 cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {prodVariants.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => setProdVariants((prev) => prev.filter((_, i) => i !== idx))}
+                              className="p-1.5 text-[#6E6278] hover:text-[#DD8A94] transition-colors cursor-pointer"
+                              title="Delete Variant"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -1018,143 +1124,121 @@ export default function ProductsPage() {
                 </div>
               )}
 
-              {/* TAB 4: COMBO OFFERS */}
+              {/* TAB 4: PACKAGES & COMBOS */}
               {activeTab === 'combos' && (
                 <div className="space-y-4 animate-in fade-in">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-xs font-bold text-white">Combo Pricing & Quantity Packages</h4>
-                      <p className="text-[11px] text-[#8A7D97]">Set discounted bundles (1 pack, 2 pack saver, 3 pack mega gift)</p>
+                      <h3 className="font-bold text-white text-xs">Packages</h3>
+                      <p className="text-[11px] text-[#8A7D97]">Setup 1-Pack, 2-Pack quantity deals with discounted pricing</p>
                     </div>
-
                     <button
                       type="button"
-                      onClick={() =>
-                        setProdCombos([
-                          ...prodCombos,
+                      onClick={() => {
+                        const count = prodCombos.length + 1;
+                        setProdCombos((prev) => [
+                          ...prev,
                           {
-                            id: `combo-${Date.now()}`,
-                            title: 'New Combo Pack',
-                            titleBn: 'নতুন কম্বো প্যাক',
-                            subtitleBn: 'বিশেষ সেভিংস অফার',
-                            quantity: 2,
-                            price: 899,
-                            originalPrice: 1600,
-                            savingsBn: 'Save ৳701',
-                            isPopular: false,
+                            id: `combo-${count}`,
+                            title: `${count} Pieces Pack`,
+                            titleBn: `${count} Pieces Pack`,
+                            subtitleBn: `${count} Pieces • Mega Saver Deal`,
+                            quantity: count,
+                            price: prodBasePrice * count - 100,
+                            originalPrice: prodOriginalPrice * count,
+                            savingsBn: `Save ৳${prodOriginalPrice * count - (prodBasePrice * count - 100)}`,
+                            badge: 'Special Offer',
                           },
-                        ])
-                      }
-                      className="bg-[#2E2733] hover:bg-[#3E3447] text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer"
+                        ]);
+                      }}
+                      className="bg-[#211C28] hover:bg-[#2A2430] text-[#D8CFE0] text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-[#2E2733]"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>Add Combo</span>
+                      <span>Add Package</span>
                     </button>
                   </div>
 
-                  <div className="space-y-3">
-                    {prodCombos.map((c, cIdx) => (
-                      <div key={c.id || cIdx} className="p-3.5 bg-[#191520] rounded-xl border border-[#2E2733] space-y-2.5">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className="space-y-2">
+                    {prodCombos.map((c, idx) => (
+                      <div
+                        key={c.id || idx}
+                        className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-[#1C1821] border border-[#2E2733] items-center text-xs"
+                      >
+                        <div className="sm:col-span-4">
+                          <label className="text-[10px] text-[#8A7D97] block">Combo Title *</label>
                           <input
                             type="text"
-                            placeholder="Title (Bn) e.g. ১টি জুয়েলারি বক্স"
-                            value={c.titleBn}
+                            required
+                            value={c.title}
                             onChange={(e) => {
-                              const updated = [...prodCombos];
-                              updated[cIdx].titleBn = e.target.value;
-                              setProdCombos(updated);
+                              const val = e.target.value;
+                              setProdCombos((prev) =>
+                                prev.map((item, i) => (i === idx ? { ...item, title: val, titleBn: val } : item))
+                              );
                             }}
-                            className="bg-[#211C28] border border-[#2E2733] text-xs text-white rounded-lg px-2.5 py-1.5 outline-none font-bold"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Subtitle (Bn) e.g. নিজের জন্য বা ছোট উপহারের জন্য"
-                            value={c.subtitleBn}
-                            onChange={(e) => {
-                              const updated = [...prodCombos];
-                              updated[cIdx].subtitleBn = e.target.value;
-                              setProdCombos(updated);
-                            }}
-                            className="bg-[#211C28] border border-[#2E2733] text-xs text-white rounded-lg px-2.5 py-1.5 outline-none"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Savings text e.g. Save ৳301"
-                            value={c.savingsBn}
-                            onChange={(e) => {
-                              const updated = [...prodCombos];
-                              updated[cIdx].savingsBn = e.target.value;
-                              setProdCombos(updated);
-                            }}
-                            className="bg-[#211C28] border border-[#2E2733] text-xs text-white rounded-lg px-2.5 py-1.5 outline-none text-[#E39BB4]"
+                            className="w-full px-2 py-1 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs"
                           />
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-3">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[11px] text-[#8A7D97]">Qty:</span>
+                        <div className="sm:col-span-2">
+                          <label className="text-[10px] text-[#8A7D97] block">Quantity (Qty) *</label>
+                          <input
+                            type="number"
+                            required
+                            min="1"
+                            value={c.quantity}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              setProdCombos((prev) =>
+                                prev.map((item, i) => (i === idx ? { ...item, quantity: val } : item))
+                              );
+                            }}
+                            className="w-full px-2 py-1 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-3">
+                          <label className="text-[10px] text-[#8A7D97] block">Deal Price (৳) *</label>
+                          <input
+                            type="number"
+                            required
+                            value={c.price}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              setProdCombos((prev) =>
+                                prev.map((item, i) => (i === idx ? { ...item, price: val } : item))
+                              );
+                            }}
+                            className="w-full px-2 py-1 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs"
+                          />
+                        </div>
+
+                        <div className="sm:col-span-3 flex items-center justify-between gap-1">
+                          <div className="flex-1">
+                            <label className="text-[10px] text-[#8A7D97] block">Badge</label>
                             <input
-                              type="number"
-                              value={c.quantity}
+                              type="text"
+                              value={c.badge || ''}
+                              placeholder="e.g. Popular"
                               onChange={(e) => {
-                                const updated = [...prodCombos];
-                                updated[cIdx].quantity = Number(e.target.value);
-                                setProdCombos(updated);
+                                const val = e.target.value;
+                                setProdCombos((prev) =>
+                                  prev.map((item, i) => (i === idx ? { ...item, badge: val } : item))
+                                );
                               }}
-                              className="w-14 bg-[#211C28] border border-[#2E2733] text-xs text-white rounded-lg px-2 py-1 outline-none font-mono text-center"
+                              className="w-full px-2 py-1 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs"
                             />
                           </div>
 
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[11px] text-[#8A7D97]">Offer ৳:</span>
-                            <input
-                              type="number"
-                              value={c.price}
-                              onChange={(e) => {
-                                const updated = [...prodCombos];
-                                updated[cIdx].price = Number(e.target.value);
-                                setProdCombos(updated);
-                              }}
-                              className="w-20 bg-[#211C28] border border-[#2E2733] text-xs text-white rounded-lg px-2 py-1 outline-none font-mono font-bold"
-                            />
-                          </div>
-
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[11px] text-[#8A7D97]">Original ৳:</span>
-                            <input
-                              type="number"
-                              value={c.originalPrice}
-                              onChange={(e) => {
-                                const updated = [...prodCombos];
-                                updated[cIdx].originalPrice = Number(e.target.value);
-                                setProdCombos(updated);
-                              }}
-                              className="w-20 bg-[#211C28] border border-[#2E2733] text-xs text-white rounded-lg px-2 py-1 outline-none font-mono line-through text-[#8A7D97]"
-                            />
-                          </div>
-
-                          <label className="flex items-center gap-1.5 cursor-pointer text-[11px] text-amber-300">
-                            <input
-                              type="checkbox"
-                              checked={c.isPopular === true}
-                              onChange={(e) => {
-                                const updated = [...prodCombos];
-                                updated[cIdx].isPopular = e.target.checked;
-                                setProdCombos(updated);
-                              }}
-                              className="accent-amber-400"
-                            />
-                            <span>Popular Deal Badge</span>
-                          </label>
-
-                          <button
-                            type="button"
-                            onClick={() => setProdCombos(prodCombos.filter((_, i) => i !== cIdx))}
-                            className="p-1 text-[#8A7D97] hover:text-rose-400 ml-auto cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {prodCombos.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => setProdCombos((prev) => prev.filter((_, i) => i !== idx))}
+                              className="p-1 text-[#6E6278] hover:text-[#DD8A94] mt-3 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -1165,113 +1249,145 @@ export default function ProductsPage() {
               {/* TAB 5: FEATURES & SPECIFICATIONS */}
               {activeTab === 'features' && (
                 <div className="space-y-6 animate-in fade-in">
-                  {/* Highlights */}
-                  <div className="space-y-3">
+                  {/* Features Highlights */}
+                  <div className="bg-[#14111A] p-4 rounded-2xl border border-[#2E2733] space-y-3">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-white">Highlighted Features (Bengali)</h4>
+                      <div>
+                        <h3 className="font-bold text-white text-xs">Features</h3>
+                        <p className="text-[11px] text-[#8A7D97]">Add highlight bullet cards for the product page</p>
+                      </div>
                       <button
                         type="button"
-                        onClick={() =>
-                          setProdFeaturesBn([
-                            ...prodFeaturesBn,
-                            { icon: 'Sparkles', title: 'নতুন বৈশিষ্ট্য', description: 'বৈশিষ্ট্যের বিবরণ লিখুন...' },
-                          ])
-                        }
-                        className="bg-[#2E2733] hover:bg-[#3E3447] text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer"
+                        onClick={() => {
+                          setProdFeaturesBn((prev) => [
+                            ...prev,
+                            { icon: 'Sparkles', title: 'Feature Title', description: 'Feature description' },
+                          ]);
+                        }}
+                        className="bg-[#211C28] hover:bg-[#2A2430] text-[#D8CFE0] text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-[#2E2733]"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>Add Feature</span>
                       </button>
                     </div>
 
-                    <div className="space-y-2.5">
-                      {prodFeaturesBn.map((f, fIdx) => (
-                        <div key={fIdx} className="p-3 bg-[#191520] rounded-xl border border-[#2E2733] flex items-start gap-2.5">
-                          <input
-                            type="text"
-                            placeholder="Title"
-                            value={f.title}
-                            onChange={(e) => {
-                              const updated = [...prodFeaturesBn];
-                              updated[fIdx].title = e.target.value;
-                              setProdFeaturesBn(updated);
-                            }}
-                            className="w-1/3 bg-[#211C28] border border-[#2E2733] text-xs text-white rounded-lg px-2.5 py-1.5 outline-none font-bold"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Description"
-                            value={f.description}
-                            onChange={(e) => {
-                              const updated = [...prodFeaturesBn];
-                              updated[fIdx].description = e.target.value;
-                              setProdFeaturesBn(updated);
-                            }}
-                            className="flex-1 bg-[#211C28] border border-[#2E2733] text-xs text-white rounded-lg px-2.5 py-1.5 outline-none"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setProdFeaturesBn(prodFeaturesBn.filter((_, i) => i !== fIdx))}
-                            className="p-1.5 text-[#8A7D97] hover:text-rose-400 cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                    <div className="space-y-2">
+                      {prodFeaturesBn.map((f, idx) => (
+                        <div
+                          key={idx}
+                          className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-[#1C1821] border border-[#2E2733] items-center text-xs"
+                        >
+                          <div className="sm:col-span-4">
+                            <input
+                              type="text"
+                              value={f.title}
+                              placeholder="Title (e.g. ওয়াটারপ্রুফ লেদার)"
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setProdFeaturesBn((prev) =>
+                                  prev.map((item, i) => (i === idx ? { ...item, title: val } : item))
+                                );
+                              }}
+                              className="w-full px-2 py-1 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs font-semibold"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-7">
+                            <input
+                              type="text"
+                              value={f.description}
+                              placeholder="Description (e.g. দীর্ঘস্থায়ী ওয়াটারপ্রুফ সুরক্ষা)"
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setProdFeaturesBn((prev) =>
+                                  prev.map((item, i) => (i === idx ? { ...item, description: val } : item))
+                                );
+                              }}
+                              className="w-full px-2 py-1 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-1 text-right">
+                            <button
+                              type="button"
+                              onClick={() => setProdFeaturesBn((prev) => prev.filter((_, i) => i !== idx))}
+                              className="p-1 text-[#6E6278] hover:text-[#DD8A94] cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
 
                   {/* Specifications */}
-                  <div className="space-y-3">
+                  <div className="bg-[#14111A] p-4 rounded-2xl border border-[#2E2733] space-y-3">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-white">Technical Specifications Table</h4>
+                      <div>
+                        <h3 className="font-bold text-white text-xs">Specifications</h3>
+                        <p className="text-[11px] text-[#8A7D97]">Add technical specification rows (Material, Size, Weight, etc.)</p>
+                      </div>
                       <button
                         type="button"
-                        onClick={() =>
-                          setProdSpecificationsBn([
-                            ...prodSpecificationsBn,
+                        onClick={() => {
+                          setProdSpecificationsBn((prev) => [
+                            ...prev,
                             { key: 'বৈশিষ্ট্য', value: 'মান' },
-                          ])
-                        }
-                        className="bg-[#2E2733] hover:bg-[#3E3447] text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer"
+                          ]);
+                        }}
+                        className="bg-[#211C28] hover:bg-[#2A2430] text-[#D8CFE0] text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-[#2E2733]"
                       >
                         <Plus className="w-3.5 h-3.5" />
-                        <span>Add Spec Row</span>
+                        <span>Add Row</span>
                       </button>
                     </div>
 
                     <div className="space-y-2">
-                      {prodSpecificationsBn.map((s, sIdx) => (
-                        <div key={sIdx} className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            placeholder="Key (e.g. মেটেরিয়াল)"
-                            value={s.key}
-                            onChange={(e) => {
-                              const updated = [...prodSpecificationsBn];
-                              updated[sIdx].key = e.target.value;
-                              setProdSpecificationsBn(updated);
-                            }}
-                            className="w-1/3 bg-[#191520] border border-[#2E2733] text-xs text-white rounded-lg px-2.5 py-1.5 outline-none font-medium"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Value (e.g. প্রিমিয়াম PU লেদার)"
-                            value={s.value}
-                            onChange={(e) => {
-                              const updated = [...prodSpecificationsBn];
-                              updated[sIdx].value = e.target.value;
-                              setProdSpecificationsBn(updated);
-                            }}
-                            className="flex-1 bg-[#191520] border border-[#2E2733] text-xs text-white rounded-lg px-2.5 py-1.5 outline-none"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setProdSpecificationsBn(prodSpecificationsBn.filter((_, i) => i !== sIdx))}
-                            className="p-1.5 text-[#8A7D97] hover:text-rose-400 cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                      {prodSpecificationsBn.map((s, idx) => (
+                        <div
+                          key={idx}
+                          className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-[#1C1821] border border-[#2E2733] items-center text-xs"
+                        >
+                          <div className="sm:col-span-4">
+                            <input
+                              type="text"
+                              value={s.key}
+                              placeholder="Key (e.g. মেটেরিয়াল)"
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setProdSpecificationsBn((prev) =>
+                                  prev.map((item, i) => (i === idx ? { ...item, key: val } : item))
+                                );
+                              }}
+                              className="w-full px-2 py-1 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs font-semibold"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-7">
+                            <input
+                              type="text"
+                              value={s.value}
+                              placeholder="Value (e.g. প্রিমিয়াম PU লেদার)"
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setProdSpecificationsBn((prev) =>
+                                  prev.map((item, i) => (i === idx ? { ...item, value: val } : item))
+                                );
+                              }}
+                              className="w-full px-2 py-1 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-1 text-right">
+                            <button
+                              type="button"
+                              onClick={() => setProdSpecificationsBn((prev) => prev.filter((_, i) => i !== idx))}
+                              className="p-1 text-[#6E6278] hover:text-[#DD8A94] cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
