@@ -32,13 +32,29 @@ export default function HomePage() {
   });
 
   const products = productsData || [];
-  const featuredProducts = products.filter((p) => p.isFeatured !== false && p.isActive !== false);
+
+  // Top 3 or 4 Featured products with the highest reviews/ratings
+  const slides = React.useMemo(() => {
+    if (!products || products.length === 0) return [];
+
+    const featured = products.filter((p) => p.isFeatured !== false && p.isActive !== false);
+    const sortedFeatured = [...featured].sort(
+      (a, b) => (b.reviewCount || 0) - (a.reviewCount || 0) || (b.rating || 5) - (a.rating || 5)
+    );
+
+    if (sortedFeatured.length > 0) {
+      return sortedFeatured.slice(0, 4);
+    }
+
+    const active = products.filter((p) => p.isActive !== false);
+    return [...active]
+      .sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0) || (b.rating || 5) - (a.rating || 5))
+      .slice(0, 4);
+  }, [products]);
 
   // Auto Slider State
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-
-  const slides = featuredProducts.length > 0 ? featuredProducts : products;
 
   const nextSlide = useCallback(() => {
     if (slides.length > 0) {
@@ -75,14 +91,21 @@ export default function HomePage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center min-h-[420px]">
               {/* Left Content */}
               <div className="lg:col-span-7 space-y-6">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-rose-600 bg-rose-50 px-3 py-1 rounded-md border border-rose-100">
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>Featured Deal • Save ৳{activeProduct.originalPrice - activeProduct.basePrice}</span>
                   </span>
-                  <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                  <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
                     {activeProduct.category || 'Organizers'}
                   </span>
+                  {activeProduct.reviewCount > 0 && (
+                    <div className="flex items-center gap-1 text-xs text-amber-600 font-bold bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      <span>{activeProduct.rating?.toFixed(1) || '5.0'}</span>
+                      <span className="text-slate-400 font-normal">({activeProduct.reviewCount})</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -146,14 +169,14 @@ export default function HomePage() {
                     <button
                       onClick={prevSlide}
                       className="w-9 h-9 rounded-full bg-white/90 border border-slate-200 shadow-xs flex items-center justify-center text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
-                      title="Previous"
+                      title="Previous Slide"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
                     <button
                       onClick={nextSlide}
                       className="w-9 h-9 rounded-full bg-white/90 border border-slate-200 shadow-xs flex items-center justify-center text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
-                      title="Next"
+                      title="Next Slide"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -172,7 +195,7 @@ export default function HomePage() {
                     className={`transition-all duration-300 rounded-full cursor-pointer ${
                       currentSlide === idx ? 'w-8 h-2 bg-slate-900' : 'w-2 h-2 bg-slate-300 hover:bg-slate-400'
                     }`}
-                    title={`Slide ${idx + 1}`}
+                    title={`Slide ${idx + 1}: ${s.name}`}
                   />
                 ))}
               </div>
