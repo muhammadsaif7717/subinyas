@@ -93,6 +93,17 @@ export default function ProductDetailPage() {
       .slice(0, 4);
   }, [allProductsData, product]);
 
+  // Sorted variants: available in-stock first, sold out variants last
+  const sortedVariants = useMemo(() => {
+    if (!product?.variants || product.variants.length === 0) return [];
+    return [...product.variants].sort((a, b) => {
+      const aInStock = a.inStock !== false && (a.stockCount === undefined || Number(a.stockCount) > 0);
+      const bInStock = b.inStock !== false && (b.stockCount === undefined || Number(b.stockCount) > 0);
+      if (aInStock === bInStock) return 0;
+      return aInStock ? -1 : 1;
+    });
+  }, [product?.variants]);
+
   if (isLoading || !product) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center bg-white">
@@ -217,7 +228,7 @@ export default function ProductDetailPage() {
               />
 
               {/* Discount / Hot Badges */}
-              <div className="absolute top-4 left-4 flex flex-col gap-1.5">
+              <div className="absolute top-4 left-4 flex flex-col gap-1.5 z-10">
                 {discountPercent > 0 && (
                   <span className="bg-rose-600 text-white text-[11px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider shadow-md">
                     -{discountPercent}% OFF
@@ -229,6 +240,31 @@ export default function ProductDetailPage() {
                   </span>
                 )}
               </div>
+
+              {/* Floating Wishlist Heart Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (inWish) removeFromWishlist(product.slug);
+                  else
+                    addToWishlist({
+                      id: `wish-${Date.now()}`,
+                      productSlug: product.slug,
+                      productName: product.name,
+                      productNameBn: product.nameBn,
+                      image: selectedImage || product.images[0],
+                      price: currentPrice,
+                    });
+                }}
+                className="absolute top-4 right-4 z-10 p-2.5 rounded-full bg-white/90 hover:bg-white text-slate-400 hover:text-rose-500 shadow-md hover:shadow-lg transition-all cursor-pointer backdrop-blur-xs active:scale-90"
+                title={inWish ? 'Remove from Wishlist' : 'Add to Wishlist'}
+              >
+                <Heart
+                  className={`w-5 h-5 transition-transform ${
+                    inWish ? 'fill-rose-500 text-rose-500 scale-110' : 'text-slate-500 hover:text-rose-500'
+                  }`}
+                />
+              </button>
             </div>
 
             {/* Thumbnail Strip */}
@@ -308,7 +344,7 @@ export default function ProductDetailPage() {
                 </label>
 
                 <div className="flex flex-wrap gap-2.5">
-                  {product.variants.map((v) => {
+                  {sortedVariants.map((v) => {
                     const isOutOfStock =
                       v.inStock === false || (v.stockCount !== undefined && Number(v.stockCount) <= 0);
                     const isSelected = selectedVariant?.id === v.id;
@@ -419,29 +455,6 @@ export default function ProductDetailPage() {
                 >
                   <span>{isVariantOutOfStock ? 'Currently Unavailable' : 'Buy Now'}</span>
                   {!isVariantOutOfStock && <ArrowRight className="w-4 h-4" />}
-                </button>
-              </div>
-
-              {/* Wishlist Button */}
-              <div className="flex items-center justify-between pt-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (inWish) removeFromWishlist(product.slug);
-                    else
-                      addToWishlist({
-                        id: `wish-${Date.now()}`,
-                        productSlug: product.slug,
-                        productName: product.name,
-                        productNameBn: product.nameBn,
-                        image: selectedImage || product.images[0],
-                        price: currentPrice,
-                      });
-                  }}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-rose-600 transition-colors cursor-pointer"
-                >
-                  <Heart className={`w-4 h-4 ${inWish ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
-                  <span>{inWish ? 'Saved in Wishlist' : 'Add to wishlist'}</span>
                 </button>
               </div>
             </div>
