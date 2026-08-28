@@ -464,20 +464,20 @@ function DashboardContent() {
     setProdVariants([
       {
         id: 'var-1',
-        name: 'Pink',
-        nameBn: 'বেবি পিঙ্ক (Baby Pink)',
-        color: 'Pink',
-        colorHex: '#F472B6',
+        name: 'Black',
+        nameBn: 'Black',
+        color: 'Black',
+        colorHex: '#0F172A',
         image: '/images/products/hello-kitty-pair.png',
         inStock: true,
         stockCount: 50,
       },
       {
         id: 'var-2',
-        name: 'Pearl White',
-        nameBn: 'পার্ল হোয়াইট (Pearl White)',
+        name: 'Silver / White',
+        nameBn: 'Silver / White',
         color: 'White',
-        colorHex: '#F8FAFC',
+        colorHex: '#F1F5F9',
         image: '/images/products/hello-kitty-open.png',
         inStock: true,
         stockCount: 30,
@@ -487,8 +487,8 @@ function DashboardContent() {
       {
         id: 'combo-single',
         title: '1 Piece Single Pack',
-        titleBn: '১টি বক্স (সিঙ্গেল প্যাক)',
-        subtitleBn: '১টি বক্স • রেগুলার অফার',
+        titleBn: '1 Piece Single Pack',
+        subtitleBn: 'Standard Package',
         quantity: 1,
         price: 499,
         originalPrice: 800,
@@ -497,8 +497,8 @@ function DashboardContent() {
       {
         id: 'combo-duo',
         title: '2 Pieces Duo Pack',
-        titleBn: '২টি বক্স বেস্টি কম্বো (Best Deal)',
-        subtitleBn: '২টি বক্স • বেস্ট ভ্যালু অফার',
+        titleBn: '2 Pieces Duo Pack (Best Deal)',
+        subtitleBn: 'Best Value Deal • Save More',
         quantity: 2,
         price: 899,
         originalPrice: 1600,
@@ -508,13 +508,15 @@ function DashboardContent() {
       },
     ]);
     setProdFeaturesBn([
-      { icon: 'Layers', title: 'মাল্টি-কম্পার্টমেন্ট', description: 'সুসংগঠিত পার্টিশন ও স্পেস' },
-      { icon: 'ShieldCheck', title: 'প্রিমিয়াম কোয়ালিটি', description: 'টেকসই ও মার্জিত ফিনিশিং' },
-      { icon: 'Gift', title: 'উপহারের সেরা চয়েস', description: 'প্রিয়জনকে উপহার দেওয়ার জন্য পারফেক্ট' },
+      { icon: 'ShieldCheck', title: '100% Genuine Quality', description: 'Durable, premium materials and long-lasting build' },
+      { icon: 'Sparkles', title: 'Modern & Elegant Design', description: 'Sleek aesthetics perfect for daily lifestyle and convenience' },
+      { icon: 'Truck', title: 'Fast Nationwide Delivery', description: 'Cash on delivery available all across Bangladesh' },
     ]);
     setProdSpecificationsBn([
-      { key: 'উপাদান', value: 'প্রিমিয়াম সিন্থেটিক লেদার ও সফট ভেলভেট' },
-      { key: 'সাইজ', value: 'কম্প্যাক্ট ট্রাভেল ফ্রেন্ডলি' },
+      { key: 'Material / Build', value: 'Premium High-Grade Quality' },
+      { key: 'Warranty', value: '6 Months Replacement Warranty' },
+      { key: 'Condition', value: '100% Brand New & Authentic' },
+      { key: 'Delivery', value: 'Cash On Delivery Nationwide' },
     ]);
     setIsProductModalOpen(true);
   };
@@ -546,7 +548,7 @@ function DashboardContent() {
             {
               id: 'var-1',
               name: 'Default',
-              nameBn: 'ডিফল্ট কালার',
+              nameBn: 'Default',
               color: 'Default',
               colorHex: '#E2E8F0',
               image: prod.images?.[0] || '/images/products/hello-kitty-pair.png',
@@ -562,8 +564,8 @@ function DashboardContent() {
             {
               id: 'combo-single',
               title: '1 Piece Single Pack',
-              titleBn: '১টি বক্স (সিঙ্গেল প্যাক)',
-              subtitleBn: '১টি বক্স • রেগুলার অফার',
+              titleBn: '1 Piece Single Pack',
+              subtitleBn: 'Standard Package',
               quantity: 1,
               price: prod.basePrice,
               originalPrice: prod.originalPrice,
@@ -575,16 +577,16 @@ function DashboardContent() {
       prod.featuresBn?.length > 0
         ? prod.featuresBn
         : [
-            { icon: 'Layers', title: 'মাল্টি-কম্পার্টমেন্ট', description: 'সুসংগঠিত পার্টিশন ও স্পেস' },
-            { icon: 'ShieldCheck', title: 'প্রিমিয়াম কোয়ালিটি', description: 'টেকসই ও মার্জিত ফিনিশিং' },
+            { icon: 'ShieldCheck', title: '100% Genuine Quality', description: 'Durable, premium materials and long-lasting build' },
+            { icon: 'Truck', title: 'Cash on Delivery', description: 'Fast delivery across Bangladesh' },
           ]
     );
     setProdSpecificationsBn(
       prod.specificationsBn?.length > 0
         ? prod.specificationsBn
         : [
-            { key: 'উপাদান', value: 'প্রিমিয়াম কোয়ালিটি' },
-            { key: 'সাইজ', value: 'স্ট্যান্ডার্ড' },
+            { key: 'Material / Quality', value: 'Premium Grade' },
+            { key: 'Warranty', value: '6 Months Replacement Warranty' },
           ]
     );
     setIsProductModalOpen(true);
