@@ -300,14 +300,6 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Live Watching / Urgency Badge */}
-            <div className="flex items-center gap-2 p-3 bg-orange-50/60 rounded-xl border border-orange-200/60 text-xs text-slate-700">
-              <Eye className="w-4 h-4 text-orange-600 shrink-0 animate-pulse" />
-              <span>
-                <strong>12+ people</strong> are viewing this product right now!
-              </span>
-            </div>
-
             {/* Variant Selection */}
             {product.variants && product.variants.length > 0 && (
               <div className="space-y-3">
