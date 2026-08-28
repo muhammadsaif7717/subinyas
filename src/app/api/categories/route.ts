@@ -11,6 +11,41 @@ export interface CategoryItem {
   createdAt: string;
 }
 
+// Helper to reliably authenticate admin with case-insensitivity and DB fallback
+async function checkIsAdmin(request: NextRequest): Promise<boolean> {
+  try {
+    const token =
+      request.cookies.get('subinyas_admin_token')?.value ||
+      request.headers.get('authorization')?.replace('Bearer ', '');
+
+    if (!token) return false;
+
+    const payload = verifyJwtToken(token);
+    if (!payload) return false;
+
+    if (payload.role && payload.role.toLowerCase() === 'admin') {
+      return true;
+    }
+
+    // Fallback check in MongoDB users collection
+    const db = await getDb();
+    if (db && (payload.email || payload.userId)) {
+      const query: Record<string, unknown> = {};
+      if (payload.email) query.email = payload.email;
+      else if (payload.userId) query.userId = payload.userId;
+
+      const user = await db.collection('users').findOne(query);
+      if (user && user.role && user.role.toLowerCase() === 'admin') {
+        return true;
+      }
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export async function GET() {
   try {
     const db = await getDb();
@@ -33,43 +68,42 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get('subinyas_admin_token')?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    }
-
-    const payload = verifyJwtToken(token);
-    if (payload?.role !== 'admin') {
-      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
+    const isAdmin = await checkIsAdmin(request);
+    if (!isAdmin) {
+      return NextResponse.json({ success: false, message: 'Unauthorized - Admin access required' }, { status: 401 });
     }
 
     const body = await request.json();
-    const { name } = body;
+    const { name, order } = body;
 
     if (!name?.trim()) {
       return NextResponse.json({ success: false, message: 'ক্যাটাগরির নাম দিন।' }, { status: 400 });
     }
 
     const db = await getDb();
-    let calculatedOrder = 1;
+    let calculatedOrder = Number(order);
 
-    if (db) {
-      const highestCat = await db
-        .collection('categories')
-        .find({})
-        .sort({ order: -1 })
-        .limit(1)
-        .toArray();
+    if (isNaN(calculatedOrder) || calculatedOrder <= 0) {
+      if (db) {
+        const highestCat = await db
+          .collection('categories')
+          .find({})
+          .sort({ order: -1 })
+          .limit(1)
+          .toArray();
 
-      if (highestCat && highestCat.length > 0 && typeof highestCat[0].order === 'number') {
-        calculatedOrder = highestCat[0].order + 1;
+        if (highestCat && highestCat.length > 0 && typeof highestCat[0].order === 'number') {
+          calculatedOrder = highestCat[0].order + 1;
+        } else {
+          const count = await db.collection('categories').countDocuments();
+          calculatedOrder = count + 1;
+        }
       } else {
-        const count = await db.collection('categories').countDocuments();
-        calculatedOrder = count + 1;
+        calculatedOrder = 1;
       }
     }
 
-    // Exact schema fields: _id, name, order, createdAt
+    // Exact schema: _id, name, order, createdAt
     const newCat = {
       name: name.trim(),
       order: calculatedOrder,
@@ -97,14 +131,9 @@ export async function POST(request: NextRequest) {
 // PATCH for drag-and-drop reordering
 export async function PATCH(request: NextRequest) {
   try {
-    const token = request.cookies.get('subinyas_admin_token')?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    }
-
-    const payload = verifyJwtToken(token);
-    if (payload?.role !== 'admin') {
-      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
+    const isAdmin = await checkIsAdmin(request);
+    if (!isAdmin) {
+      return NextResponse.json({ success: false, message: 'Unauthorized - Admin access required' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -154,14 +183,9 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const token = request.cookies.get('subinyas_admin_token')?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    }
-
-    const payload = verifyJwtToken(token);
-    if (payload?.role !== 'admin') {
-      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
+    const isAdmin = await checkIsAdmin(request);
+    if (!isAdmin) {
+      return NextResponse.json({ success: false, message: 'Unauthorized - Admin access required' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -176,11 +200,15 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Database disconnected' }, { status: 500 });
     }
 
-    const filter: Filter<Document> = ObjectId.isValid(catId)
-      ? { _id: new ObjectId(catId) }
-      : ({ _id: catId } as unknown as Filter<Document>);
+    let filter: Filter<Document>;
+    if (ObjectId.isValid(catId)) {
+      filter = { $or: [{ _id: new ObjectId(catId) }, { id: catId }] as any };
+    } else {
+      filter = { $or: [{ _id: catId as any }, { id: catId }, { name: catId }] as any };
+    }
 
-    await db.collection('categories').deleteOne(filter);
+    const res = await db.collection('categories').deleteOne(filter);
+    console.log(`Deleted category ${catId}, deletedCount:`, res.deletedCount);
 
     return NextResponse.json({ success: true, message: 'ক্যাটাগরি মুছে ফেলা হয়েছে' });
   } catch (error) {

@@ -263,12 +263,21 @@ function DashboardContent() {
   // Category Delete Mutation
   const deleteCategoryMutation = useMutation({
     mutationFn: async (catId: string) => {
-      const res = await axios.delete(`/api/categories?id=${catId}`);
+      const res = await axios.delete(`/api/categories?id=${encodeURIComponent(catId)}`);
       return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      setCatSuccess('ক্যাটাগরি মুছে ফেলা হয়েছে');
+      setTimeout(() => setCatSuccess(''), 2500);
+    },
+    onError: (err: unknown) => {
+      const msg =
+        axios.isAxiosError(err) && err.response?.data?.message
+          ? err.response.data.message
+          : 'ক্যাটাগরি মুছতে সমস্যা হয়েছে।';
+      setCatError(msg);
     },
   });
 
