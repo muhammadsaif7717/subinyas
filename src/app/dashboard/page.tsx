@@ -127,6 +127,7 @@ function DashboardContent() {
   const [productFormError, setProductFormError] = useState('');
   const [productFormSuccess, setProductFormSuccess] = useState('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadingVariantIdx, setUploadingVariantIdx] = useState<number | null>(null);
 
   // Form Fields (100% MongoDB Product Schema Support)
   const [prodName, setProdName] = useState('');
@@ -617,7 +618,7 @@ function DashboardContent() {
     setIsProductModalOpen(true);
   };
 
-  // Handle Image Upload
+  // Handle Main Showcase Images Upload
   const handleProductImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -639,6 +640,34 @@ function DashboardContent() {
       setProductFormError('Failed to upload image.');
     } finally {
       setIsUploadingImage(false);
+    }
+  };
+
+  // Handle Specific Variant Matching Image Upload
+  const handleVariantImageUpload = async (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingVariantIdx(idx);
+    setProductFormError('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await axios.post('/api/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      if (res.data?.success && res.data?.url) {
+        const uploadedUrl = res.data.url;
+        setProdVariants((prev) =>
+          prev.map((item, i) => (i === idx ? { ...item, image: uploadedUrl } : item))
+        );
+        // Ensure image is also part of the general gallery
+        setProdImages((prev) => (prev.includes(uploadedUrl) ? prev : [...prev, uploadedUrl]));
+      }
+    } catch {
+      setProductFormError('Failed to upload variant image.');
+    } finally {
+      setUploadingVariantIdx(null);
     }
   };
 
@@ -669,6 +698,9 @@ function DashboardContent() {
       return c;
     });
 
+    const variantImages = prodVariants.map((v) => v.image).filter(Boolean) as string[];
+    const combinedImages = Array.from(new Set([...prodImages, ...variantImages])).filter(Boolean);
+
     const fullProduct: Product = {
       id: editingProductSlug ? `prod-${editingProductSlug}` : `prod-${Date.now()}`,
       slug: cleanSlug,
@@ -681,7 +713,7 @@ function DashboardContent() {
       reviewCount: prodReviewCount || 0,
       basePrice: parsedBasePrice,
       originalPrice: parsedOrigPrice,
-      images: prodImages.length > 0 ? prodImages : ['/images/products/hello-kitty-pair.png'],
+      images: combinedImages.length > 0 ? combinedImages : ['/images/products/hello-kitty-pair.png'],
       variants: prodVariants,
       combos: syncedCombos,
       featuresBn: prodFeaturesBn,
@@ -1893,14 +1925,60 @@ function DashboardContent() {
                   </button>
                 </div>
 
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                   {prodVariants.map((v, idx) => (
                     <div
                       key={v.id || idx}
-                      className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 p-3 rounded-xl bg-[#1C1821] border border-[#2E2733] items-center"
+                      className="grid grid-cols-1 sm:grid-cols-12 gap-3 p-3.5 rounded-xl bg-[#1C1821] border border-[#2E2733] items-center"
                     >
-                      <div className="sm:col-span-5">
-                        <label className="text-[10px] text-[#8A7D97] block mb-0.5">Color / Variant Name</label>
+                      {/* 1. Color Variant Image Slot */}
+                      <div className="sm:col-span-2">
+                        <label className="text-[10px] text-[#8A7D97] block mb-1">Color Photo</label>
+                        <div className="flex items-center gap-2">
+                          <label className="relative w-11 h-11 rounded-xl overflow-hidden border border-[#332B3D] bg-[#14111A] hover:border-[#C4587A] flex items-center justify-center cursor-pointer group shrink-0 transition-colors">
+                            {uploadingVariantIdx === idx ? (
+                              <Loader2 className="w-4 h-4 animate-spin text-[#C4587A]" />
+                            ) : v.image ? (
+                              <>
+                                <Image src={v.image} alt={v.name} fill className="object-cover" />
+                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                  <Camera className="w-3.5 h-3.5 text-white" />
+                                </div>
+                              </>
+                            ) : (
+                              <div className="flex flex-col items-center justify-center text-[9px] text-[#8A7D97] group-hover:text-[#E39BB4]">
+                                <Camera className="w-3.5 h-3.5 mb-0.5" />
+                                <span>+ Photo</span>
+                              </div>
+                            )}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleVariantImageUpload(idx, e)}
+                              className="hidden"
+                            />
+                          </label>
+
+                          {v.image && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setProdVariants((prev) =>
+                                  prev.map((item, i) => (i === idx ? { ...item, image: '' } : item))
+                                )
+                              }
+                              className="text-[10px] text-[#DD8A94] hover:underline"
+                              title="Clear Photo"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 2. Color / Variant Name */}
+                      <div className="sm:col-span-3">
+                        <label className="text-[10px] text-[#8A7D97] block mb-1">Color Name</label>
                         <input
                           type="text"
                           required
@@ -1930,13 +2008,14 @@ function DashboardContent() {
                               )
                             );
                           }}
-                          placeholder="e.g. Matte Black, Pearl Silver, Rose Gold..."
+                          placeholder="e.g. Matte Black"
                           className="w-full px-2.5 py-1.5 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs"
                         />
                       </div>
 
+                      {/* 3. Color Hex */}
                       <div className="sm:col-span-3">
-                        <label className="text-[10px] text-[#8A7D97] block mb-0.5">Color Hex</label>
+                        <label className="text-[10px] text-[#8A7D97] block mb-1">Color Hex</label>
                         <div className="flex items-center gap-1.5">
                           <input
                             type="color"
@@ -1963,8 +2042,9 @@ function DashboardContent() {
                         </div>
                       </div>
 
+                      {/* 4. Stock Count */}
                       <div className="sm:col-span-2">
-                        <label className="text-[10px] text-[#8A7D97] block mb-0.5">Stock Count</label>
+                        <label className="text-[10px] text-[#8A7D97] block mb-1">Stock Count</label>
                         <input
                           type="number"
                           min="0"
@@ -1981,6 +2061,7 @@ function DashboardContent() {
                         />
                       </div>
 
+                      {/* 5. In Stock Checkbox & Delete */}
                       <div className="sm:col-span-2 flex items-center justify-between gap-2 pt-3 sm:pt-0">
                         <label className="flex items-center gap-1 text-[11px] cursor-pointer text-[#D8CFE0]">
                           <input
@@ -2272,23 +2353,35 @@ function DashboardContent() {
                 </div>
               </div>
 
-              {/* Image Upload */}
-              <div>
-                <label className={labelCls}>Product Images (Cloudinary CDN Upload)</label>
-                <div className="flex flex-wrap items-center gap-3">
-                  <label className="inline-flex items-center gap-2 bg-[#211C28] border border-[#2E2733] hover:border-[#3A323F] text-[#D8CFE0] px-3.5 py-2 rounded-xl text-xs cursor-pointer">
+              {/* Main Showcase & Gallery Images */}
+              <div className="bg-[#14111A] p-4 rounded-2xl border border-[#2E2733] space-y-3">
+                <div>
+                  <h3 className="font-bold text-white text-xs">Main Product Showcase & Extra Gallery Photos</h3>
+                  <p className="text-[11px] text-[#8A7D97]">
+                    Upload general multi-angle shots, banners, or combined package photos
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 pt-1">
+                  <label className="inline-flex items-center gap-2 bg-[#211C28] border border-[#2E2733] hover:border-[#3A323F] text-[#D8CFE0] px-4 py-2.5 rounded-xl text-xs cursor-pointer transition-colors">
                     {isUploadingImage ? <Loader2 className="w-4 h-4 animate-spin text-[#C4587A]" /> : <Camera className="w-4 h-4 text-[#E39BB4]" />}
-                    <span>{isUploadingImage ? 'Uploading...' : 'Upload Image'}</span>
+                    <span>{isUploadingImage ? 'Uploading Photos...' : '+ Upload Showcase Photos'}</span>
                     <input type="file" accept="image/*" multiple onChange={handleProductImageUpload} className="hidden" />
                   </label>
 
                   {prodImages.map((url, idx) => (
-                    <div key={idx} className="relative w-12 h-12 rounded-xl overflow-hidden border border-[#2E2733] bg-[#14111A]">
+                    <div key={idx} className="relative w-14 h-14 rounded-xl overflow-hidden border border-[#2E2733] bg-[#14111A] group">
                       <Image src={url} alt={`Preview ${idx}`} fill className="object-cover" />
+                      {idx === 0 && (
+                        <span className="absolute bottom-0 inset-x-0 bg-black/80 text-[8px] text-[#E39BB4] text-center font-bold py-0.5">
+                          Main
+                        </span>
+                      )}
                       <button
                         type="button"
                         onClick={() => setProdImages((prev) => prev.filter((_, i) => i !== idx))}
-                        className="absolute top-0.5 right-0.5 bg-[#0B0910]/90 text-white rounded-full p-0.5"
+                        className="absolute top-0.5 right-0.5 bg-[#0B0910]/90 text-white hover:text-rose-400 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Remove Photo"
                       >
                         <X className="w-2.5 h-2.5" />
                       </button>

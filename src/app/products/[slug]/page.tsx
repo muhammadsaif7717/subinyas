@@ -71,18 +71,30 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     if (product) {
-      setSelectedImage(product.images?.[0] || '/images/products/hello-kitty-pair.png');
       if (product.variants?.length > 0) {
         const firstInStock = product.variants.find(
           (v) => v.inStock !== false && (v.stockCount === undefined || Number(v.stockCount) > 0)
         );
-        setSelectedVariant(firstInStock || product.variants[0]);
+        const defaultVar = firstInStock || product.variants[0];
+        setSelectedVariant(defaultVar);
+        setSelectedImage(defaultVar?.image || product.images?.[0] || '/images/products/hello-kitty-pair.png');
+      } else {
+        setSelectedImage(product.images?.[0] || '/images/products/hello-kitty-pair.png');
       }
+
       if (product.combos?.length > 0) {
         setSelectedCombo(product.combos[0]);
       }
       trackViewContent(product.nameBn, product.category, product.basePrice);
     }
+  }, [product]);
+
+  // Combined gallery images (includes general product images + variant-specific images)
+  const galleryImages = useMemo(() => {
+    if (!product) return [];
+    const variantImgs = (product.variants || []).map((v) => v.image).filter(Boolean) as string[];
+    const all = Array.from(new Set([...(product.images || []), ...variantImgs])).filter(Boolean);
+    return all.length > 0 ? all : ['/images/products/hello-kitty-pair.png'];
   }, [product]);
 
   // Related products
@@ -268,9 +280,9 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Thumbnail Strip */}
-            {product.images && product.images.length > 1 && (
+            {galleryImages && galleryImages.length > 1 && (
               <div className="flex items-center gap-3 overflow-x-auto pb-2">
-                {product.images.map((img, idx) => (
+                {galleryImages.map((img, idx) => (
                   <button
                     key={idx}
                     type="button"
