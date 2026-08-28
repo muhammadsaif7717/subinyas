@@ -9,10 +9,10 @@ import { FloatingWhatsApp } from './FloatingWhatsApp';
 export function AppLayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  // Hide Navbar, Footer, and WhatsApp button on /login and /admin routes
-  const isAuthOrAdminPage = pathname === '/login' || pathname?.startsWith('/admin');
+  // Hide Navbar, Footer, and WhatsApp button on /login and /dashboard routes
+  const isAuthOrDashboard = pathname === '/login' || pathname?.startsWith('/dashboard');
 
-  if (isAuthOrAdminPage) {
+  if (isAuthOrDashboard) {
     return <main className="min-h-screen flex flex-col justify-center">{children}</main>;
   }
 

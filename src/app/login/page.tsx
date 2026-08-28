@@ -36,7 +36,7 @@ export default function LoginPage() {
         const res = await login(email, password);
         if (res.success) {
           if (email.trim().toLowerCase() === 'admin@subinyas.shop') {
-            router.push('/admin');
+            router.push('/dashboard');
           } else {
             router.push('/');
           }

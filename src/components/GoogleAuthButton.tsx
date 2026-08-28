@@ -56,7 +56,7 @@ export function GoogleAuthButton({ onError }: { onError?: (msg: string) => void 
               await refetchUser();
               const userRole = res.data?.user?.role;
               if (userRole === 'admin') {
-                router.push('/admin');
+                router.push('/dashboard');
               } else {
                 router.push('/');
               }
