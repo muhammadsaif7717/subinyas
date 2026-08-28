@@ -100,34 +100,54 @@ export function Navbar() {
 
           {/* Right Action Controls: Wishlist, Cart & Right-Side Menu Drawer Button */}
           <div className="flex items-center gap-2.5 sm:gap-3">
-            {/* Wishlist Button */}
-            <Link
-              href="/wishlist"
-              className="relative p-2.5 rounded-full text-slate-600 hover:text-rose-600 hover:bg-rose-50/60 transition-colors"
-              title="Wishlist"
-            >
-              <Heart className="w-5 h-5 stroke-[1.75]" />
-              {wishlistCount > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-in zoom-in">
-                  {wishlistCount}
-                </span>
-              )}
-            </Link>
+            {/* Wishlist Button (Auth Gated) */}
+            {user ? (
+              <Link
+                href="/wishlist"
+                className="relative p-2.5 rounded-full text-slate-600 hover:text-rose-600 hover:bg-rose-50/60 transition-colors"
+                title="Wishlist"
+              >
+                <Heart className="w-5 h-5 stroke-[1.75]" />
+                {wishlistCount > 0 && (
+                  <span className="absolute top-1 right-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-in zoom-in">
+                    {wishlistCount}
+                  </span>
+                )}
+              </Link>
+            ) : (
+              <Link
+                href={`/login?callbackUrl=${encodeURIComponent('/wishlist')}&authRequired=true&action=wishlist`}
+                className="relative p-2.5 rounded-full text-slate-600 hover:text-rose-600 hover:bg-rose-50/60 transition-colors"
+                title="Wishlist (Login Required)"
+              >
+                <Heart className="w-5 h-5 stroke-[1.75]" />
+              </Link>
+            )}
 
-            {/* Shopping Cart Button */}
-            <button
-              type="button"
-              onClick={() => setIsCartOpen(true)}
-              className="relative p-2.5 rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
-              title="Shopping Cart"
-            >
-              <ShoppingBag className="w-5 h-5 stroke-[1.75]" />
-              {cartCount > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 bg-slate-900 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-in zoom-in">
-                  {cartCount}
-                </span>
-              )}
-            </button>
+            {/* Shopping Cart Button (Auth Gated) */}
+            {user ? (
+              <button
+                type="button"
+                onClick={() => setIsCartOpen(true)}
+                className="relative p-2.5 rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+                title="Shopping Cart"
+              >
+                <ShoppingBag className="w-5 h-5 stroke-[1.75]" />
+                {cartCount > 0 && (
+                  <span className="absolute top-1 right-1 w-4 h-4 bg-slate-900 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-in zoom-in">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+            ) : (
+              <Link
+                href={`/login?callbackUrl=${encodeURIComponent(pathname)}&authRequired=true&action=cart`}
+                className="relative p-2.5 rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                title="Shopping Cart (Login Required)"
+              >
+                <ShoppingBag className="w-5 h-5 stroke-[1.75]" />
+              </Link>
+            )}
 
             {/* If User is Logged In: Show Profile Image + Menu Icon (No name text) */}
             {user ? (
