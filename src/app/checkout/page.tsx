@@ -197,12 +197,12 @@ export default function CheckoutPage() {
             <div>
               <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 uppercase tracking-tight flex items-center gap-2">
                 <span>Billing & Shipping</span>
-                <span className="text-xs font-normal text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-100 uppercase tracking-normal">
-                  ক্যাশ অন ডেলিভারি
+                <span className="text-xs font-semibold text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-100 uppercase tracking-wider">
+                  Cash on Delivery
                 </span>
               </h2>
               <p className="text-xs text-slate-500 mt-1">
-                অর্ডার কনফার্ম করতে নিচের তথ্যগুলো সঠিকভাবে পূরণ করুন। অগ্রিম কোনো টাকা দিতে হবে না।
+                Please provide accurate details below to confirm your order. No advance payment required.
               </p>
             </div>
 
@@ -216,12 +216,12 @@ export default function CheckoutPage() {
               {/* Customer Name */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  আপনার নাম <span className="text-rose-500">*</span>
+                  Full Name <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="আপনার পূর্ণ নাম লিখুন"
+                  placeholder="Enter your full name"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
@@ -231,7 +231,7 @@ export default function CheckoutPage() {
               {/* Phone Number */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  আপনার ফোন নাম্বার <span className="text-rose-500">*</span>
+                  Phone Number <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="tel"
@@ -242,18 +242,18 @@ export default function CheckoutPage() {
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
                 />
-                <p className="text-[11px] text-slate-400 mt-1">অর্ডার নিশ্চিত করতে এই নাম্বারে কল করা হবে।</p>
+                <p className="text-[11px] text-slate-400 mt-1">We will call this number to verify your delivery.</p>
               </div>
 
               {/* Full Address */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  পুরো ঠিকানা <span className="text-rose-500">*</span>
+                  Delivery Address <span className="text-rose-500">*</span>
                 </label>
                 <textarea
                   required
                   rows={3}
-                  placeholder="বাসা/ফ্ল্যাট নং, রোড নং, এলাকা, থানা ও জেলার নাম লিখুন..."
+                  placeholder="House/Road no, Area, Thana & District..."
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all resize-none"
@@ -263,7 +263,7 @@ export default function CheckoutPage() {
               {/* Delivery Area Picker */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                  ডেলিভারি এরিয়া নির্বাচন করুন <span className="text-rose-500">*</span>
+                  Select Delivery Location <span className="text-rose-500">*</span>
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <label
@@ -283,8 +283,8 @@ export default function CheckoutPage() {
                         className="w-4 h-4 accent-orange-500"
                       />
                       <div>
-                        <p className="text-xs font-bold">ঢাকা সিটির ভেতরে</p>
-                        <p className="text-[10px] text-slate-500">হোম ডেলিভারি (২৪-৪৮ ঘণ্টা)</p>
+                        <p className="text-xs font-bold">Inside Dhaka City</p>
+                        <p className="text-[10px] text-slate-500">Home Delivery (24-48 hrs)</p>
                       </div>
                     </div>
                     <span className="text-xs font-extrabold font-mono text-orange-600">৳70</span>
@@ -307,8 +307,8 @@ export default function CheckoutPage() {
                         className="w-4 h-4 accent-orange-500"
                       />
                       <div>
-                        <p className="text-xs font-bold">ঢাকার বাইরে</p>
-                        <p className="text-[10px] text-slate-500">সমগ্র বাংলাদেশ (২-৪ দিন)</p>
+                        <p className="text-xs font-bold">Outside Dhaka</p>
+                        <p className="text-[10px] text-slate-500">All Bangladesh (2-4 days)</p>
                       </div>
                     </div>
                     <span className="text-xs font-extrabold font-mono text-orange-600">৳130</span>
@@ -319,11 +319,11 @@ export default function CheckoutPage() {
               {/* Order Notes */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  অর্ডার নোট (ঐচ্ছিক)
+                  Order Notes (Optional)
                 </label>
                 <input
                   type="text"
-                  placeholder="ডেলিভারির জন্য কোনো বিশেষ নির্দেশনা থাকলে লিখুন..."
+                  placeholder="Special instructions or delivery landmark..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-orange-500"
@@ -335,11 +335,11 @@ export default function CheckoutPage() {
             <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
               <div className="flex items-center gap-2 text-slate-600 text-xs font-medium">
                 <Truck className="w-4 h-4 text-orange-500 shrink-0" />
-                <span>সারা দেশে ক্যাশ অন ডেলিভারি</span>
+                <span>Cash on Delivery across Bangladesh</span>
               </div>
               <div className="flex items-center gap-2 text-slate-600 text-xs font-medium">
                 <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>১০০% আসল প্রোডাক্টের নিশ্চয়তা</span>
+                <span>100% Genuine Quality Guarantee</span>
               </div>
             </div>
           </div>
@@ -359,12 +359,12 @@ export default function CheckoutPage() {
             {cart.length === 0 ? (
               <div className="py-12 text-center space-y-3">
                 <ShoppingBag className="w-12 h-12 mx-auto text-slate-300 stroke-1" />
-                <p className="text-sm font-semibold text-slate-500">আপনার কার্ট খালি আছে</p>
+                <p className="text-sm font-semibold text-slate-500">Your cart is currently empty</p>
                 <Link
                   href="/products"
                   className="inline-flex items-center gap-2 bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-slate-800 transition-all"
                 >
-                  <span>পণ্য দেখুন (Browse Products)</span>
+                  <span>Browse Products</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
@@ -469,9 +469,9 @@ export default function CheckoutPage() {
                       className="mt-0.5 w-4 h-4 accent-orange-500"
                     />
                     <div>
-                      <p className="text-xs font-bold text-slate-900">Cash on delivery (ক্যাশ অন ডেলিভারি)</p>
+                      <p className="text-xs font-bold text-slate-900">Cash on Delivery (ক্যাশ অন ডেলিভারি)</p>
                       <p className="text-[11px] text-slate-500 mt-0.5">
-                        প্রোডাক্ট হাতে পেয়ে চেক করে ডেলিভারি ম্যানকে টাকা পরিশোধ করবেন।
+                        Pay with cash after inspecting the product upon delivery.
                       </p>
                     </div>
                   </label>
@@ -486,12 +486,12 @@ export default function CheckoutPage() {
                   {isSubmitting ? (
                     <span className="flex items-center gap-2">
                       <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>অর্ডার প্রসেস হচ্ছে...</span>
+                      <span>Processing Order...</span>
                     </span>
                   ) : (
                     <>
                       <Lock className="w-4 h-4" />
-                      <span>অর্ডার কনফার্ম করুন • ৳{grandTotal}</span>
+                      <span>Confirm Order • ৳{grandTotal}</span>
                     </>
                   )}
                 </button>

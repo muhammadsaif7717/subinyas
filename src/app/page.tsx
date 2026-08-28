@@ -147,7 +147,7 @@ export default function HomePage() {
                       href={`/products/${activeProduct.slug}`}
                       className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm py-3.5 px-6 rounded-xl transition-all shadow-xs"
                     >
-                      <span>এখনই অর্ডার করুন (Order Now)</span>
+                      <span>Order Now</span>
                       <ArrowRight className="w-4 h-4" />
                     </Link>
 
@@ -233,7 +233,7 @@ export default function HomePage() {
         </div>
 
         {isLoading ? (
-          <div className="text-center py-12 text-slate-400 text-sm">পণ্য লোড হচ্ছে...</div>
+          <div className="text-center py-12 text-slate-400 text-sm">Loading products...</div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {products.map((product) => (

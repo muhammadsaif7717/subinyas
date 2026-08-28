@@ -115,12 +115,12 @@ export default function ProductsPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-              className="bg-white px-3 py-2.5 rounded-xl border border-slate-200 text-slate-800 font-medium focus:outline-none focus:border-slate-900 cursor-pointer"
+              className="bg-white px-3 py-2.5 rounded-xl border border-slate-200 text-slate-800 font-medium focus:outline-none focus:border-slate-900 cursor-pointer text-xs sm:text-sm"
             >
-              <option value="featured">Featured (জনপ্রিয়)</option>
-              <option value="price-asc">Price: Low to High (কম থেকে বেশি)</option>
-              <option value="price-desc">Price: High to Low (বেশি থেকে কম)</option>
-              <option value="rating">Top Rated (সর্বোচ্চ রেটিং)</option>
+              <option value="featured">Featured</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+              <option value="rating">Top Rated</option>
             </select>
           </div>
         </div>

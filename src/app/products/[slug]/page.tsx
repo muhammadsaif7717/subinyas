@@ -155,8 +155,8 @@ export default function ProductDetailPage() {
         <div className="fixed top-20 right-4 sm:right-8 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-slate-700 animate-in slide-in-from-top duration-200">
           <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
           <div>
-            <p className="text-xs font-bold">কার্টে যোগ করা হয়েছে!</p>
-            <p className="text-[10px] text-slate-400">চেকআউট করতে ভিউ কার্ট বাটনে ক্লিক করুন</p>
+            <p className="text-xs font-bold">Added to Cart!</p>
+            <p className="text-[10px] text-slate-400">Click checkout to place your order</p>
           </div>
           <Link
             href="/checkout"
@@ -285,7 +285,7 @@ export default function ProductDetailPage() {
             <div className="flex items-center gap-2 p-3 bg-orange-50/60 rounded-xl border border-orange-200/60 text-xs text-slate-700">
               <Eye className="w-4 h-4 text-orange-600 shrink-0 animate-pulse" />
               <span>
-                <strong>১২+ জন গ্রাহক</strong> বর্তমানে এই পণ্যটি দেখছেন!
+                <strong>12+ people</strong> are viewing this product right now!
               </span>
             </div>
 
@@ -293,7 +293,7 @@ export default function ProductDetailPage() {
             {product.variants && product.variants.length > 0 && (
               <div className="space-y-2.5">
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  কালার / ভ্যারিয়েন্ট নির্বাচন করুন:{' '}
+                  Select Color / Variant:{' '}
                   <span className="text-slate-900 font-bold ml-1">
                     {selectedVariant?.nameBn || selectedVariant?.name}
                   </span>
@@ -325,7 +325,7 @@ export default function ProductDetailPage() {
             {product.combos && product.combos.length > 1 && (
               <div className="space-y-2.5">
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  অফার প্যাকেজ নির্বাচন করুন:
+                  Select Combo Package:
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {product.combos.map((combo) => (
@@ -343,7 +343,7 @@ export default function ProductDetailPage() {
                         <span className="text-xs font-bold text-slate-900">{combo.titleBn}</span>
                         {combo.isPopular && (
                           <span className="bg-rose-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
-                            জনপ্রিয়
+                            Popular
                           </span>
                         )}
                       </div>
@@ -399,7 +399,7 @@ export default function ProductDetailPage() {
                   onClick={handleBuyNow}
                   className="flex-1 h-12 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-extrabold text-xs sm:text-sm px-4 rounded-xl transition-all shadow-md shadow-orange-600/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
                 >
-                  <span>Buy Now (এখনই কিনুন)</span>
+                  <span>Buy Now</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
@@ -427,7 +427,7 @@ export default function ProductDetailPage() {
                 </button>
 
                 <span className="text-xs text-slate-400">
-                  ক্যাটাগরি: <strong className="text-slate-700">{product.category}</strong>
+                  Category: <strong className="text-slate-700">{product.category}</strong>
                 </span>
               </div>
             </div>
