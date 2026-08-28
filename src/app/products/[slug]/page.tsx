@@ -61,7 +61,7 @@ export default function ProductDetailPage() {
     },
   });
 
-  const product = dynamicProduct || (slug === 'jewelry-box' ? INITIAL_JEWELRY_BOX_PRODUCT : dynamicProduct);
+  const product = dynamicProduct;
 
   // Selected State
   const [selectedImage, setSelectedImage] = useState<string>('');
@@ -100,10 +100,13 @@ export default function ProductDetailPage() {
     );
   }
 
-  const currentPrice = selectedCombo?.price || product.basePrice;
-  const currentOriginalPrice = selectedCombo?.originalPrice || product.originalPrice;
+  const currentPrice =
+    selectedCombo && selectedCombo.quantity > 1 ? selectedCombo.price : product.basePrice;
+  const currentOriginalPrice =
+    selectedCombo && selectedCombo.quantity > 1 ? selectedCombo.originalPrice : product.originalPrice;
   const savings = Math.max(0, currentOriginalPrice - currentPrice);
-  const discountPercent = Math.round(((currentOriginalPrice - currentPrice) / currentOriginalPrice) * 100);
+  const discountPercent =
+    currentOriginalPrice > 0 ? Math.round(((currentOriginalPrice - currentPrice) / currentOriginalPrice) * 100) : 0;
   const inWish = isInWishlist(product.slug);
 
   const handleVariantSelect = (variant: ProductVariant) => {

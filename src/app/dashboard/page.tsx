@@ -626,6 +626,20 @@ function DashboardContent() {
     }
 
     const cleanSlug = prodSlug.toLowerCase().trim().replace(/[^a-z0-9-_]/g, '-');
+    const parsedBasePrice = Number(prodBasePrice) || 499;
+    const parsedOrigPrice = Number(prodOriginalPrice) || 800;
+
+    const syncedCombos = prodCombos.map((c) => {
+      if (c.quantity === 1 || c.id === 'combo-single') {
+        return {
+          ...c,
+          price: parsedBasePrice,
+          originalPrice: parsedOrigPrice,
+          savingsBn: `Save ৳${Math.max(0, parsedOrigPrice - parsedBasePrice)}`,
+        };
+      }
+      return c;
+    });
 
     const fullProduct: Product = {
       id: editingProductSlug ? `prod-${editingProductSlug}` : `prod-${Date.now()}`,
@@ -637,11 +651,11 @@ function DashboardContent() {
       descriptionBn: prodDescriptionBn.trim() || prodNameBn.trim(),
       rating: prodRating || 5.0,
       reviewCount: prodReviewCount || 0,
-      basePrice: Number(prodBasePrice) || 499,
-      originalPrice: Number(prodOriginalPrice) || 800,
+      basePrice: parsedBasePrice,
+      originalPrice: parsedOrigPrice,
       images: prodImages.length > 0 ? prodImages : ['/images/products/hello-kitty-pair.png'],
       variants: prodVariants,
-      combos: prodCombos,
+      combos: syncedCombos,
       featuresBn: prodFeaturesBn,
       specificationsBn: prodSpecificationsBn,
       isFeatured: prodIsFeatured,
