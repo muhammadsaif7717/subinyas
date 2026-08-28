@@ -622,14 +622,15 @@ function DashboardContent() {
     e.preventDefault();
     setProductFormError('');
 
-    if (!prodName.trim() || !prodNameBn.trim() || !prodSlug.trim()) {
-      setProductFormError('Product Name (English), Name (Bangla), and Slug are required.');
+    if (!prodName.trim() || !prodSlug.trim()) {
+      setProductFormError('Product Title and Slug are required.');
       return;
     }
 
     const cleanSlug = prodSlug.toLowerCase().trim().replace(/[^a-z0-9-_]/g, '-');
     const parsedBasePrice = Number(prodBasePrice) || 499;
     const parsedOrigPrice = Number(prodOriginalPrice) || 800;
+    const finalName = prodName.trim();
 
     const syncedCombos = prodCombos.map((c) => {
       if (c.quantity === 1 || c.id === 'combo-single') {
@@ -646,11 +647,11 @@ function DashboardContent() {
     const fullProduct: Product = {
       id: editingProductSlug ? `prod-${editingProductSlug}` : `prod-${Date.now()}`,
       slug: cleanSlug,
-      name: prodName.trim(),
-      nameBn: prodNameBn.trim(),
+      name: finalName,
+      nameBn: prodNameBn.trim() || finalName,
       category: prodCategory.trim(),
-      taglineBn: prodTaglineBn.trim() || prodNameBn.trim(),
-      descriptionBn: prodDescriptionBn.trim() || prodNameBn.trim(),
+      taglineBn: prodTaglineBn.trim() || finalName,
+      descriptionBn: prodDescriptionBn.trim() || finalName,
       rating: prodRating || 5.0,
       reviewCount: prodReviewCount || 0,
       basePrice: parsedBasePrice,
@@ -1687,43 +1688,32 @@ function DashboardContent() {
             )}
 
             <form onSubmit={handleSaveProductForm} className="space-y-5 text-xs sm:text-sm">
-              {/* Names */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-300 font-medium mb-1">Product Title (English) *</label>
-                  <input
-                    type="text"
-                    required
-                    value={prodName}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setProdName(val);
-                      if (!editingProductSlug) {
-                        const autoSlug = val
-                          .toLowerCase()
-                          .trim()
-                          .replace(/[^\w\s-]/g, '')
-                          .replace(/[\s_-]+/g, '-')
-                          .replace(/^-+|-+$/g, '');
-                        setProdSlug(autoSlug);
-                      }
-                    }}
-                    placeholder="e.g. Velvet Cosmetic Travel Organizer Pouch"
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 font-medium mb-1">Product Title (Bangla) *</label>
-                  <input
-                    type="text"
-                    required
-                    value={prodNameBn}
-                    onChange={(e) => setProdNameBn(e.target.value)}
-                    placeholder="যেমন: প্রিমিয়াম ভেলভেট ট্রাভেল মেকআপ ব্যাগ"
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500"
-                  />
-                </div>
+              {/* Product Name */}
+              <div>
+                <label className="block text-slate-300 font-medium mb-1">
+                  Product Title / Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={prodName}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setProdName(val);
+                    setProdNameBn(val);
+                    if (!editingProductSlug) {
+                      const autoSlug = val
+                        .toLowerCase()
+                        .trim()
+                        .replace(/[^\w\s-]/g, '')
+                        .replace(/[\s_-]+/g, '-')
+                        .replace(/^-+|-+$/g, '');
+                      setProdSlug(autoSlug);
+                    }
+                  }}
+                  placeholder="e.g. G63 Smart Light Digital Clock with Wireless Charger"
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                />
               </div>
 
               {/* Slug, Category, Pricing */}
@@ -1864,23 +1854,23 @@ function DashboardContent() {
 
               {/* Tagline & Description */}
               <div>
-                <label className="block text-slate-300 font-medium mb-1">Tagline (Bangla)</label>
+                <label className="block text-slate-300 font-medium mb-1">Short Tagline / Subtitle</label>
                 <input
                   type="text"
                   value={prodTaglineBn}
                   onChange={(e) => setProdTaglineBn(e.target.value)}
-                  placeholder="যেমন: আপনার প্রসাধনী ও জুয়েলারি সুরক্ষিত ও পরিপাটি রাখার জন্য"
+                  placeholder="e.g. Modern multifunctional smart alarm clock with RGB ambient lighting"
                   className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-medium mb-1">Detailed Description (Bangla)</label>
+                <label className="block text-slate-300 font-medium mb-1">Detailed Description</label>
                 <textarea
-                  rows={2}
+                  rows={3}
                   value={prodDescriptionBn}
                   onChange={(e) => setProdDescriptionBn(e.target.value)}
-                  placeholder="প্রোডাক্টের বিবরণ লিখুন..."
+                  placeholder="Write full product description, key features, and package benefits..."
                   className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500 resize-none"
                 />
               </div>
@@ -1901,7 +1891,7 @@ function DashboardContent() {
                         {
                           id: newId,
                           name: 'New Color',
-                          nameBn: 'নতুন কালার',
+                          nameBn: 'New Color',
                           color: 'Custom',
                           colorHex: '#3B82F6',
                           image: prodImages[0] || '/images/products/hello-kitty-pair.png',
@@ -1924,46 +1914,47 @@ function DashboardContent() {
                       className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 p-3 rounded-xl bg-slate-900 border border-slate-800 items-center"
                     >
                       <div className="sm:col-span-5">
-                        <label className="text-[10px] text-slate-400 block mb-0.5">Color Name (Bangla / English)</label>
+                        <label className="text-[10px] text-slate-400 block mb-0.5">Color / Variant Name</label>
                         <input
                           type="text"
                           required
-                          value={v.nameBn}
+                          value={v.name}
                           onChange={(e) => {
                             const val = e.target.value;
                             const detectedHex = (name: string) => {
                               const lower = name.toLowerCase();
-                              if (lower.includes('কালো') || lower.includes('black')) return '#1E293B';
-                              if (lower.includes('সাদা') || lower.includes('white')) return '#F8FAFC';
-                              if (lower.includes('পিঙ্ক') || lower.includes('pink') || lower.includes('গোলাপি')) return '#F472B6';
-                              if (lower.includes('লাল') || lower.includes('red')) return '#EF4444';
-                              if (lower.includes('নীল') || lower.includes('blue')) return '#3B82F6';
-                              if (lower.includes('সবুজ') || lower.includes('green')) return '#10B981';
-                              if (lower.includes('হলুদ') || lower.includes('yellow')) return '#EAB308';
-                              if (lower.includes('বেগুনি') || lower.includes('purple')) return '#8B5CF6';
-                              if (lower.includes('গোল্ড') || lower.includes('gold')) return '#D97706';
-                              if (lower.includes('রোজ গোল্ড') || lower.includes('rose gold')) return '#B76E79';
-                              if (lower.includes('বাদামি') || lower.includes('brown')) return '#78350F';
-                              if (lower.includes('ধূসর') || lower.includes('gray') || lower.includes('grey')) return '#64748B';
+                              if (lower.includes('black')) return '#1E293B';
+                              if (lower.includes('white')) return '#F8FAFC';
+                              if (lower.includes('silver')) return '#E2E8F0';
+                              if (lower.includes('pink')) return '#F472B6';
+                              if (lower.includes('red')) return '#EF4444';
+                              if (lower.includes('blue')) return '#3B82F6';
+                              if (lower.includes('green')) return '#10B981';
+                              if (lower.includes('yellow')) return '#EAB308';
+                              if (lower.includes('purple')) return '#8B5CF6';
+                              if (lower.includes('gold')) return '#D97706';
+                              if (lower.includes('rose gold')) return '#B76E79';
+                              if (lower.includes('brown')) return '#78350F';
+                              if (lower.includes('gray') || lower.includes('grey')) return '#64748B';
                               return v.colorHex;
                             };
                             setProdVariants((prev) =>
                               prev.map((item, i) =>
-                                i === idx ? { ...item, nameBn: val, name: val, colorHex: detectedHex(val) } : item
+                                i === idx ? { ...item, name: val, nameBn: val, colorHex: detectedHex(val) } : item
                               )
                             );
                           }}
-                          placeholder="e.g. Black (কালো), White (সাদা), Pink..."
+                          placeholder="e.g. Matte Black, Pearl Silver, Rose Gold..."
                           className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
                         />
                       </div>
 
                       <div className="sm:col-span-3">
-                        <label className="text-[10px] text-slate-400 block mb-0.5">Hex Color</label>
+                        <label className="text-[10px] text-slate-400 block mb-0.5">Color Hex</label>
                         <div className="flex items-center gap-1.5">
                           <input
                             type="color"
-                            value={v.colorHex || '#F472B6'}
+                            value={v.colorHex || '#1E293B'}
                             onChange={(e) => {
                               const hex = e.target.value;
                               setProdVariants((prev) =>
@@ -2041,7 +2032,7 @@ function DashboardContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-bold text-white text-xs">Combo Packages & Quantity Deals</h3>
-                    <p className="text-[11px] text-slate-400">Setup 1-Pack, 2-Pack bestie deals with discounted pricing</p>
+                    <p className="text-[11px] text-slate-400">Setup 1-Pack, 2-Pack quantity deals with discounted pricing</p>
                   </div>
                   <button
                     type="button"
@@ -2051,9 +2042,9 @@ function DashboardContent() {
                         ...prev,
                         {
                           id: `combo-${count}`,
-                          title: `${count} Pieces Combo`,
-                          titleBn: `${count}টি বক্স স্পেশাল প্যাক`,
-                          subtitleBn: `${count}টি বক্স • মেগা সেভার অফার`,
+                          title: `${count} Pieces Pack`,
+                          titleBn: `${count} Pieces Pack`,
+                          subtitleBn: `${count} Pieces • Mega Saver Deal`,
                           quantity: count,
                           price: prodBasePrice * count - 100,
                           originalPrice: prodOriginalPrice * count,
@@ -2076,14 +2067,14 @@ function DashboardContent() {
                       className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800 items-center text-xs"
                     >
                       <div className="sm:col-span-4">
-                        <label className="text-[10px] text-slate-400 block">Combo Title (Bangla)</label>
+                        <label className="text-[10px] text-slate-400 block">Combo Title</label>
                         <input
                           type="text"
-                          value={c.titleBn}
+                          value={c.title}
                           onChange={(e) => {
                             const val = e.target.value;
                             setProdCombos((prev) =>
-                              prev.map((item, i) => (i === idx ? { ...item, titleBn: val } : item))
+                              prev.map((item, i) => (i === idx ? { ...item, title: val, titleBn: val } : item))
                             );
                           }}
                           className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
@@ -2156,7 +2147,7 @@ function DashboardContent() {
               <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-bold text-white text-xs">Key Highlights (featuresBn)</h3>
+                    <h3 className="font-bold text-white text-xs">Key Highlights & Features</h3>
                     <p className="text-[11px] text-slate-400">Add highlight bullet cards for the product page</p>
                   </div>
                   <button
@@ -2164,7 +2155,7 @@ function DashboardContent() {
                     onClick={() => {
                       setProdFeaturesBn((prev) => [
                         ...prev,
-                        { icon: 'Sparkles', title: 'নতুন বৈশিষ্ট্য', description: 'বিস্তারিত বিবরণ' },
+                        { icon: 'Sparkles', title: 'Feature Title', description: 'Feature description' },
                       ]);
                     }}
                     className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-slate-700"
@@ -2181,7 +2172,7 @@ function DashboardContent() {
                       className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800 items-center text-xs"
                     >
                       <div className="sm:col-span-4">
-                        <label className="text-[10px] text-slate-400 block">Title (Bangla)</label>
+                        <label className="text-[10px] text-slate-400 block">Title</label>
                         <input
                           type="text"
                           value={feat.title}
@@ -2191,12 +2182,13 @@ function DashboardContent() {
                               prev.map((item, i) => (i === idx ? { ...item, title: val } : item))
                             );
                           }}
+                          placeholder="e.g. Long Battery Life"
                           className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
                         />
                       </div>
 
                       <div className="sm:col-span-7">
-                        <label className="text-[10px] text-slate-400 block">Description (Bangla)</label>
+                        <label className="text-[10px] text-slate-400 block">Description</label>
                         <input
                           type="text"
                           value={feat.description}
@@ -2206,6 +2198,7 @@ function DashboardContent() {
                               prev.map((item, i) => (i === idx ? { ...item, description: val } : item))
                             );
                           }}
+                          placeholder="e.g. Up to 10 hours continuous operation"
                           className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
                         />
                       </div>
@@ -2228,13 +2221,13 @@ function DashboardContent() {
               <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-bold text-white text-xs">Technical Specifications (specificationsBn)</h3>
-                    <p className="text-[11px] text-slate-400">Material, size, weight and specifications</p>
+                    <h3 className="font-bold text-white text-xs">Technical Specifications</h3>
+                    <p className="text-[11px] text-slate-400">Material, size, warranty and specifications</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => {
-                      setProdSpecificationsBn((prev) => [...prev, { key: 'উপাদান', value: 'মান' }]);
+                      setProdSpecificationsBn((prev) => [...prev, { key: 'Specification', value: 'Detail' }]);
                     }}
                     className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-slate-700"
                   >
@@ -2250,7 +2243,7 @@ function DashboardContent() {
                       className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800 items-center text-xs"
                     >
                       <div className="sm:col-span-5">
-                        <label className="text-[10px] text-slate-400 block">Key (e.g. উপাদান)</label>
+                        <label className="text-[10px] text-slate-400 block">Key (e.g. Material / Battery)</label>
                         <input
                           type="text"
                           value={spec.key}
@@ -2265,7 +2258,7 @@ function DashboardContent() {
                       </div>
 
                       <div className="sm:col-span-6">
-                        <label className="text-[10px] text-slate-400 block">Value (e.g. লেদার)</label>
+                        <label className="text-[10px] text-slate-400 block">Value (e.g. Premium Aluminium)</label>
                         <input
                           type="text"
                           value={spec.value}

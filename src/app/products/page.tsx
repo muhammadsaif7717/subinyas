@@ -237,7 +237,7 @@ export default function ProductsPage() {
 
                     <Link href={`/products/${p.slug}`} className="block">
                       <h3 className="font-semibold text-slate-900 text-base group-hover:text-rose-600 transition-colors">
-                        {p.nameBn}
+                        {p.name || p.nameBn}
                       </h3>
                     </Link>
                     <p className="text-xs text-slate-500 line-clamp-2">{p.taglineBn}</p>

@@ -62,7 +62,7 @@ export function CartDrawer() {
                   <div className="flex-1 flex flex-col justify-between min-w-0">
                     <div>
                       <div className="flex items-start justify-between gap-2">
-                        <h4 className="text-xs font-bold text-slate-900 truncate">{item.productNameBn}</h4>
+                        <h4 className="text-xs font-bold text-slate-900 truncate">{item.productName || item.productNameBn}</h4>
                         <button
                           onClick={() => removeFromCart(item.id)}
                           className="text-slate-400 hover:text-rose-500 p-0.5"
@@ -112,7 +112,7 @@ export function CartDrawer() {
                 <span className="text-slate-900 font-extrabold text-base">৳{cartSubtotal}</span>
               </div>
               <p className="text-[10px] text-slate-400">
-                ডেলিভারি চার্জ চেকআউটে এরিয়া অনুযায়ী নির্ধারিত হবে (ঢাকা ৳৭০ / বাইরে ৳১৩০)।
+                Delivery charge will be calculated at checkout based on area (Inside Dhaka ৳70 / Outside ৳130).
               </p>
 
               <Link

@@ -260,11 +260,13 @@ export default function ProductDetailPage() {
               </div>
 
               <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-3">
-                {product.nameBn}
+                {product.name || product.nameBn}
               </h1>
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mt-0.5">
-                {product.name}
-              </p>
+              {product.taglineBn && product.taglineBn !== product.name && (
+                <p className="text-xs sm:text-sm font-medium text-slate-500 mt-1">
+                  {product.taglineBn}
+                </p>
+              )}
             </div>
 
             {/* Price & Savings */}
@@ -505,7 +507,7 @@ export default function ProductDetailPage() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-xs text-slate-400">কোনো ফিচার সংরক্ষিত নেই।</p>
+                  <p className="text-xs text-slate-400">No key features listed.</p>
                 )}
               </div>
             )}
@@ -527,7 +529,7 @@ export default function ProductDetailPage() {
                     </tbody>
                   </table>
                 ) : (
-                  <div className="p-4 text-slate-400">কোনো স্পেসিফিকেশন সংরক্ষিত নেই।</div>
+                  <div className="p-4 text-slate-400">No specifications listed.</div>
                 )}
               </div>
             )}

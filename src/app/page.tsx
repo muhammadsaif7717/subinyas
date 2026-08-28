@@ -121,11 +121,8 @@ export default function HomePage() {
 
                 <div className="space-y-2">
                   <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-slate-900 leading-tight">
-                    {activeProduct.nameBn}
+                    {activeProduct.name || activeProduct.nameBn}
                   </h1>
-                  <p className="text-xs font-medium text-slate-400 uppercase tracking-widest">
-                    {activeProduct.name}
-                  </p>
                 </div>
 
                 <p className="text-sm sm:text-base text-slate-600 max-w-lg leading-relaxed">
@@ -167,7 +164,7 @@ export default function HomePage() {
                   <Image
                     key={activeProduct.slug}
                     src={activeProduct.images[0] || '/images/products/hello-kitty-pair.png'}
-                    alt={activeProduct.nameBn}
+                    alt={activeProduct.name}
                     fill
                     priority
                     className="object-cover transition-opacity duration-500 animate-in fade-in"
@@ -245,7 +242,7 @@ export default function HomePage() {
                   <Link href={`/products/${product.slug}`}>
                     <Image
                       src={product.images[0] || '/images/products/hello-kitty-open.png'}
-                      alt={product.nameBn}
+                      alt={product.name}
                       fill
                       className="object-cover group-hover:scale-103 transition-transform duration-300"
                     />
@@ -291,7 +288,7 @@ export default function HomePage() {
                     </div>
                     <Link href={`/products/${product.slug}`}>
                       <h3 className="font-semibold text-slate-900 text-base group-hover:text-rose-600 transition-colors">
-                        {product.nameBn}
+                        {product.name || product.nameBn}
                       </h3>
                     </Link>
                     <p className="text-xs text-slate-500 line-clamp-2">{product.taglineBn}</p>
@@ -315,9 +312,9 @@ export default function HomePage() {
                           productName: product.name,
                           productNameBn: product.nameBn,
                           image: product.images[0],
-                          comboId: product.combos[0]?.id || 'combo-single',
-                          comboTitleBn: product.combos[0]?.titleBn || '১টি বক্স',
-                          selectedVariants: [product.variants[0]?.nameBn || 'Default'],
+                          comboId: product.combos?.[0]?.id || 'combo-single',
+                          comboTitleBn: product.combos?.[0]?.title || '1 Piece Single Pack',
+                          selectedVariants: [product.variants?.[0]?.name || 'Default'],
                           price: product.basePrice,
                           quantity: 1,
                         });
@@ -348,24 +345,24 @@ export default function HomePage() {
           <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-100">
             <Truck className="w-5 h-5 text-slate-800 shrink-0" />
             <div>
-              <div className="font-bold text-slate-900">সারাদেশে হোম ডেলিভারি</div>
-              <div>ক্যাশ অন ডেলিভারি সুবিধা (No Login Required)</div>
+              <div className="font-bold text-slate-900">Fast Nationwide Delivery</div>
+              <div>Cash on Delivery across Bangladesh</div>
             </div>
           </div>
 
           <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-100">
             <ShieldCheck className="w-5 h-5 text-slate-800 shrink-0" />
             <div>
-              <div className="font-bold text-slate-900">১০০% কোয়ালিটি গ্যারান্টি</div>
-              <div>৭ দিনের সহজ রিপ্লেসমেন্ট সুবিধা</div>
+              <div className="font-bold text-slate-900">100% Quality Guaranteed</div>
+              <div>7-Day Easy Replacement Warranty</div>
             </div>
           </div>
 
           <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-100">
             <Heart className="w-5 h-5 text-slate-800 shrink-0" />
             <div>
-              <div className="font-bold text-slate-900">উপহারের জন্য সেরা চয়েস</div>
-              <div>প্রিমিয়াম ও নান্দনিক ফিনিশিং</div>
+              <div className="font-bold text-slate-900">Premium Lifestyle Products</div>
+              <div>Carefully Curated & Authentic Collection</div>
             </div>
           </div>
         </div>
