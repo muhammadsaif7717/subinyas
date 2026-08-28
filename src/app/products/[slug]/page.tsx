@@ -323,32 +323,24 @@ export default function ProductDetailPage() {
                             handleVariantSelect(v);
                           }
                         }}
-                        className={`relative flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold border transition-all ${
+                        className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-medium border transition-all ${
                           isOutOfStock
-                            ? 'border-slate-200 bg-slate-100/80 text-slate-400 opacity-60 cursor-not-allowed'
+                            ? 'border-slate-200 bg-slate-50 text-slate-400 opacity-50 cursor-not-allowed'
                             : isSelected
-                            ? 'border-orange-500 bg-orange-50 text-orange-950 ring-2 ring-orange-500 shadow-xs cursor-pointer'
-                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-400 cursor-pointer'
+                            ? 'border-orange-500 bg-orange-50/70 text-slate-900 font-semibold ring-1.5 ring-orange-500 shadow-xs cursor-pointer'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:text-slate-900 cursor-pointer'
                         }`}
                       >
                         <span
-                          className="w-4 h-4 rounded-full border border-slate-300 shadow-2xs relative shrink-0 overflow-hidden"
+                          className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-2xs shrink-0"
                           style={{ backgroundColor: v.colorHex || '#ddd' }}
-                        >
-                          {isOutOfStock && (
-                            <span className="absolute inset-0 bg-slate-900/30 flex items-center justify-center">
-                              <span className="w-full h-0.5 bg-rose-600 rotate-45 transform block" />
-                            </span>
-                          )}
-                        </span>
+                        />
 
-                        <span className={isOutOfStock ? 'line-through text-slate-400' : ''}>
-                          {v.name || v.nameBn}
-                        </span>
+                        <span>{v.name || v.nameBn}</span>
 
                         {isOutOfStock && (
-                          <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 bg-rose-100 text-rose-700 rounded">
-                            Sold Out
+                          <span className="text-[10px] text-slate-400 font-normal">
+                            (Sold out)
                           </span>
                         )}
                       </button>
