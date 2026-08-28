@@ -191,26 +191,72 @@ export async function createOrder(orderData: Omit<Order, 'orderId' | 'status' | 
   return newOrder;
 }
 
-export async function updateOrderStatus(orderId: string, status: OrderStatus, notes?: string): Promise<boolean> {
+export async function updateOrderStatus(orderId: string, newStatus: OrderStatus, notes?: string): Promise<boolean> {
   const db = await getDb();
   if (db) {
+    const existingOrder = (await db.collection('orders').findOne({ orderId })) as unknown as Order | null;
+    const prevStatus = existingOrder?.status;
+
     const updateDoc: Record<string, unknown> = {
-      status,
+      status: newStatus,
       updatedAt: new Date().toISOString(),
     };
     if (notes !== undefined) {
       updateDoc.notes = notes;
     }
-    await db.collection('orders').updateOne(
-      { orderId },
-      { $set: updateDoc }
-    );
+    await db.collection('orders').updateOne({ orderId }, { $set: updateDoc });
+
+    // Inventory Adjustment Logic
+    if (existingOrder && prevStatus !== newStatus) {
+      const productSlug = existingOrder.productSlug;
+      const variants = existingOrder.selectedVariants || [];
+
+      // If moved to Shipped/Delivered from Pending (deduct stock if not already deducted)
+      const isNowFulfilled = ['Confirmed', 'Shipped', 'Delivered'].includes(newStatus);
+      const wasFulfilled = ['Confirmed', 'Shipped', 'Delivered'].includes(prevStatus || '');
+
+      const isNowCancelled = ['Cancelled', 'Returned'].includes(newStatus);
+      const wasCancelled = ['Cancelled', 'Returned'].includes(prevStatus || '');
+
+      if (isNowCancelled && wasFulfilled) {
+        // Return item to stock (+1 per variant)
+        for (const varName of variants) {
+          await db.collection('products').updateOne(
+            { slug: productSlug, 'variants.nameBn': varName },
+            {
+              $inc: { 'variants.$.stockCount': 1 },
+              $set: { 'variants.$.inStock': true, updatedAt: new Date().toISOString() },
+            }
+          );
+        }
+      } else if (isNowFulfilled && (wasCancelled || prevStatus === 'Pending')) {
+        // Deduct from stock (-1 per variant)
+        for (const varName of variants) {
+          const prod = (await db.collection('products').findOne({ slug: productSlug })) as unknown as Product | null;
+          const targetVariant = prod?.variants?.find((v) => v.nameBn === varName);
+          const currentCount = targetVariant?.stockCount || 10;
+          const newCount = Math.max(0, currentCount - 1);
+
+          await db.collection('products').updateOne(
+            { slug: productSlug, 'variants.nameBn': varName },
+            {
+              $set: {
+                'variants.$.stockCount': newCount,
+                'variants.$.inStock': newCount > 0,
+                updatedAt: new Date().toISOString(),
+              },
+            }
+          );
+        }
+      }
+    }
+
     return true;
   }
 
   const order = memoryOrders.find((o) => o.orderId === orderId);
   if (order) {
-    order.status = status;
+    order.status = newStatus;
     if (notes !== undefined) order.notes = notes;
     order.updatedAt = new Date().toISOString();
     return true;

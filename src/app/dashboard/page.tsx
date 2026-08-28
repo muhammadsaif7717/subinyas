@@ -28,8 +28,12 @@ import {
   Camera,
   Loader2,
   ExternalLink,
+  Edit,
+  Sparkles,
 } from 'lucide-react';
-import { Order, OrderStatus, StoreSettings, Product, Review } from '@/lib/types';
+import { Order, OrderStatus, StoreSettings, Product, Review, ProductVariant, ComboOption } from '@/lib/types';
+
+const CATEGORY_OPTIONS = ['Organizers', 'Jewelry Box', 'Pouches', 'Travel', 'Accessories', 'Bags', 'Gifts'];
 
 export default function AdminDashboardPage() {
   const queryClient = useQueryClient();
@@ -38,70 +42,26 @@ export default function AdminDashboardPage() {
   const [reviewStatusFilter, setReviewStatusFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Add Product Modal State
-  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  // Add / Edit Product Modal State
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [editingProductSlug, setEditingProductSlug] = useState<string | null>(null);
   const [productFormError, setProductFormError] = useState('');
   const [productFormSuccess, setProductFormSuccess] = useState('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  // New Product State
-  const [newProdName, setNewProdName] = useState('');
-  const [newProdNameBn, setNewProdNameBn] = useState('');
-  const [newProdSlug, setNewProdSlug] = useState('');
-  const [newProdCategory, setNewProdCategory] = useState('Organizers');
-  const [newProdTaglineBn, setNewProdTaglineBn] = useState('');
-  const [newProdDescriptionBn, setNewProdDescriptionBn] = useState('');
-  const [newProdBasePrice, setNewProdBasePrice] = useState<number>(499);
-  const [newProdOriginalPrice, setNewProdOriginalPrice] = useState<number>(800);
-  const [newProdImages, setNewProdImages] = useState<string[]>([
-    '/images/products/hello-kitty-pair.png',
-  ]);
-  const [newProdVariants, setNewProdVariants] = useState([
-    {
-      id: 'var-1',
-      name: 'Pink',
-      nameBn: 'পিঙ্ক (Pink)',
-      color: 'Pink',
-      colorHex: '#F472B6',
-      image: '/images/products/hello-kitty-pair.png',
-      inStock: true,
-      stockCount: 50,
-    },
-    {
-      id: 'var-2',
-      name: 'Pearl White',
-      nameBn: 'পার্ল হোয়াইট (Pearl White)',
-      color: 'White',
-      colorHex: '#F8FAFC',
-      image: '/images/products/hello-kitty-open.png',
-      inStock: true,
-      stockCount: 30,
-    },
-  ]);
-  const [newProdCombos, setNewProdCombos] = useState([
-    {
-      id: 'combo-single',
-      title: '1 Piece Single Pack',
-      titleBn: '১টি বক্স (সিঙ্গেল প্যাক)',
-      subtitleBn: '১টি বক্স • রেগুলার অফার',
-      quantity: 1,
-      price: 499,
-      originalPrice: 800,
-      savingsBn: 'Save ৳301',
-    },
-    {
-      id: 'combo-duo',
-      title: '2 Pieces Duo Pack',
-      titleBn: '২টি বক্স বেস্টি কম্বো (Best Deal)',
-      subtitleBn: '২টি বক্স • বেস্ট ভ্যালু অফার',
-      quantity: 2,
-      price: 899,
-      originalPrice: 1600,
-      badge: 'Best Deal 🔥',
-      isPopular: true,
-      savingsBn: 'Save ৳701',
-    },
-  ]);
+  // Form Fields
+  const [prodName, setProdName] = useState('');
+  const [prodNameBn, setProdNameBn] = useState('');
+  const [prodSlug, setProdSlug] = useState('');
+  const [prodCategory, setProdCategory] = useState('Organizers');
+  const [prodTaglineBn, setProdTaglineBn] = useState('');
+  const [prodDescriptionBn, setProdDescriptionBn] = useState('');
+  const [prodBasePrice, setProdBasePrice] = useState<number>(499);
+  const [prodOriginalPrice, setProdOriginalPrice] = useState<number>(800);
+  const [prodIsFeatured, setProdIsFeatured] = useState<boolean>(true);
+  const [prodImages, setProdImages] = useState<string[]>([]);
+  const [prodVariants, setProdVariants] = useState<ProductVariant[]>([]);
+  const [prodCombos, setProdCombos] = useState<ComboOption[]>([]);
 
   // Fetch orders
   const {
@@ -172,6 +132,7 @@ export default function AdminDashboardPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
     },
   });
 
@@ -197,7 +158,7 @@ export default function AdminDashboardPage() {
     },
   });
 
-  // Stock update mutation
+  // Stock toggle update mutation
   const updateStockMutation = useMutation({
     mutationFn: async ({
       slug,
@@ -230,7 +191,7 @@ export default function AdminDashboardPage() {
     },
   });
 
-  // Save/Create Product Mutation
+  // Save/Update Product Mutation
   const saveProductMutation = useMutation({
     mutationFn: async (productData: Product) => {
       const res = await axios.post('/api/products', { product: productData });
@@ -242,8 +203,8 @@ export default function AdminDashboardPage() {
       setProductFormSuccess('প্রোডাক্ট সফলভাবে ডাটাবেসে সেভ হয়েছে!');
       setTimeout(() => {
         setProductFormSuccess('');
-        setIsAddProductOpen(false);
-      }, 1500);
+        setIsProductModalOpen(false);
+      }, 1200);
     },
     onError: (err: unknown) => {
       const msg =
@@ -268,7 +229,121 @@ export default function AdminDashboardPage() {
     },
   });
 
-  // Handle Product Image Upload to Cloudinary
+  // Open modal for NEW product
+  const handleOpenAddProduct = () => {
+    setEditingProductSlug(null);
+    setProductFormError('');
+    setProductFormSuccess('');
+    setProdName('');
+    setProdNameBn('');
+    setProdSlug('');
+    setProdCategory('Organizers');
+    setProdTaglineBn('');
+    setProdDescriptionBn('');
+    setProdBasePrice(499);
+    setProdOriginalPrice(800);
+    setProdIsFeatured(true);
+    setProdImages(['/images/products/hello-kitty-pair.png']);
+    setProdVariants([
+      {
+        id: 'var-1',
+        name: 'Pink',
+        nameBn: 'বেবি পিঙ্ক (Baby Pink)',
+        color: 'Pink',
+        colorHex: '#F472B6',
+        image: '/images/products/hello-kitty-pair.png',
+        inStock: true,
+        stockCount: 50,
+      },
+      {
+        id: 'var-2',
+        name: 'Pearl White',
+        nameBn: 'পার্ল হোয়াইট (Pearl White)',
+        color: 'White',
+        colorHex: '#F8FAFC',
+        image: '/images/products/hello-kitty-open.png',
+        inStock: true,
+        stockCount: 30,
+      },
+    ]);
+    setProdCombos([
+      {
+        id: 'combo-single',
+        title: '1 Piece Single Pack',
+        titleBn: '১টি বক্স (সিঙ্গেল প্যাক)',
+        subtitleBn: '১টি বক্স • রেগুলার অফার',
+        quantity: 1,
+        price: 499,
+        originalPrice: 800,
+        savingsBn: 'Save ৳301',
+      },
+      {
+        id: 'combo-duo',
+        title: '2 Pieces Duo Pack',
+        titleBn: '২টি বক্স বেস্টি কম্বো (Best Deal)',
+        subtitleBn: '২টি বক্স • বেস্ট ভ্যালু অফার',
+        quantity: 2,
+        price: 899,
+        originalPrice: 1600,
+        badge: 'Best Deal 🔥',
+        isPopular: true,
+        savingsBn: 'Save ৳701',
+      },
+    ]);
+    setIsProductModalOpen(true);
+  };
+
+  // Open modal for EDITING existing product
+  const handleOpenEditProduct = (prod: Product) => {
+    setEditingProductSlug(prod.slug);
+    setProductFormError('');
+    setProductFormSuccess('');
+    setProdName(prod.name || '');
+    setProdNameBn(prod.nameBn || '');
+    setProdSlug(prod.slug || '');
+    setProdCategory(prod.category || 'Organizers');
+    setProdTaglineBn(prod.taglineBn || '');
+    setProdDescriptionBn(prod.descriptionBn || '');
+    setProdBasePrice(prod.basePrice || 499);
+    setProdOriginalPrice(prod.originalPrice || 800);
+    setProdIsFeatured(prod.isFeatured !== false);
+    setProdImages(prod.images?.length > 0 ? prod.images : ['/images/products/hello-kitty-pair.png']);
+    setProdVariants(
+      prod.variants?.length > 0
+        ? prod.variants
+        : [
+            {
+              id: 'var-1',
+              name: 'Default',
+              nameBn: 'ডিফল্ট কালার',
+              color: 'Default',
+              colorHex: '#E2E8F0',
+              image: prod.images?.[0] || '/images/products/hello-kitty-pair.png',
+              inStock: true,
+              stockCount: 20,
+            },
+          ]
+    );
+    setProdCombos(
+      prod.combos?.length > 0
+        ? prod.combos
+        : [
+            {
+              id: 'combo-single',
+              title: '1 Piece Single Pack',
+              titleBn: '১টি বক্স (সিঙ্গেল প্যাক)',
+              subtitleBn: '১টি বক্স • রেগুলার অফার',
+              quantity: 1,
+              price: prod.basePrice,
+              originalPrice: prod.originalPrice,
+              savingsBn: `Save ৳${prod.originalPrice - prod.basePrice}`,
+            },
+          ]
+    );
+    setIsProductModalOpen(true);
+  };
+
+  // Handle Image Upload
   const handleProductImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -283,7 +358,7 @@ export default function AdminDashboardPage() {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         if (res.data?.success && res.data?.url) {
-          setNewProdImages((prev) => [...prev, res.data.url]);
+          setProdImages((prev) => [...prev, res.data.url]);
         }
       }
     } catch {
@@ -293,32 +368,33 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleCreateProduct = (e: React.FormEvent) => {
+  // Handle Save (Create or Update)
+  const handleSaveProductForm = (e: React.FormEvent) => {
     e.preventDefault();
     setProductFormError('');
 
-    if (!newProdName.trim() || !newProdNameBn.trim() || !newProdSlug.trim()) {
+    if (!prodName.trim() || !prodNameBn.trim() || !prodSlug.trim()) {
       setProductFormError('পণ্যের নাম (English & Bangla) এবং স্লাগ আবশ্যক।');
       return;
     }
 
-    const cleanSlug = newProdSlug.toLowerCase().trim().replace(/[^a-z0-9-_]/g, '-');
+    const cleanSlug = prodSlug.toLowerCase().trim().replace(/[^a-z0-9-_]/g, '-');
 
     const fullProduct: Product = {
-      id: `prod-${Date.now()}`,
+      id: editingProductSlug ? `prod-${editingProductSlug}` : `prod-${Date.now()}`,
       slug: cleanSlug,
-      name: newProdName.trim(),
-      nameBn: newProdNameBn.trim(),
-      category: newProdCategory.trim(),
-      taglineBn: newProdTaglineBn.trim() || newProdNameBn.trim(),
-      descriptionBn: newProdDescriptionBn.trim() || newProdNameBn.trim(),
+      name: prodName.trim(),
+      nameBn: prodNameBn.trim(),
+      category: prodCategory.trim(),
+      taglineBn: prodTaglineBn.trim() || prodNameBn.trim(),
+      descriptionBn: prodDescriptionBn.trim() || prodNameBn.trim(),
       rating: 5.0,
       reviewCount: 0,
-      basePrice: Number(newProdBasePrice) || 499,
-      originalPrice: Number(newProdOriginalPrice) || 800,
-      images: newProdImages.length > 0 ? newProdImages : ['/images/products/hello-kitty-pair.png'],
-      variants: newProdVariants,
-      combos: newProdCombos,
+      basePrice: Number(prodBasePrice) || 499,
+      originalPrice: Number(prodOriginalPrice) || 800,
+      images: prodImages.length > 0 ? prodImages : ['/images/products/hello-kitty-pair.png'],
+      variants: prodVariants,
+      combos: prodCombos,
       featuresBn: [
         { icon: 'Layers', title: 'মাল্টি-কম্পার্টমেন্ট', description: 'সুসংগঠিত পার্টিশন ও স্পেস' },
         { icon: 'ShieldCheck', title: 'প্রিমিয়াম কোয়ালিটি', description: 'টেকসই ও মার্জিত ফিনিশিং' },
@@ -328,6 +404,7 @@ export default function AdminDashboardPage() {
         { key: 'উপাদান', value: 'প্রিমিয়াম সিন্থেটিক লেদার ও সফট ভেলভেট' },
         { key: 'সাইজ', value: 'কম্প্যাক্ট ট্রাভেল ফ্রেন্ডলি' },
       ],
+      isFeatured: prodIsFeatured,
       isActive: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -337,7 +414,7 @@ export default function AdminDashboardPage() {
   };
 
   const orders = ordersData || [];
-  const totalRevenue = orders.reduce((sum, o) => (o.status !== 'Cancelled' ? sum + o.totalAmount : sum), 0);
+  const totalRevenue = orders.reduce((sum, o) => (o.status !== 'Cancelled' && o.status !== 'Returned' ? sum + o.totalAmount : sum), 0);
   const pendingOrders = orders.filter((o) => o.status === 'Pending').length;
   const confirmedOrders = orders.filter((o) => o.status === 'Confirmed').length;
   const deliveredOrders = orders.filter((o) => o.status === 'Delivered').length;
@@ -444,7 +521,7 @@ export default function AdminDashboardPage() {
               <Layers className="w-4 h-4 text-teal-400" />
             </div>
             <div className="text-2xl sm:text-3xl font-black text-teal-400">{products.length} টি</div>
-            <span className="text-[11px] text-slate-400 mt-1 block">ডেলিভার্ড অর্ডার: {deliveredOrders} টি</span>
+            <span className="text-[11px] text-slate-400 mt-1 block">ডেলিভার্ড: {deliveredOrders} টি</span>
           </div>
         </div>
 
@@ -520,7 +597,7 @@ export default function AdminDashboardPage() {
               </div>
 
               <div className="flex items-center gap-2 overflow-x-auto">
-                {['All', 'Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'].map((st) => (
+                {['All', 'Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled', 'Returned'].map((st) => (
                   <button
                     key={st}
                     onClick={() => setStatusFilter(st)}
@@ -611,14 +688,17 @@ export default function AdminDashboardPage() {
                                   ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
                                   : ord.status === 'Delivered'
                                   ? 'bg-teal-500/20 text-teal-300 border-teal-500/30'
+                                  : ord.status === 'Returned'
+                                  ? 'bg-orange-500/20 text-orange-300 border-orange-500/30'
                                   : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
                               }`}
                             >
                               <option value="Pending" className="bg-slate-900 text-amber-300">Pending</option>
-                              <option value="Confirmed" className="bg-slate-900 text-blue-300">Confirmed</option>
+                              <option value="Confirmed" className="bg-slate-900 text-blue-300">Confirmed (Stock -1)</option>
                               <option value="Shipped" className="bg-slate-900 text-purple-300">Shipped</option>
                               <option value="Delivered" className="bg-slate-900 text-teal-300">Delivered</option>
-                              <option value="Cancelled" className="bg-slate-900 text-rose-300">Cancelled</option>
+                              <option value="Returned" className="bg-slate-900 text-orange-300">Returned (Stock +1)</option>
+                              <option value="Cancelled" className="bg-slate-900 text-rose-300">Cancelled (Stock +1)</option>
                             </select>
                           </td>
                           <td className="py-4 px-4 text-right">
@@ -659,11 +739,11 @@ export default function AdminDashboardPage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-800/40 p-4 rounded-2xl border border-slate-700">
               <div>
                 <h3 className="text-base font-bold text-white">Products Management</h3>
-                <p className="text-xs text-slate-400">Manage products, pricing, variants, and live inventory in MongoDB</p>
+                <p className="text-xs text-slate-400">Manage products, pricing, featured status, variants, and live inventory in MongoDB</p>
               </div>
 
               <button
-                onClick={() => setIsAddProductOpen(true)}
+                onClick={handleOpenAddProduct}
                 className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-rose-600/20 transition-all cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
@@ -678,7 +758,7 @@ export default function AdminDashboardPage() {
                 <Layers className="w-12 h-12 mx-auto text-slate-500 stroke-1" />
                 <p>No products found in MongoDB database.</p>
                 <button
-                  onClick={() => setIsAddProductOpen(true)}
+                  onClick={handleOpenAddProduct}
                   className="bg-rose-600 text-white text-xs font-bold px-4 py-2 rounded-xl"
                 >
                   Create First Product
@@ -699,15 +779,29 @@ export default function AdminDashboardPage() {
                             <span className="bg-slate-700 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded">
                               {prod.category}
                             </span>
+                            {prod.isFeatured && (
+                              <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
+                                <Sparkles className="w-3 h-3" />
+                                <span>Featured</span>
+                              </span>
+                            )}
                           </div>
                           <span className="text-xs text-slate-400 font-mono">Slug: /products/{prod.slug}</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-rose-400 bg-rose-500/10 px-3 py-1.5 rounded-lg border border-rose-500/20">
                           Base: ৳{prod.basePrice} (Orig: ৳{prod.originalPrice})
                         </span>
+
+                        <button
+                          onClick={() => handleOpenEditProduct(prod)}
+                          className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                          <span>Edit</span>
+                        </button>
 
                         <Link
                           href={`/products/${prod.slug}`}
@@ -715,7 +809,7 @@ export default function AdminDashboardPage() {
                           className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors"
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
-                          <span>View Live</span>
+                          <span>Live</span>
                         </Link>
 
                         <button
@@ -740,12 +834,15 @@ export default function AdminDashboardPage() {
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         {prod.variants?.map((v) => (
                           <div key={v.id} className="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 space-y-2.5">
-                            <div className="flex items-center gap-2.5">
-                              <div
-                                className="w-4 h-4 rounded-full border border-slate-600 shrink-0"
-                                style={{ backgroundColor: v.colorHex }}
-                              />
-                              <span className="font-bold text-white text-xs truncate">{v.nameBn}</span>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2.5">
+                                <div
+                                  className="w-4 h-4 rounded-full border border-slate-600 shrink-0"
+                                  style={{ backgroundColor: v.colorHex }}
+                                />
+                                <span className="font-bold text-white text-xs truncate">{v.nameBn}</span>
+                              </div>
+                              <span className="text-[10px] font-mono text-slate-400">Stock: {v.stockCount || 0}</span>
                             </div>
 
                             <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
@@ -974,17 +1071,17 @@ export default function AdminDashboardPage() {
         )}
       </main>
 
-      {/* ADD NEW PRODUCT MODAL */}
-      {isAddProductOpen && (
+      {/* ADD / EDIT PRODUCT MODAL */}
+      {isProductModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-3xl p-6 sm:p-8 space-y-6 shadow-2xl animate-in fade-in duration-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <Plus className="w-5 h-5 text-rose-500" />
-                <span>নতুন প্রোডাক্ট যুক্ত করুন</span>
+                <span>{editingProductSlug ? 'প্রোডাক্ট এডিট করুন (Edit Product)' : 'নতুন প্রোডাক্ট যুক্ত করুন (Add Product)'}</span>
               </h2>
               <button
-                onClick={() => setIsAddProductOpen(false)}
+                onClick={() => setIsProductModalOpen(false)}
                 className="p-1 text-slate-400 hover:text-white rounded-lg cursor-pointer"
               >
                 <X className="w-5 h-5" />
@@ -1003,24 +1100,27 @@ export default function AdminDashboardPage() {
               </div>
             )}
 
-            <form onSubmit={handleCreateProduct} className="space-y-4 text-xs sm:text-sm">
+            <form onSubmit={handleSaveProductForm} className="space-y-5 text-xs sm:text-sm">
+              {/* Names */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">Product Name (English) *</label>
                   <input
                     type="text"
                     required
-                    value={newProdName}
+                    value={prodName}
                     onChange={(e) => {
                       const val = e.target.value;
-                      setNewProdName(val);
-                      const autoSlug = val
-                        .toLowerCase()
-                        .trim()
-                        .replace(/[^\w\s-]/g, '')
-                        .replace(/[\s_-]+/g, '-')
-                        .replace(/^-+|-+$/g, '');
-                      setNewProdSlug(autoSlug);
+                      setProdName(val);
+                      if (!editingProductSlug) {
+                        const autoSlug = val
+                          .toLowerCase()
+                          .trim()
+                          .replace(/[^\w\s-]/g, '')
+                          .replace(/[\s_-]+/g, '-')
+                          .replace(/^-+|-+$/g, '');
+                        setProdSlug(autoSlug);
+                      }
                     }}
                     placeholder="e.g. Velvet Cosmetic Travel Pouch"
                     className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
@@ -1032,38 +1132,43 @@ export default function AdminDashboardPage() {
                   <input
                     type="text"
                     required
-                    value={newProdNameBn}
-                    onChange={(e) => setNewProdNameBn(e.target.value)}
+                    value={prodNameBn}
+                    onChange={(e) => setProdNameBn(e.target.value)}
                     placeholder="যেমন: প্রিমিয়াম ভেলভেট ট্রাভেল মেকআপ ব্যাগ"
                     className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Slug, Category, Pricing */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">
-                    Product Slug (Auto Generated) *
+                    Product Slug *
                   </label>
                   <input
                     type="text"
                     required
-                    value={newProdSlug}
-                    onChange={(e) => setNewProdSlug(e.target.value)}
+                    value={prodSlug}
+                    onChange={(e) => setProdSlug(e.target.value)}
                     placeholder="velvet-pouch"
                     className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-rose-300 focus:outline-none focus:border-rose-500 font-mono text-xs font-semibold"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1">Category</label>
-                  <input
-                    type="text"
-                    value={newProdCategory}
-                    onChange={(e) => setNewProdCategory(e.target.value)}
-                    placeholder="Organizers"
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
-                  />
+                  <label className="block text-slate-300 font-medium mb-1">Category *</label>
+                  <select
+                    value={prodCategory}
+                    onChange={(e) => setProdCategory(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500 cursor-pointer"
+                  >
+                    {CATEGORY_OPTIONS.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -1071,19 +1176,58 @@ export default function AdminDashboardPage() {
                   <input
                     type="number"
                     required
-                    value={newProdBasePrice}
-                    onChange={(e) => setNewProdBasePrice(Number(e.target.value))}
+                    value={prodBasePrice}
+                    onChange={(e) => setProdBasePrice(Number(e.target.value))}
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">Original Price (৳)</label>
+                  <input
+                    type="number"
+                    value={prodOriginalPrice}
+                    onChange={(e) => setProdOriginalPrice(Number(e.target.value))}
                     className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
                   />
                 </div>
               </div>
 
+              {/* Featured Checkbox */}
+              <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
+                <div>
+                  <label className="font-bold text-white text-xs flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span>Featured Product (হোমপেজ ও হিরো স্লাইডারে প্রদর্শন করুন)</span>
+                  </label>
+                  <p className="text-[11px] text-slate-400">টিক দেওয়া থাকলে এই পণ্যটি হোমপেজের হিরো স্লাইডার ও কালেকশনে শো করবে</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={prodIsFeatured}
+                  onChange={(e) => setProdIsFeatured(e.target.checked)}
+                  className="w-5 h-5 accent-rose-500 rounded cursor-pointer"
+                />
+              </div>
+
+              {/* Tagline & Description */}
               <div>
-                <label className="block text-slate-300 font-medium mb-1">Description (বাংলা)</label>
+                <label className="block text-slate-300 font-medium mb-1">Tagline (বাংলা ছোট বিবরণ)</label>
+                <input
+                  type="text"
+                  value={prodTaglineBn}
+                  onChange={(e) => setProdTaglineBn(e.target.value)}
+                  placeholder="যেমন: আপনার প্রসাধনী ও জুয়েলারি সুরক্ষিত ও পরিপাটি রাখার জন্য"
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-medium mb-1">Description (বাংলা বিস্তারিত বিবরণ)</label>
                 <textarea
                   rows={2}
-                  value={newProdDescriptionBn}
-                  onChange={(e) => setNewProdDescriptionBn(e.target.value)}
+                  value={prodDescriptionBn}
+                  onChange={(e) => setProdDescriptionBn(e.target.value)}
                   placeholder="প্রোডাক্টের বিবরণ লিখুন..."
                   className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500 resize-none"
                 />
@@ -1099,12 +1243,12 @@ export default function AdminDashboardPage() {
                     <input type="file" accept="image/*" multiple onChange={handleProductImageUpload} className="hidden" />
                   </label>
 
-                  {newProdImages.map((url, idx) => (
+                  {prodImages.map((url, idx) => (
                     <div key={idx} className="relative w-12 h-12 rounded-xl overflow-hidden border border-slate-700 bg-slate-950">
                       <Image src={url} alt={`Preview ${idx}`} fill className="object-cover" />
                       <button
                         type="button"
-                        onClick={() => setNewProdImages((prev) => prev.filter((_, i) => i !== idx))}
+                        onClick={() => setProdImages((prev) => prev.filter((_, i) => i !== idx))}
                         className="absolute top-0.5 right-0.5 bg-slate-900/90 text-white rounded-full p-0.5"
                       >
                         <X className="w-2.5 h-2.5" />
@@ -1117,7 +1261,7 @@ export default function AdminDashboardPage() {
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setIsAddProductOpen(false)}
+                  onClick={() => setIsProductModalOpen(false)}
                   className="px-5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:bg-slate-800 transition-colors"
                 >
                   Cancel
@@ -1128,7 +1272,7 @@ export default function AdminDashboardPage() {
                   className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg shadow-rose-600/30 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-60"
                 >
                   {saveProductMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                  <span>Save Product to Database</span>
+                  <span>{editingProductSlug ? 'Update Product' : 'Save Product to Database'}</span>
                 </button>
               </div>
             </form>

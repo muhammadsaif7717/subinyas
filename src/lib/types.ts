@@ -1,4 +1,4 @@
-export type OrderStatus = 'Pending' | 'Confirmed' | 'Shipped' | 'Delivered' | 'Cancelled';
+export type OrderStatus = 'Pending' | 'Confirmed' | 'Shipped' | 'Delivered' | 'Cancelled' | 'Returned';
 
 export type DeliveryArea = 'inside_dhaka' | 'outside_dhaka';
 
@@ -51,6 +51,7 @@ export interface Product {
     key: string;
     value: string;
   }[];
+  isFeatured?: boolean;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
