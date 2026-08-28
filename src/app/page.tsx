@@ -100,8 +100,14 @@ export default function HomePage() {
         >
           <div className="max-w-6xl mx-auto px-4 sm:px-6 relative">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center min-h-[420px]">
-              {/* Left Content */}
-              <div className="lg:col-span-7 space-y-6">
+              {/* Text & Content Block */}
+              <div
+                className={`space-y-6 ${
+                  activeProduct.heroLayout === 'text_right'
+                    ? 'lg:col-span-7 lg:order-2'
+                    : 'lg:col-span-7 lg:order-1'
+                }`}
+              >
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-rose-600 bg-rose-50 px-3 py-1 rounded-md border border-rose-100">
                     <Sparkles className="w-3.5 h-3.5" />
@@ -158,8 +164,14 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Right Visual Frame */}
-              <div className="lg:col-span-5 relative">
+              {/* Visual Banner Frame */}
+              <div
+                className={`relative ${
+                  activeProduct.heroLayout === 'text_right'
+                    ? 'lg:col-span-5 lg:order-1'
+                    : 'lg:col-span-5 lg:order-2'
+                }`}
+              >
                 <div className="relative aspect-square rounded-3xl overflow-hidden bg-slate-50 border border-slate-200 shadow-sm">
                   <Image
                     key={activeProduct.slug}

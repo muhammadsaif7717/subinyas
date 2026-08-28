@@ -54,6 +54,7 @@ export interface Product {
   isFeatured?: boolean;
   isHeroSlider?: boolean;
   heroBannerImage?: string;
+  heroLayout?: 'text_left' | 'text_right';
   heroOrder?: number;
   isActive: boolean;
   createdAt?: string;

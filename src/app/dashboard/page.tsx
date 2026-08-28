@@ -1646,6 +1646,57 @@ function DashboardContent() {
                               </div>
                             </div>
 
+                            {/* Banner Layout Orientation Controls */}
+                            <div className="bg-[#14111A] p-4 rounded-xl border border-[#2E2733] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div>
+                                <h5 className="text-xs font-bold text-white flex items-center gap-1.5">
+                                  <Sliders className="w-3.5 h-3.5 text-[#D3A45E]" />
+                                  <span>Banner Layout Orientation</span>
+                                </h5>
+                                <p className="text-[11px] text-[#8A7D97]">
+                                  Choose whether text details appear on the left or right side on the homepage
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    saveProductMutation.mutate({
+                                      ...prod,
+                                      heroLayout: 'text_left',
+                                      updatedAt: new Date().toISOString(),
+                                    });
+                                  }}
+                                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                                    prod.heroLayout !== 'text_right'
+                                      ? 'bg-[#C4587A] text-white border-[#C4587A] shadow-sm shadow-[#C4587A]/25'
+                                      : 'bg-[#211C28] text-[#9C8FA8] hover:text-white border-[#2E2733]'
+                                  }`}
+                                >
+                                  <span>Text in Left • Image in Right</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    saveProductMutation.mutate({
+                                      ...prod,
+                                      heroLayout: 'text_right',
+                                      updatedAt: new Date().toISOString(),
+                                    });
+                                  }}
+                                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                                    prod.heroLayout === 'text_right'
+                                      ? 'bg-[#C4587A] text-white border-[#C4587A] shadow-sm shadow-[#C4587A]/25'
+                                      : 'bg-[#211C28] text-[#9C8FA8] hover:text-white border-[#2E2733]'
+                                  }`}
+                                >
+                                  <span>Image in Left • Text in Right</span>
+                                </button>
+                              </div>
+                            </div>
+
                             {/* 16:9 Banner Image Uploader & Live Preview Frame */}
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
                               {/* 16:9 Visual Container */}
