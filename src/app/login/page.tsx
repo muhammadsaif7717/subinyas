@@ -2,14 +2,14 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Mail, Lock, User as UserIcon, ArrowRight, Loader2, Phone } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { GoogleAuthButton } from '@/components/GoogleAuthButton';
 import axios from 'axios';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, googleLogin } = useAuth();
+  const { login } = useAuth();
   const [isRegister, setIsRegister] = useState(false);
 
   const [name, setName] = useState('');
@@ -55,23 +55,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleDemoGoogleLogin = async () => {
-    setIsLoading(true);
-    setError('');
-    try {
-      const res = await googleLogin('demo-google-token', 'user@gmail.com', 'Google User');
-      if (res.success) {
-        router.push('/');
-      } else {
-        setError(res.message || 'Google login failed');
-      }
-    } catch {
-      setError('Google login error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="py-16 sm:py-24 max-w-md mx-auto px-4">
       <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xl space-y-6">
@@ -92,43 +75,18 @@ export default function LoginPage() {
         </div>
 
         {error && (
-          <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs p-3 rounded-xl font-medium">
-            {error}
+          <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs p-3 rounded-xl font-medium leading-relaxed">
+            ⚠️ {error}
           </div>
         )}
 
-        {/* Google Sign-In Button */}
-        <button
-          type="button"
-          onClick={handleDemoGoogleLogin}
-          disabled={isLoading}
-          className="w-full bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-semibold py-2.5 px-4 rounded-xl shadow-xs transition-all flex items-center justify-center gap-3 text-xs sm:text-sm cursor-pointer"
-        >
-          <svg className="w-4 h-4" viewBox="0 0 24 24">
-            <path
-              fill="#4285F4"
-              d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
-            />
-            <path
-              fill="#34A853"
-              d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.99 0 12s.45 3.83 1.25 5.42l4.03-3.15z"
-            />
-            <path
-              fill="#EA4335"
-              d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-            />
-          </svg>
-          <span>Continue with Google</span>
-        </button>
+        {/* Real Google Account Chooser Component */}
+        <GoogleAuthButton onError={(msg) => setError(msg)} />
 
         <div className="relative flex items-center justify-center">
           <div className="border-t border-slate-200 w-full"></div>
           <span className="bg-white px-3 text-[11px] uppercase tracking-wider text-slate-400 font-semibold absolute">
-            Or
+            Or with email
           </span>
         </div>
 
@@ -219,7 +177,7 @@ export default function LoginPage() {
               Already have an account?{' '}
               <button
                 onClick={() => setIsRegister(false)}
-                className="font-bold text-slate-900 hover:underline"
+                className="font-bold text-slate-900 hover:underline cursor-pointer"
               >
                 Log In
               </button>
@@ -229,7 +187,7 @@ export default function LoginPage() {
               Don't have an account?{' '}
               <button
                 onClick={() => setIsRegister(true)}
-                className="font-bold text-slate-900 hover:underline"
+                className="font-bold text-slate-900 hover:underline cursor-pointer"
               >
                 Sign Up
               </button>
