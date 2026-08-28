@@ -85,18 +85,30 @@ function LoginFormContent() {
           </p>
         </div>
 
-        {/* Action Required Banner */}
+        {/* Action-Specific English Notification Banner */}
         {authRequired && (
-          <div className="bg-rose-50/80 border border-rose-200 text-rose-800 text-xs p-3.5 rounded-2xl flex items-start gap-2.5 shadow-xs">
+          <div className="bg-rose-50/90 border border-rose-200 text-rose-900 text-xs p-3.5 rounded-2xl flex items-start gap-3 shadow-xs">
             {actionType === 'cart' ? (
               <ShoppingBag className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-            ) : (
+            ) : actionType === 'wishlist' ? (
               <Heart className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+            ) : (
+              <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
             )}
-            <div>
-              <p className="font-bold text-rose-900">লগইন প্রয়োজন</p>
-              <p className="text-[11px] text-rose-700 mt-0.5 leading-relaxed">
-                পণ্য কার্ট বা উইশলিস্টে যুক্ত করতে এবং অর্ডার সম্পন্ন করতে অনুগ্রহ করে আগে সাইন ইন করুন। লগইন করার সাথে সাথে আপনি পূর্বের পেজে ফিরে যাবেন।
+            <div className="space-y-0.5">
+              <p className="font-bold text-rose-950">
+                {actionType === 'cart'
+                  ? 'Sign In Required for Cart'
+                  : actionType === 'wishlist'
+                  ? 'Sign In Required for Wishlist'
+                  : 'Authentication Required'}
+              </p>
+              <p className="text-[11px] text-rose-800 leading-relaxed">
+                {actionType === 'cart'
+                  ? 'Please sign in to add this item to your shopping cart and continue.'
+                  : actionType === 'wishlist'
+                  ? 'Please sign in to save items to your wishlist and access them anytime.'
+                  : 'Please sign in to continue with your requested action.'}
               </p>
             </div>
           </div>
