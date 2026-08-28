@@ -276,35 +276,58 @@ function DashboardContent() {
   const [draggedCategoryIndex, setDraggedCategoryIndex] = useState<number | null>(null);
   const [dragOverCategoryIndex, setDragOverCategoryIndex] = useState<number | null>(null);
 
-  const handleCategoryDragStart = (index: number) => {
+  const handleCategoryDragStart = (e: React.DragEvent, index: number) => {
     setDraggedCategoryIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', index.toString());
   };
 
-  const handleCategoryDragEnter = (index: number) => {
-    setDragOverCategoryIndex(index);
+  const handleCategoryDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverCategoryIndex !== index) {
+      setDragOverCategoryIndex(index);
+    }
   };
 
-  const handleCategoryDragEnd = () => {
-    if (
-      draggedCategoryIndex === null ||
-      dragOverCategoryIndex === null ||
-      draggedCategoryIndex === dragOverCategoryIndex
-    ) {
+  const handleCategoryDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    const sourceIndex = draggedCategoryIndex;
+    if (sourceIndex === null || sourceIndex === targetIndex) {
       setDraggedCategoryIndex(null);
       setDragOverCategoryIndex(null);
       return;
     }
 
     const updatedList = [...categories];
-    const [movedItem] = updatedList.splice(draggedCategoryIndex, 1);
-    updatedList.splice(dragOverCategoryIndex, 0, movedItem);
+    const [movedItem] = updatedList.splice(sourceIndex, 1);
+    updatedList.splice(targetIndex, 0, movedItem);
 
-    const reorderedPayload = updatedList.map((item, idx) => ({
-      id: item.id || (item._id as string),
+    // Update order numbers sequentially
+    const reorderedList = updatedList.map((item, idx) => ({
+      ...item,
       order: idx + 1,
     }));
 
-    reorderCategoriesMutation.mutate(reorderedPayload);
+    // Optimistically update React Query cache immediately for instant UI feedback
+    queryClient.setQueryData(['admin-categories'], {
+      success: true,
+      categories: reorderedList,
+    });
+
+    // Send PATCH to MongoDB
+    reorderCategoriesMutation.mutate(
+      reorderedList.map((item) => ({
+        id: (item._id || item.id) as string,
+        order: item.order,
+      }))
+    );
+
+    setDraggedCategoryIndex(null);
+    setDragOverCategoryIndex(null);
+  };
+
+  const handleCategoryDragEnd = () => {
     setDraggedCategoryIndex(null);
     setDragOverCategoryIndex(null);
   };
@@ -1303,13 +1326,13 @@ function DashboardContent() {
                     <div
                       key={cat._id || cat.id || cat.name || idx}
                       draggable
-                      onDragStart={() => handleCategoryDragStart(idx)}
-                      onDragEnter={() => handleCategoryDragEnter(idx)}
-                      onDragOver={(e) => e.preventDefault()}
+                      onDragStart={(e) => handleCategoryDragStart(e, idx)}
+                      onDragOver={(e) => handleCategoryDragOver(e, idx)}
+                      onDrop={(e) => handleCategoryDrop(e, idx)}
                       onDragEnd={handleCategoryDragEnd}
                       className={`p-3.5 bg-slate-950/60 rounded-xl border transition-all cursor-grab active:cursor-grabbing flex items-center justify-between gap-3 select-none ${
                         draggedCategoryIndex === idx
-                          ? 'opacity-40 border-amber-500/60 bg-amber-500/10 scale-[0.98]'
+                          ? 'opacity-30 border-amber-500/60 bg-amber-500/10 scale-[0.98]'
                           : dragOverCategoryIndex === idx
                           ? 'border-amber-400 bg-amber-500/20 shadow-md ring-2 ring-amber-400/30'
                           : 'border-slate-800 hover:border-slate-700 hover:bg-slate-900/60'
