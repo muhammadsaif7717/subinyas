@@ -34,8 +34,7 @@ import {
   FolderPlus,
   Folder,
   ChevronDown,
-  ArrowUp,
-  ArrowDown,
+  GripVertical,
 } from 'lucide-react';
 import { Order, OrderStatus, StoreSettings, Product, Review, ProductVariant, ComboOption } from '@/lib/types';
 import { CategoryItem } from '@/app/api/categories/route';
@@ -283,36 +282,41 @@ function DashboardContent() {
     },
   });
 
-  // Handle Category Move Up
-  const handleMoveUp = (index: number) => {
-    if (index === 0) return;
-    const currentList = [...categories];
-    const prevCat = currentList[index - 1];
-    const currCat = currentList[index];
+  // Drag and Drop States for Category Reordering
+  const [draggedCategoryIndex, setDraggedCategoryIndex] = useState<number | null>(null);
+  const [dragOverCategoryIndex, setDragOverCategoryIndex] = useState<number | null>(null);
 
-    const prevOrder = prevCat.order || index;
-    const currOrder = currCat.order || index + 1;
-
-    reorderCategoriesMutation.mutate([
-      { id: currCat.id || (currCat._id as string), order: prevOrder },
-      { id: prevCat.id || (prevCat._id as string), order: currOrder },
-    ]);
+  const handleCategoryDragStart = (index: number) => {
+    setDraggedCategoryIndex(index);
   };
 
-  // Handle Category Move Down
-  const handleMoveDown = (index: number) => {
-    if (index === categories.length - 1) return;
-    const currentList = [...categories];
-    const currCat = currentList[index];
-    const nextCat = currentList[index + 1];
+  const handleCategoryDragEnter = (index: number) => {
+    setDragOverCategoryIndex(index);
+  };
 
-    const currOrder = currCat.order || index + 1;
-    const nextOrder = nextCat.order || index + 2;
+  const handleCategoryDragEnd = () => {
+    if (
+      draggedCategoryIndex === null ||
+      dragOverCategoryIndex === null ||
+      draggedCategoryIndex === dragOverCategoryIndex
+    ) {
+      setDraggedCategoryIndex(null);
+      setDragOverCategoryIndex(null);
+      return;
+    }
 
-    reorderCategoriesMutation.mutate([
-      { id: currCat.id || (currCat._id as string), order: nextOrder },
-      { id: nextCat.id || (nextCat._id as string), order: currOrder },
-    ]);
+    const updatedList = [...categories];
+    const [movedItem] = updatedList.splice(draggedCategoryIndex, 1);
+    updatedList.splice(dragOverCategoryIndex, 0, movedItem);
+
+    const reorderedPayload = updatedList.map((item, idx) => ({
+      id: item.id || (item._id as string),
+      order: idx + 1,
+    }));
+
+    reorderCategoriesMutation.mutate(reorderedPayload);
+    setDraggedCategoryIndex(null);
+    setDragOverCategoryIndex(null);
   };
 
   // Stock toggle update mutation
@@ -1308,7 +1312,7 @@ function DashboardContent() {
               </form>
             </div>
 
-            {/* RIGHT SIDE: Categories List & Reordering Controls (7 cols) */}
+            {/* RIGHT SIDE: Categories List & Drag-and-Drop Reordering (7 cols) */}
             <div className="lg:col-span-7 bg-slate-800/60 rounded-2xl border border-slate-700 overflow-hidden shadow-lg space-y-4">
               <div className="p-5 border-b border-slate-700 flex items-center justify-between">
                 <div>
@@ -1317,22 +1321,9 @@ function DashboardContent() {
                     <span>সকল ক্যাটাগরি তালিকা ({categories.length} টি)</span>
                   </h4>
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    তীর চিহ্নে (🔼 🔽) ক্লিক করে ক্যাটাগরির ক্রম পরিবর্তন করতে পারবেন
+                    যেকোনো ক্যাটাগরি মাউস দিয়ে ড্র্যাগ (Drag & Drop) করে উপরে বা নিচে সাজিয়ে নিন
                   </p>
                 </div>
-
-                {categories.length > 0 && (
-                  <button
-                    onClick={() => {
-                      if (confirm('আপনি কি নিশ্চিত যে সকল ক্যাটাগরি ডিলিট করতে চান?')) {
-                        deleteCategoryMutation.mutate('all');
-                      }
-                    }}
-                    className="text-[10px] font-bold text-rose-400 hover:text-rose-300 bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/20 cursor-pointer"
-                  >
-                    Clear All
-                  </button>
-                )}
               </div>
 
               {isCategoriesLoading ? (
@@ -1348,13 +1339,32 @@ function DashboardContent() {
                   {categories.map((cat, idx) => (
                     <div
                       key={cat.id || cat.slug || idx}
-                      className="p-3.5 bg-slate-950/60 rounded-xl border border-slate-800 flex items-center justify-between gap-3 hover:border-slate-700 transition-colors"
+                      draggable
+                      onDragStart={() => handleCategoryDragStart(idx)}
+                      onDragEnter={() => handleCategoryDragEnter(idx)}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDragEnd={handleCategoryDragEnd}
+                      className={`p-3.5 bg-slate-950/60 rounded-xl border transition-all cursor-grab active:cursor-grabbing flex items-center justify-between gap-3 select-none ${
+                        draggedCategoryIndex === idx
+                          ? 'opacity-40 border-amber-500/60 bg-amber-500/10 scale-[0.98]'
+                          : dragOverCategoryIndex === idx
+                          ? 'border-amber-400 bg-amber-500/20 shadow-md ring-2 ring-amber-400/30'
+                          : 'border-slate-800 hover:border-slate-700 hover:bg-slate-900/60'
+                      }`}
                     >
-                      {/* Left: Order Badge & Names */}
+                      {/* Left: Drag Handle, Order Badge & Names */}
                       <div className="flex items-center gap-3">
+                        <div
+                          className="text-slate-500 hover:text-amber-400 cursor-grab active:cursor-grabbing p-1 rounded transition-colors shrink-0"
+                          title="ড্র্যাগ করে ক্রম পরিবর্তন করুন (Drag to Reorder)"
+                        >
+                          <GripVertical className="w-4 h-4" />
+                        </div>
+
                         <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center justify-center font-mono font-bold text-xs shrink-0">
                           #{cat.order || idx + 1}
                         </div>
+
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-white text-xs sm:text-sm">{cat.name}</span>
@@ -1364,36 +1374,16 @@ function DashboardContent() {
                         </div>
                       </div>
 
-                      {/* Right: Reorder Up/Down buttons + Delete */}
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {/* Move Up */}
-                        <button
-                          onClick={() => handleMoveUp(idx)}
-                          disabled={idx === 0 || reorderCategoriesMutation.isPending}
-                          className="p-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-slate-300 hover:text-white rounded-lg border border-slate-700 cursor-pointer transition-colors"
-                          title="উপরে নিন (Move Up)"
-                        >
-                          <ArrowUp className="w-3.5 h-3.5" />
-                        </button>
-
-                        {/* Move Down */}
-                        <button
-                          onClick={() => handleMoveDown(idx)}
-                          disabled={idx === categories.length - 1 || reorderCategoriesMutation.isPending}
-                          className="p-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-slate-300 hover:text-white rounded-lg border border-slate-700 cursor-pointer transition-colors"
-                          title="নিচে নামান (Move Down)"
-                        >
-                          <ArrowDown className="w-3.5 h-3.5" />
-                        </button>
-
-                        {/* Delete */}
+                      {/* Right: Individual Delete button */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">Drag to move</span>
                         <button
                           onClick={() => {
                             if (confirm(`"${cat.name}" ক্যাটাগরি মুছে ফেলতে চান?`)) {
                               deleteCategoryMutation.mutate(cat.id || (cat._id as string) || cat.slug);
                             }
                           }}
-                          className="p-1.5 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white rounded-lg transition-colors cursor-pointer ml-1"
+                          className="p-1.5 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white rounded-lg transition-colors cursor-pointer"
                           title="ক্যাটাগরি মুছুন"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
