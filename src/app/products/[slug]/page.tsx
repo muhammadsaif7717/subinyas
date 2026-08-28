@@ -388,43 +388,18 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Quantity Stepper & Main Action Buttons (Add to Cart & Buy Now) */}
+            {/* Main Action Buttons (Add to Cart & Buy Now) */}
             <div className="space-y-3.5 pt-2">
               <div className="flex items-center gap-3">
-                {/* Quantity Stepper */}
-                <div className={`flex items-center border rounded-xl overflow-hidden shadow-2xs h-12 ${
-                  isVariantOutOfStock ? 'border-slate-200 bg-slate-100 opacity-60' : 'border-slate-200 bg-slate-50'
-                }`}>
-                  <button
-                    type="button"
-                    disabled={isVariantOutOfStock}
-                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    className="px-3.5 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors disabled:cursor-not-allowed"
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <span className="px-3 text-sm font-mono font-bold text-slate-900 min-w-[28px] text-center">
-                    {quantity}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={isVariantOutOfStock}
-                    onClick={() => setQuantity((q) => q + 1)}
-                    className="px-3.5 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors disabled:cursor-not-allowed"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-
                 {/* Add To Cart Button */}
                 <button
                   type="button"
                   disabled={isVariantOutOfStock}
                   onClick={handleAddToCart}
-                  className={`flex-1 h-12 font-extrabold text-xs sm:text-sm px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 active:scale-[0.99] ${
+                  className={`flex-1 h-12 sm:h-13 font-bold text-xs sm:text-sm px-5 rounded-2xl transition-all flex items-center justify-center gap-2 active:scale-[0.99] ${
                     isVariantOutOfStock
-                      ? 'bg-slate-200 text-slate-400 border border-slate-300 shadow-none cursor-not-allowed'
-                      : 'bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20 cursor-pointer'
+                      ? 'bg-slate-100 text-slate-400 border border-slate-200 shadow-none cursor-not-allowed'
+                      : 'bg-white hover:bg-slate-50 text-slate-900 border-2 border-slate-900 shadow-xs hover:border-slate-800 cursor-pointer'
                   }`}
                 >
                   <ShoppingBag className="w-4 h-4" />
@@ -436,10 +411,10 @@ export default function ProductDetailPage() {
                   type="button"
                   disabled={isVariantOutOfStock}
                   onClick={handleBuyNow}
-                  className={`flex-1 h-12 font-extrabold text-xs sm:text-sm px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 active:scale-[0.99] ${
+                  className={`flex-1 h-12 sm:h-13 font-extrabold text-xs sm:text-sm px-5 rounded-2xl transition-all shadow-md flex items-center justify-center gap-2 active:scale-[0.99] ${
                     isVariantOutOfStock
                       ? 'bg-slate-200 text-slate-400 border border-slate-300 shadow-none cursor-not-allowed'
-                      : 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white shadow-orange-600/25 cursor-pointer'
+                      : 'bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-orange-500/25 cursor-pointer'
                   }`}
                 >
                   <span>{isVariantOutOfStock ? 'Currently Unavailable' : 'Buy Now'}</span>
