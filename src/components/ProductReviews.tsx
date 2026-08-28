@@ -157,9 +157,9 @@ export function ProductReviews({ productSlug, productNameBn }: ProductReviewsPro
       </div>
 
       {submitSuccess && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs p-4 rounded-2xl flex items-center gap-2 font-medium animate-in fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>আপনার রিভিউটি সফলভাবে প্রকাশিত হয়েছে! ধন্যবাদ আপনার মতামতের জন্য।</span>
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 text-xs p-4 rounded-2xl flex items-center gap-2 font-medium animate-in fade-in">
+          <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
+          <span>আপনার রিভিউটি সফলভাবে সাবমিট হয়েছে। অ্যাডমিনের পর্যালোচনার পর এটি ওয়েবসাইটে প্রকাশিত হবে। ধন্যবাদ!</span>
         </div>
       )}
 

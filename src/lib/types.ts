@@ -67,7 +67,9 @@ export interface Review {
   comment: string;
   mediaUrls?: string[];
   isVerifiedPurchase?: boolean;
+  status: 'Pending' | 'Approved' | 'Declined';
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Order {
