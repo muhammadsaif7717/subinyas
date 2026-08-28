@@ -1830,28 +1830,12 @@ function DashboardContent() {
                     </label>
                     <p className="text-[10px] text-[#8A7D97]">Enable or Disable</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {prodIsHeroSlider && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-[10px] text-[#8A7D97] font-mono">#</span>
-                        <input
-                          type="number"
-                          min="1"
-                          max="20"
-                          value={prodHeroOrder}
-                          onChange={(e) => setProdHeroOrder(Number(e.target.value))}
-                          className="w-10 px-1.5 py-1 bg-[#1C1821] border border-[#332B3D] rounded-lg text-[#E4BC79] text-xs font-mono font-bold text-center"
-                          title="Slide display sequence"
-                        />
-                      </div>
-                    )}
-                    <input
-                      type="checkbox"
-                      checked={prodIsHeroSlider}
-                      onChange={(e) => setProdIsHeroSlider(e.target.checked)}
-                      className="w-5 h-5 accent-[#D3A45E] rounded cursor-pointer"
-                    />
-                  </div>
+                  <input
+                    type="checkbox"
+                    checked={prodIsHeroSlider}
+                    onChange={(e) => setProdIsHeroSlider(e.target.checked)}
+                    className="w-5 h-5 accent-[#D3A45E] rounded cursor-pointer"
+                  />
                 </div>
 
                 <div className="bg-[#14111A] p-3.5 rounded-xl border border-[#2E2733] flex items-center justify-between">
