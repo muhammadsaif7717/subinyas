@@ -10,8 +10,6 @@ import {
   TrendingUp,
   Clock,
   CheckCircle2,
-  XCircle,
-  Truck,
   Phone,
   MessageCircle,
   Download,
@@ -20,13 +18,16 @@ import {
   RefreshCw,
   LogOut,
   Sliders,
-  Shield,
   Layers,
   Star,
   MessageSquare,
   Check,
   X,
   Trash2,
+  Plus,
+  Camera,
+  Loader2,
+  ExternalLink,
 } from 'lucide-react';
 import { Order, OrderStatus, StoreSettings, Product, Review } from '@/lib/types';
 
@@ -36,6 +37,71 @@ export default function AdminDashboardPage() {
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [reviewStatusFilter, setReviewStatusFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Add Product Modal State
+  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [productFormError, setProductFormError] = useState('');
+  const [productFormSuccess, setProductFormSuccess] = useState('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  // New Product State
+  const [newProdName, setNewProdName] = useState('');
+  const [newProdNameBn, setNewProdNameBn] = useState('');
+  const [newProdSlug, setNewProdSlug] = useState('');
+  const [newProdCategory, setNewProdCategory] = useState('Organizers');
+  const [newProdTaglineBn, setNewProdTaglineBn] = useState('');
+  const [newProdDescriptionBn, setNewProdDescriptionBn] = useState('');
+  const [newProdBasePrice, setNewProdBasePrice] = useState<number>(499);
+  const [newProdOriginalPrice, setNewProdOriginalPrice] = useState<number>(800);
+  const [newProdImages, setNewProdImages] = useState<string[]>([
+    '/images/products/hello-kitty-pair.png',
+  ]);
+  const [newProdVariants, setNewProdVariants] = useState([
+    {
+      id: 'var-1',
+      name: 'Pink',
+      nameBn: 'পিঙ্ক (Pink)',
+      color: 'Pink',
+      colorHex: '#F472B6',
+      image: '/images/products/hello-kitty-pair.png',
+      inStock: true,
+      stockCount: 50,
+    },
+    {
+      id: 'var-2',
+      name: 'Pearl White',
+      nameBn: 'পার্ল হোয়াইট (Pearl White)',
+      color: 'White',
+      colorHex: '#F8FAFC',
+      image: '/images/products/hello-kitty-open.png',
+      inStock: true,
+      stockCount: 30,
+    },
+  ]);
+  const [newProdCombos, setNewProdCombos] = useState([
+    {
+      id: 'combo-single',
+      title: '1 Piece Single Pack',
+      titleBn: '১টি বক্স (সিঙ্গেল প্যাক)',
+      subtitleBn: '১টি বক্স • রেগুলার অফার',
+      quantity: 1,
+      price: 499,
+      originalPrice: 800,
+      savingsBn: 'Save ৳301',
+    },
+    {
+      id: 'combo-duo',
+      title: '2 Pieces Duo Pack',
+      titleBn: '২টি বক্স বেস্টি কম্বো (Best Deal)',
+      subtitleBn: '২টি বক্স • বেস্ট ভ্যালু অফার',
+      quantity: 2,
+      price: 899,
+      originalPrice: 1600,
+      badge: 'Best Deal 🔥',
+      isPopular: true,
+      savingsBn: 'Save ৳701',
+    },
+  ]);
 
   // Fetch orders
   const {
@@ -51,7 +117,7 @@ export default function AdminDashboardPage() {
   });
 
   // Fetch products
-  const { data: productsData, isLoading: isProductsLoading } = useQuery({
+  const { data: productsData, isLoading: isProductsLoading, refetch: refetchProducts } = useQuery<Product[]>({
     queryKey: ['admin-products'],
     queryFn: async () => {
       const res = await axios.get('/api/products');
@@ -152,6 +218,42 @@ export default function AdminDashboardPage() {
     },
   });
 
+  // Delete Product Mutation
+  const deleteProductMutation = useMutation({
+    mutationFn: async (slug: string) => {
+      const res = await axios.delete(`/api/products?slug=${slug}`);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+  });
+
+  // Save/Create Product Mutation
+  const saveProductMutation = useMutation({
+    mutationFn: async (productData: Product) => {
+      const res = await axios.post('/api/products', { product: productData });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      setProductFormSuccess('প্রোডাক্ট সফলভাবে ডাটাবেসে সেভ হয়েছে!');
+      setTimeout(() => {
+        setProductFormSuccess('');
+        setIsAddProductOpen(false);
+      }, 1500);
+    },
+    onError: (err: unknown) => {
+      const msg =
+        axios.isAxiosError(err) && err.response?.data?.message
+          ? err.response.data.message
+          : 'প্রোডাক্ট সেভ করতে সমস্যা হয়েছে।';
+      setProductFormError(msg);
+    },
+  });
+
   // Save Settings mutation
   const saveSettingsMutation = useMutation({
     mutationFn: async (newSettings: Partial<StoreSettings>) => {
@@ -166,6 +268,74 @@ export default function AdminDashboardPage() {
     },
   });
 
+  // Handle Product Image Upload to Cloudinary
+  const handleProductImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setIsUploadingImage(true);
+    setProductFormError('');
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const formData = new FormData();
+        formData.append('file', files[i]);
+        const res = await axios.post('/api/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        if (res.data?.success && res.data?.url) {
+          setNewProdImages((prev) => [...prev, res.data.url]);
+        }
+      }
+    } catch {
+      setProductFormError('ইমেজ আপলোড করতে সমস্যা হয়েছে।');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleCreateProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    setProductFormError('');
+
+    if (!newProdName.trim() || !newProdNameBn.trim() || !newProdSlug.trim()) {
+      setProductFormError('পণ্যের নাম (English & Bangla) এবং স্লাগ আবশ্যক।');
+      return;
+    }
+
+    const cleanSlug = newProdSlug.toLowerCase().trim().replace(/[^a-z0-9-_]/g, '-');
+
+    const fullProduct: Product = {
+      id: `prod-${Date.now()}`,
+      slug: cleanSlug,
+      name: newProdName.trim(),
+      nameBn: newProdNameBn.trim(),
+      category: newProdCategory.trim(),
+      taglineBn: newProdTaglineBn.trim() || newProdNameBn.trim(),
+      descriptionBn: newProdDescriptionBn.trim() || newProdNameBn.trim(),
+      rating: 5.0,
+      reviewCount: 0,
+      basePrice: Number(newProdBasePrice) || 499,
+      originalPrice: Number(newProdOriginalPrice) || 800,
+      images: newProdImages.length > 0 ? newProdImages : ['/images/products/hello-kitty-pair.png'],
+      variants: newProdVariants,
+      combos: newProdCombos,
+      featuresBn: [
+        { icon: 'Layers', title: 'মাল্টি-কম্পার্টমেন্ট', description: 'সুসংগঠিত পার্টিশন ও স্পেস' },
+        { icon: 'ShieldCheck', title: 'প্রিমিয়াম কোয়ালিটি', description: 'টেকসই ও মার্জিত ফিনিশিং' },
+        { icon: 'Gift', title: 'উপহারের সেরা চয়েস', description: 'প্রিয়জনকে উপহার দেওয়ার জন্য পারফেক্ট' },
+      ],
+      specificationsBn: [
+        { key: 'উপাদান', value: 'প্রিমিয়াম সিন্থেটিক লেদার ও সফট ভেলভেট' },
+        { key: 'সাইজ', value: 'কম্প্যাক্ট ট্রাভেল ফ্রেন্ডলি' },
+      ],
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    saveProductMutation.mutate(fullProduct);
+  };
+
   const orders = ordersData || [];
   const totalRevenue = orders.reduce((sum, o) => (o.status !== 'Cancelled' ? sum + o.totalAmount : sum), 0);
   const pendingOrders = orders.filter((o) => o.status === 'Pending').length;
@@ -173,6 +343,7 @@ export default function AdminDashboardPage() {
   const deliveredOrders = orders.filter((o) => o.status === 'Delivered').length;
   const reviews = reviewsData || [];
   const pendingReviews = reviews.filter((r) => r.status === 'Pending').length;
+  const products = productsData || [];
 
   const handleStatusChange = (orderId: string, status: OrderStatus) => {
     updateStatusMutation.mutate({ orderId, status });
@@ -219,6 +390,7 @@ export default function AdminDashboardPage() {
               onClick={() => {
                 refetchOrders();
                 refetchReviews();
+                refetchProducts();
               }}
               className="p-2 text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 rounded-lg border border-slate-700 cursor-pointer"
               title="রিফ্রেশ করুন"
@@ -268,11 +440,11 @@ export default function AdminDashboardPage() {
 
           <div className="bg-slate-800/60 p-5 rounded-2xl border border-slate-700 shadow-md">
             <div className="flex items-center justify-between text-slate-400 text-xs font-medium mb-2">
-              <span>সফল ডেলিভারি</span>
-              <CheckCircle2 className="w-4 h-4 text-teal-400" />
+              <span>মোট প্রডাক্ট সংখ্যা</span>
+              <Layers className="w-4 h-4 text-teal-400" />
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-teal-400">{deliveredOrders} টি</div>
-            <span className="text-[11px] text-slate-400 mt-1 block">কনফার্মড: {confirmedOrders} টি</span>
+            <div className="text-2xl sm:text-3xl font-black text-teal-400">{products.length} টি</div>
+            <span className="text-[11px] text-slate-400 mt-1 block">ডেলিভার্ড অর্ডার: {deliveredOrders} টি</span>
           </div>
         </div>
 
@@ -291,6 +463,18 @@ export default function AdminDashboardPage() {
           </button>
 
           <button
+            onClick={() => setActiveTab('inventory')}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
+              activeTab === 'inventory'
+                ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30'
+                : 'bg-slate-800/80 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            <span>প্রোডাক্ট ও স্টক কন্ট্রোল ({products.length})</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('reviews')}
             className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'reviews'
@@ -305,18 +489,6 @@ export default function AdminDashboardPage() {
                 {pendingReviews} new
               </span>
             )}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('inventory')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
-              activeTab === 'inventory'
-                ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30'
-                : 'bg-slate-800/80 text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Layers className="w-4 h-4" />
-            <span>প্রোডাক্ট ও স্টক কন্ট্রোল</span>
           </button>
 
           <button
@@ -481,7 +653,133 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* TAB 2: REVIEW MODERATION */}
+        {/* TAB 2: PRODUCTS & INVENTORY CONTROL */}
+        {activeTab === 'inventory' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-800/40 p-4 rounded-2xl border border-slate-700">
+              <div>
+                <h3 className="text-base font-bold text-white">Products Management</h3>
+                <p className="text-xs text-slate-400">Manage products, pricing, variants, and live inventory in MongoDB</p>
+              </div>
+
+              <button
+                onClick={() => setIsAddProductOpen(true)}
+                className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-rose-600/20 transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add New Product</span>
+              </button>
+            </div>
+
+            {isProductsLoading ? (
+              <div className="p-12 text-center text-slate-400">Loading products...</div>
+            ) : products.length === 0 ? (
+              <div className="p-12 text-center text-slate-400 bg-slate-800/40 rounded-2xl border border-slate-700 space-y-3">
+                <Layers className="w-12 h-12 mx-auto text-slate-500 stroke-1" />
+                <p>No products found in MongoDB database.</p>
+                <button
+                  onClick={() => setIsAddProductOpen(true)}
+                  className="bg-rose-600 text-white text-xs font-bold px-4 py-2 rounded-xl"
+                >
+                  Create First Product
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {products.map((prod) => (
+                  <div key={prod.slug} className="bg-slate-800/60 p-6 rounded-2xl border border-slate-700 space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700 pb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-slate-900 border border-slate-700 shrink-0">
+                          <Image src={prod.images[0] || '/images/products/hello-kitty-pair.png'} alt={prod.nameBn} fill className="object-cover" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-white text-base">{prod.nameBn}</h3>
+                            <span className="bg-slate-700 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded">
+                              {prod.category}
+                            </span>
+                          </div>
+                          <span className="text-xs text-slate-400 font-mono">Slug: /products/{prod.slug}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-bold text-rose-400 bg-rose-500/10 px-3 py-1.5 rounded-lg border border-rose-500/20">
+                          Base: ৳{prod.basePrice} (Orig: ৳{prod.originalPrice})
+                        </span>
+
+                        <Link
+                          href={`/products/${prod.slug}`}
+                          target="_blank"
+                          className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          <span>View Live</span>
+                        </Link>
+
+                        <button
+                          onClick={() => {
+                            if (confirm(`Are you sure you want to delete "${prod.nameBn}"?`)) {
+                              deleteProductMutation.mutate(prod.slug);
+                            }
+                          }}
+                          className="p-2 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+                          title="Delete Product"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Variants and Stock */}
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                        Color Variants & Stock Status
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {prod.variants?.map((v) => (
+                          <div key={v.id} className="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 space-y-2.5">
+                            <div className="flex items-center gap-2.5">
+                              <div
+                                className="w-4 h-4 rounded-full border border-slate-600 shrink-0"
+                                style={{ backgroundColor: v.colorHex }}
+                              />
+                              <span className="font-bold text-white text-xs truncate">{v.nameBn}</span>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={v.inStock}
+                                  onChange={(e) =>
+                                    updateStockMutation.mutate({
+                                      slug: prod.slug,
+                                      variantId: v.id,
+                                      inStock: e.target.checked,
+                                      stockCount: v.stockCount,
+                                    })
+                                  }
+                                  className="accent-rose-500 rounded"
+                                />
+                                <span className={v.inStock ? 'text-emerald-400 font-bold text-[11px]' : 'text-rose-400 text-[11px]'}>
+                                  {v.inStock ? 'In Stock' : 'Out of Stock'}
+                                </span>
+                              </label>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 3: REVIEW MODERATION */}
         {activeTab === 'reviews' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between bg-slate-800/40 p-4 rounded-2xl border border-slate-700">
@@ -606,60 +904,6 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* TAB 3: INVENTORY */}
-        {activeTab === 'inventory' && (
-          <div className="space-y-6">
-            {productsData?.map((prod) => (
-              <div key={prod.slug} className="bg-slate-800/60 p-6 rounded-2xl border border-slate-700 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-700 pb-3">
-                  <div>
-                    <h3 className="font-bold text-white text-base">{prod.nameBn}</h3>
-                    <span className="text-xs text-slate-400 font-mono">Slug: {prod.slug}</span>
-                  </div>
-                  <span className="text-xs font-bold text-rose-400 bg-rose-500/10 px-2.5 py-1 rounded-md border border-rose-500/20">
-                    বেস প্রাইস: ৳{prod.basePrice}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {prod.variants.map((v) => (
-                    <div key={v.id} className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-4 h-4 rounded-full border border-slate-600"
-                          style={{ backgroundColor: v.colorHex }}
-                        />
-                        <span className="font-bold text-white text-xs">{v.nameBn}</span>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={v.inStock}
-                            onChange={(e) =>
-                              updateStockMutation.mutate({
-                                slug: prod.slug,
-                                variantId: v.id,
-                                inStock: e.target.checked,
-                                stockCount: v.stockCount,
-                              })
-                            }
-                            className="accent-rose-500 rounded"
-                          />
-                          <span className={v.inStock ? 'text-emerald-400 font-bold' : 'text-rose-400'}>
-                            {v.inStock ? 'In Stock (মজুদ আছে)' : 'Stock Out (শেষ)'}
-                          </span>
-                        </label>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* TAB 4: SETTINGS */}
         {activeTab === 'settings' && (
           <div className="max-w-2xl bg-slate-800/60 p-6 rounded-2xl border border-slate-700 space-y-6">
@@ -729,6 +973,168 @@ export default function AdminDashboardPage() {
           </div>
         )}
       </main>
+
+      {/* ADD NEW PRODUCT MODAL */}
+      {isAddProductOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-3xl p-6 sm:p-8 space-y-6 shadow-2xl animate-in fade-in duration-200 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <Plus className="w-5 h-5 text-rose-500" />
+                <span>নতুন প্রোডাক্ট যুক্ত করুন</span>
+              </h2>
+              <button
+                onClick={() => setIsAddProductOpen(false)}
+                className="p-1 text-slate-400 hover:text-white rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {productFormError && (
+              <div className="bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs p-3.5 rounded-xl font-medium">
+                ⚠️ {productFormError}
+              </div>
+            )}
+
+            {productFormSuccess && (
+              <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs p-3.5 rounded-xl font-medium">
+                ✅ {productFormSuccess}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateProduct} className="space-y-4 text-xs sm:text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">Product Name (English) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newProdName}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewProdName(val);
+                      const autoSlug = val
+                        .toLowerCase()
+                        .trim()
+                        .replace(/[^\w\s-]/g, '')
+                        .replace(/[\s_-]+/g, '-')
+                        .replace(/^-+|-+$/g, '');
+                      setNewProdSlug(autoSlug);
+                    }}
+                    placeholder="e.g. Velvet Cosmetic Travel Pouch"
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">Product Name (বাংলা) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newProdNameBn}
+                    onChange={(e) => setNewProdNameBn(e.target.value)}
+                    placeholder="যেমন: প্রিমিয়াম ভেলভেট ট্রাভেল মেকআপ ব্যাগ"
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">
+                    Product Slug (Auto Generated) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newProdSlug}
+                    onChange={(e) => setNewProdSlug(e.target.value)}
+                    placeholder="velvet-pouch"
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-rose-300 focus:outline-none focus:border-rose-500 font-mono text-xs font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">Category</label>
+                  <input
+                    type="text"
+                    value={newProdCategory}
+                    onChange={(e) => setNewProdCategory(e.target.value)}
+                    placeholder="Organizers"
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">Base Price (৳) *</label>
+                  <input
+                    type="number"
+                    required
+                    value={newProdBasePrice}
+                    onChange={(e) => setNewProdBasePrice(Number(e.target.value))}
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-medium mb-1">Description (বাংলা)</label>
+                <textarea
+                  rows={2}
+                  value={newProdDescriptionBn}
+                  onChange={(e) => setNewProdDescriptionBn(e.target.value)}
+                  placeholder="প্রোডাক্টের বিবরণ লিখুন..."
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500 resize-none"
+                />
+              </div>
+
+              {/* Image Upload */}
+              <div>
+                <label className="block text-slate-300 font-medium mb-1.5">Product Images (Upload via Cloudinary)</label>
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="inline-flex items-center gap-2 bg-slate-800 border border-slate-700 hover:border-slate-500 text-slate-200 px-3.5 py-2 rounded-xl text-xs cursor-pointer">
+                    {isUploadingImage ? <Loader2 className="w-4 h-4 animate-spin text-rose-500" /> : <Camera className="w-4 h-4 text-rose-400" />}
+                    <span>{isUploadingImage ? 'Uploading...' : 'Upload Image'}</span>
+                    <input type="file" accept="image/*" multiple onChange={handleProductImageUpload} className="hidden" />
+                  </label>
+
+                  {newProdImages.map((url, idx) => (
+                    <div key={idx} className="relative w-12 h-12 rounded-xl overflow-hidden border border-slate-700 bg-slate-950">
+                      <Image src={url} alt={`Preview ${idx}`} fill className="object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setNewProdImages((prev) => prev.filter((_, i) => i !== idx))}
+                        className="absolute top-0.5 right-0.5 bg-slate-900/90 text-white rounded-full p-0.5"
+                      >
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsAddProductOpen(false)}
+                  className="px-5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:bg-slate-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saveProductMutation.isPending || isUploadingImage}
+                  className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg shadow-rose-600/30 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-60"
+                >
+                  {saveProductMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  <span>Save Product to Database</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -77,6 +77,37 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   return memoryProducts.find((p) => p.slug === slug) || (slug === 'jewelry-box' ? INITIAL_JEWELRY_BOX_PRODUCT : null);
 }
 
+export async function saveProduct(product: Product): Promise<boolean> {
+  const db = await getDb();
+  if (db) {
+    const { _id, ...cleanProduct } = product as unknown as { _id?: string };
+    await db.collection('products').updateOne(
+      { slug: product.slug },
+      { $set: { ...cleanProduct, updatedAt: new Date().toISOString() } },
+      { upsert: true }
+    );
+    return true;
+  }
+
+  const index = memoryProducts.findIndex((p) => p.slug === product.slug);
+  if (index > -1) {
+    memoryProducts[index] = product;
+  } else {
+    memoryProducts.push(product);
+  }
+  return true;
+}
+
+export async function deleteProduct(slug: string): Promise<boolean> {
+  const db = await getDb();
+  if (db) {
+    await db.collection('products').deleteOne({ slug });
+    return true;
+  }
+  memoryProducts = memoryProducts.filter((p) => p.slug !== slug);
+  return true;
+}
+
 export async function updateProductStock(slug: string, variantId: string, inStock: boolean, stockCount: number): Promise<boolean> {
   const db = await getDb();
   if (db) {
@@ -105,18 +136,18 @@ export async function updateProductStock(slug: string, variantId: string, inStoc
   return false;
 }
 
-export async function getOrders(statusFilter?: string, searchQuery?: string): Promise<Order[]> {
+export async function getOrders(statusFilter?: string, search?: string): Promise<Order[]> {
   const db = await getDb();
   if (db) {
     const query: Record<string, unknown> = {};
     if (statusFilter && statusFilter !== 'All') {
       query.status = statusFilter;
     }
-    if (searchQuery) {
+    if (search) {
       query.$or = [
-        { customerName: { $regex: searchQuery, $options: 'i' } },
-        { phone: { $regex: searchQuery, $options: 'i' } },
-        { orderId: { $regex: searchQuery, $options: 'i' } },
+        { orderId: { $regex: search, $options: 'i' } },
+        { customerName: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } },
       ];
     }
     const orders = (await db.collection('orders').find(query).sort({ createdAt: -1 }).toArray()) as unknown as Order[];
@@ -127,58 +158,61 @@ export async function getOrders(statusFilter?: string, searchQuery?: string): Pr
   if (statusFilter && statusFilter !== 'All') {
     filtered = filtered.filter((o) => o.status === statusFilter);
   }
-  if (searchQuery) {
-    const q = searchQuery.toLowerCase();
+  if (search) {
+    const s = search.toLowerCase();
     filtered = filtered.filter(
-      (o) => o.customerName.toLowerCase().includes(q) || o.phone.includes(q) || o.orderId.toLowerCase().includes(q)
+      (o) =>
+        o.orderId.toLowerCase().includes(s) ||
+        o.customerName.toLowerCase().includes(s) ||
+        o.phone.includes(s)
     );
   }
   return filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
-export async function createOrder(orderData: Omit<Order, 'orderId' | 'createdAt' | 'updatedAt' | 'status'>): Promise<Order> {
-  const orderId = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
-  const now = new Date().toISOString();
+export async function createOrder(orderData: Omit<Order, 'orderId' | 'status' | 'createdAt' | 'updatedAt'>): Promise<Order> {
+  const orderId = `SUB-${Math.floor(1000 + Math.random() * 9000)}`;
   const newOrder: Order = {
     ...orderData,
     orderId,
     status: 'Pending',
-    createdAt: now,
-    updatedAt: now,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 
   const db = await getDb();
   if (db) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const res = await db.collection('orders').insertOne({ ...newOrder } as any);
-    newOrder._id = res.insertedId.toString();
-  } else {
-    memoryOrders.unshift(newOrder);
+    await db.collection('orders').insertOne({ ...newOrder } as any);
+    return newOrder;
   }
 
+  memoryOrders.unshift(newOrder);
   return newOrder;
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus, notes?: string): Promise<boolean> {
-  const now = new Date().toISOString();
   const db = await getDb();
   if (db) {
-    const updateObj: Record<string, unknown> = { status, updatedAt: now };
-    if (notes !== undefined) updateObj.notes = notes;
-
-    let filter: Record<string, unknown> = { orderId };
-    if (ObjectId.isValid(orderId)) {
-      filter = { $or: [{ orderId }, { _id: new ObjectId(orderId) }] };
+    const updateDoc: Record<string, unknown> = {
+      status,
+      updatedAt: new Date().toISOString(),
+    };
+    if (notes !== undefined) {
+      updateDoc.notes = notes;
     }
-    await db.collection('orders').updateOne(filter, { $set: updateObj });
+    await db.collection('orders').updateOne(
+      { orderId },
+      { $set: updateDoc }
+    );
     return true;
   }
 
-  const order = memoryOrders.find((o) => o.orderId === orderId || o._id === orderId);
+  const order = memoryOrders.find((o) => o.orderId === orderId);
   if (order) {
     order.status = status;
     if (notes !== undefined) order.notes = notes;
-    order.updatedAt = now;
+    order.updatedAt = new Date().toISOString();
     return true;
   }
   return false;
@@ -196,19 +230,16 @@ export async function getStoreSettings(): Promise<StoreSettings> {
   return memorySettings;
 }
 
-export async function updateStoreSettings(newSettings: Partial<StoreSettings>): Promise<StoreSettings> {
-  const now = new Date().toISOString();
+export async function updateStoreSettings(newSettings: Partial<StoreSettings>): Promise<boolean> {
   const db = await getDb();
   if (db) {
     await db.collection('settings').updateOne(
       {},
-      { $set: { ...newSettings, updatedAt: now } },
+      { $set: { ...newSettings, updatedAt: new Date().toISOString() } },
       { upsert: true }
     );
-    const updated = (await db.collection('settings').findOne({})) as unknown as StoreSettings | null;
-    return updated || { ...memorySettings, ...newSettings };
+    return true;
   }
-
-  memorySettings = { ...memorySettings, ...newSettings, updatedAt: now };
-  return memorySettings;
+  memorySettings = { ...memorySettings, ...newSettings };
+  return true;
 }
