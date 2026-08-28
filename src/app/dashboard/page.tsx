@@ -370,12 +370,22 @@ function DashboardContent() {
   // Delete Product Mutation
   const deleteProductMutation = useMutation({
     mutationFn: async (slug: string) => {
-      const res = await axios.delete(`/api/products?slug=${slug}`);
+      const res = await axios.delete(`/api/products?slug=${encodeURIComponent(slug)}`);
       return res.data;
     },
-    onSuccess: () => {
+    onSuccess: (_, deletedSlug) => {
+      queryClient.setQueryData<Product[]>(['admin-products'], (prev) =>
+        prev ? prev.filter((p) => p.slug !== deletedSlug) : []
+      );
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+    onError: (err: unknown) => {
+      const msg =
+        axios.isAxiosError(err) && err.response?.data?.message
+          ? err.response.data.message
+          : 'Failed to delete product.';
+      alert(`Error: ${msg}`);
     },
   });
 

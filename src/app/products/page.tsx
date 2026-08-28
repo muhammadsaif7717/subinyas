@@ -24,11 +24,10 @@ export default function ProductsPage() {
       const res = await axios.get('/api/products');
       return res.data?.products || [];
     },
-    initialData: [INITIAL_JEWELRY_BOX_PRODUCT],
   });
 
   // Fetch categories from API
-  const { data: categoriesData } = useQuery<{ success: boolean; categories: { name: string; nameBn: string }[] }>({
+  const { data: categoriesData } = useQuery<{ success: boolean; categories: { name: string }[] }>({
     queryKey: ['categories'],
     queryFn: async () => {
       const res = await axios.get('/api/categories');
@@ -36,7 +35,7 @@ export default function ProductsPage() {
     },
   });
 
-  const products = productsData && productsData.length > 0 ? productsData : [INITIAL_JEWELRY_BOX_PRODUCT];
+  const products = productsData || [];
 
   // Extract categories dynamically
   const categories = useMemo(() => {

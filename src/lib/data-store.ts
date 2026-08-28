@@ -53,11 +53,7 @@ export async function getProducts(): Promise<Product[]> {
   const db = await getDb();
   if (db) {
     const products = (await db.collection('products').find({}).toArray()) as unknown as Product[];
-    if (products.length > 0) return products;
-    // Seed initial product if empty
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await db.collection('products').insertOne({ ...INITIAL_JEWELRY_BOX_PRODUCT } as any);
-    return [INITIAL_JEWELRY_BOX_PRODUCT];
+    return products || [];
   }
   return memoryProducts;
 }
@@ -65,16 +61,14 @@ export async function getProducts(): Promise<Product[]> {
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   const db = await getDb();
   if (db) {
-    const product = (await db.collection('products').findOne({ slug })) as unknown as Product | null;
-    if (product) return product;
-    if (slug === 'jewelry-box') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await db.collection('products').insertOne({ ...INITIAL_JEWELRY_BOX_PRODUCT } as any);
-      return INITIAL_JEWELRY_BOX_PRODUCT;
+    let filter: Record<string, unknown> = { slug };
+    if (ObjectId.isValid(slug)) {
+      filter = { $or: [{ _id: new ObjectId(slug) }, { slug }, { id: slug }] };
     }
-    return null;
+    const product = (await db.collection('products').findOne(filter)) as unknown as Product | null;
+    return product;
   }
-  return memoryProducts.find((p) => p.slug === slug) || (slug === 'jewelry-box' ? INITIAL_JEWELRY_BOX_PRODUCT : null);
+  return memoryProducts.find((p) => p.slug === slug || p.id === slug) || null;
 }
 
 export async function saveProduct(product: Product): Promise<boolean> {
@@ -101,10 +95,17 @@ export async function saveProduct(product: Product): Promise<boolean> {
 export async function deleteProduct(slug: string): Promise<boolean> {
   const db = await getDb();
   if (db) {
-    await db.collection('products').deleteOne({ slug });
+    let filter: Record<string, unknown> = { slug };
+    if (ObjectId.isValid(slug)) {
+      filter = { $or: [{ _id: new ObjectId(slug) }, { slug }, { id: slug }] };
+    } else {
+      filter = { $or: [{ slug }, { id: slug }] };
+    }
+    const res = await db.collection('products').deleteOne(filter);
+    console.log(`Deleted product ${slug}, deletedCount:`, res.deletedCount);
     return true;
   }
-  memoryProducts = memoryProducts.filter((p) => p.slug !== slug);
+  memoryProducts = memoryProducts.filter((p) => p.slug !== slug && p.id !== slug);
   return true;
 }
 
