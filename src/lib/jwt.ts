@@ -7,6 +7,7 @@ export interface TokenPayload {
   email: string;
   role: string;
   name: string;
+  avatar?: string;
 }
 
 export function signJwtToken(payload: TokenPayload, expiresIn = '7d'): string {

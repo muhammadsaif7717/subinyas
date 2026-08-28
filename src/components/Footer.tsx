@@ -11,15 +11,15 @@ export function Footer() {
           <span>subinyas.shop</span>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-6 font-medium">
           <Link href="/" className="hover:text-slate-900 transition-colors">
-            হোম
+            Home
           </Link>
-          <Link href="/products/jewelry-box" className="hover:text-slate-900 transition-colors">
-            জুয়েলারি বক্স
+          <Link href="/products" className="hover:text-slate-900 transition-colors">
+            Products
           </Link>
           <Link href="/admin" className="hover:text-slate-900 transition-colors">
-            অ্যাডমিন
+            Admin
           </Link>
         </div>
 

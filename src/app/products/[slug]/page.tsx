@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useCart } from '@/lib/cart-context';
+import { ProductReviews } from '@/components/ProductReviews';
 import { OrderReceiptModal } from '@/components/OrderReceiptModal';
 import { INITIAL_JEWELRY_BOX_PRODUCT } from '@/lib/constants';
 import { Order, DeliveryArea, Product } from '@/lib/types';
@@ -520,42 +521,11 @@ export default function DynamicProductPage() {
           </div>
         )}
 
-        {/* Customer Reviews */}
-        <div className="pt-12 border-t border-slate-100 space-y-6">
-          <h2 className="text-xl font-bold text-slate-900 text-center">গ্রাহকদের মতামত</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
-            <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900">সুমাইয়া রহমান</span>
-                <span className="text-amber-500">★★★★★</span>
-              </div>
-              <p className="text-slate-600 leading-relaxed">
-                "Hello Kitty Pink বক্সটি সত্যি অনেক সুন্দর। মেটেরিয়াল কোয়ালিটি বেশ ভালো। ট্রাভেলের জন্য খুব কাজের।"
-              </p>
-            </div>
-
-            <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900">আফরোজা খান</span>
-                <span className="text-amber-500">★★★★★</span>
-              </div>
-              <p className="text-slate-600 leading-relaxed">
-                "বেস্টি কম্বো অফারে নিয়েছিলাম। বান্ধবীর জন্মদিনে উপহার দিয়েছি, ও খুব পছন্দ করেছে।"
-              </p>
-            </div>
-
-            <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50/50 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900">নুসরাত জাহান</span>
-                <span className="text-amber-500">★★★★★</span>
-              </div>
-              <p className="text-slate-600 leading-relaxed">
-                "ক্যাশ অন ডেলিভারিতে দ্রুত পেয়েছি। প্যাকেজিং ও ফিনিশিং দারুণ।"
-              </p>
-            </div>
-          </div>
-        </div>
+        {/* Customer Reviews & Ratings */}
+        <ProductReviews
+          productSlug={product.slug}
+          productNameBn={product.nameBn}
+        />
       </main>
 
       {/* Order Celebration Receipt Modal */}

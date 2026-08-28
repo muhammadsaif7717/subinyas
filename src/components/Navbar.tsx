@@ -31,7 +31,7 @@ export function Navbar() {
             Home
           </Link>
           <Link
-            href="/products/jewelry-box"
+            href="/products"
             className="hover:text-slate-900 transition-colors"
           >
             Products
@@ -73,11 +73,20 @@ export function Navbar() {
             <div className="relative">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 py-1.5 px-3 rounded-full transition-colors cursor-pointer"
+                className="flex items-center gap-2 text-xs font-semibold text-slate-800 bg-slate-100 hover:bg-slate-200 py-1 px-2.5 rounded-full transition-colors cursor-pointer"
               >
-                <div className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold">
-                  {user.name ? user.name.slice(0, 1).toUpperCase() : 'U'}
-                </div>
+                {user.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={user.avatar}
+                    alt={user.name || 'User'}
+                    className="w-5 h-5 rounded-full object-cover border border-slate-300"
+                  />
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold">
+                    {user.name ? user.name.slice(0, 1).toUpperCase() : 'U'}
+                  </div>
+                )}
                 <span className="max-w-[90px] truncate hidden sm:inline">{user.name || 'Account'}</span>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
               </button>

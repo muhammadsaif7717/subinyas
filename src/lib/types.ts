@@ -56,6 +56,20 @@ export interface Product {
   updatedAt?: string;
 }
 
+export interface Review {
+  _id?: string;
+  id: string;
+  productSlug: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  rating: number;
+  comment: string;
+  mediaUrls?: string[];
+  isVerifiedPurchase?: boolean;
+  createdAt: string;
+}
+
 export interface Order {
   _id?: string;
   orderId: string;

@@ -49,6 +49,13 @@ export async function POST(request: NextRequest) {
         userId = insertRes.insertedId.toString();
       } else {
         userId = existing._id.toString();
+        // Update user avatar and name if available
+        if (userAvatar || userName) {
+          await db.collection('users').updateOne(
+            { _id: existing._id },
+            { $set: { avatar: userAvatar || existing.avatar, name: userName || existing.name } }
+          );
+        }
       }
     }
 
@@ -57,6 +64,7 @@ export async function POST(request: NextRequest) {
       email: cleanEmail,
       role: cleanEmail === (process.env.ADMIN_EMAIL || 'admin@subinyas.shop').toLowerCase() ? 'admin' : 'customer',
       name: userName,
+      avatar: userAvatar,
     });
 
     const response = NextResponse.json({

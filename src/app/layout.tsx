@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Hind_Siliguri } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/providers';
+import { AppLayoutShell } from '@/components/AppLayoutShell';
 
 const hindSiliguri = Hind_Siliguri({
   weight: ['400', '500', '600', '700'],
@@ -28,10 +29,6 @@ export const metadata: Metadata = {
   },
 };
 
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
-import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -41,10 +38,7 @@ export default function RootLayout({
     <html lang="bn" className={`${hindSiliguri.variable} scroll-smooth`}>
       <body className="antialiased font-sans bg-white text-slate-900 selection:bg-rose-500 selection:text-white flex flex-col min-h-screen justify-between">
         <Providers>
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
-          <FloatingWhatsApp />
+          <AppLayoutShell>{children}</AppLayoutShell>
         </Providers>
       </body>
     </html>
