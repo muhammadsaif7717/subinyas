@@ -64,6 +64,16 @@ export interface Product {
   updatedAt?: string;
 }
 
+export function isProductInStock(p: Product): boolean {
+  if (p.isActive === false) return false;
+  if (!p.variants || p.variants.length === 0) return true;
+  return p.variants.some(
+    (v) =>
+      v.inStock !== false &&
+      (v.stockCount === undefined || Number(v.stockCount) > 0 || (v.stock !== undefined && Number(v.stock) > 0))
+  );
+}
+
 export interface Review {
   _id?: string;
   id: string;

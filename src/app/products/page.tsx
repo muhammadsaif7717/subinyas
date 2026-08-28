@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { Search, SlidersHorizontal, Star, Heart, ShoppingBag, ArrowUpDown, X } from 'lucide-react';
-import { Product } from '@/lib/types';
+import { Product, isProductInStock } from '@/lib/types';
 import { INITIAL_JEWELRY_BOX_PRODUCT } from '@/lib/constants';
 import { useCart } from '@/lib/cart-context';
 
@@ -53,6 +53,8 @@ export default function ProductsPage() {
   const filteredProducts = useMemo(() => {
     return products
       .filter((product) => {
+        if (product.isActive === false) return false;
+
         const matchesSearch =
           product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           product.nameBn.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -66,8 +68,18 @@ export default function ProductsPage() {
       .sort((a, b) => {
         if (sortBy === 'price-asc') return a.basePrice - b.basePrice;
         if (sortBy === 'price-desc') return b.basePrice - a.basePrice;
-        if (sortBy === 'rating') return b.rating - a.rating;
-        return 0; // featured / default
+        if (sortBy === 'rating') return (b.rating || 5) - (a.rating || 5);
+
+        // 'featured' / default sort: Prioritize Featured + In Stock products
+        const aInStock = isProductInStock(a) ? 1 : 0;
+        const bInStock = isProductInStock(b) ? 1 : 0;
+        if (aInStock !== bInStock) return bInStock - aInStock;
+
+        const aFeat = a.isFeatured === true ? 1 : 0;
+        const bFeat = b.isFeatured === true ? 1 : 0;
+        if (aFeat !== bFeat) return bFeat - aFeat;
+
+        return (b.reviewCount || 0) - (a.reviewCount || 0) || (b.rating || 5) - (a.rating || 5);
       });
   }, [products, searchQuery, selectedCategory, maxPrice, sortBy]);
 
@@ -182,6 +194,8 @@ export default function ProductsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredProducts.map((p) => {
             const inWishlist = isInWishlist(p.slug);
+            const inStock = isProductInStock(p);
+
             return (
               <div
                 key={p.id}
@@ -221,8 +235,27 @@ export default function ProductsPage() {
                     <Heart className={`w-4 h-4 ${inWishlist ? 'fill-rose-500 text-rose-500' : ''}`} />
                   </button>
 
+                  {/* Category Badge */}
                   <span className="absolute top-3 left-3 bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
                     {p.category}
+                  </span>
+
+                  {/* Stock Status Badge */}
+                  <span
+                    className={`absolute bottom-3 left-3 text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-xs backdrop-blur-xs ${
+                      inStock
+                        ? 'bg-emerald-500/90 text-white'
+                        : 'bg-rose-500/90 text-white'
+                    }`}
+                  >
+                    {inStock ? (
+                      <>
+                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                        <span>In Stock</span>
+                      </>
+                    ) : (
+                      <span>Out of Stock</span>
+                    )}
                   </span>
                 </div>
 
@@ -257,6 +290,7 @@ export default function ProductsPage() {
                   {/* Action Buttons */}
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <button
+                      disabled={!inStock}
                       onClick={() => {
                         addToCart({
                           productSlug: p.slug,
@@ -270,17 +304,21 @@ export default function ProductsPage() {
                           quantity: 1,
                         });
                       }}
-                      className="bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-semibold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      className={`border font-semibold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors ${
+                        inStock
+                          ? 'bg-white hover:bg-slate-50 border-slate-300 text-slate-800 cursor-pointer'
+                          : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                      }`}
                     >
                       <ShoppingBag className="w-3.5 h-3.5" />
-                      <span>Add to Cart</span>
+                      <span>{inStock ? 'Add to Cart' : 'Out of Stock'}</span>
                     </button>
 
                     <Link
                       href={`/products/${p.slug}`}
                       className="bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2 px-3 rounded-xl text-xs text-center flex items-center justify-center transition-colors"
                     >
-                      <span>Buy Now</span>
+                      <span>{inStock ? 'Buy Now' : 'View Details'}</span>
                     </Link>
                   </div>
                 </div>

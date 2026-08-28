@@ -16,7 +16,7 @@ import {
   ShoppingBag,
   Sparkles,
 } from 'lucide-react';
-import { Product, StoreSettings } from '@/lib/types';
+import { Product, StoreSettings, isProductInStock } from '@/lib/types';
 import { useCart } from '@/lib/cart-context';
 
 export default function HomePage() {
@@ -277,14 +277,14 @@ export default function HomePage() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Featured Collections</h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">Our most loved lifestyle essentials</p>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">Our curated in-stock premium essentials</p>
           </div>
 
           <Link
             href="/products"
             className="text-xs font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1"
           >
-            <span>View All ({products.length})</span>
+            <span>View All Products ({products.length})</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -293,108 +293,139 @@ export default function HomePage() {
           <div className="text-center py-12 text-slate-400 text-sm">Loading products...</div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {products.map((product) => (
-              <div
-                key={product.slug}
-                className="group rounded-2xl border border-slate-200 overflow-hidden bg-white hover:border-slate-400 transition-all flex flex-col justify-between"
-              >
-                <div className="relative aspect-square bg-slate-50 overflow-hidden">
-                  <Link href={`/products/${product.slug}`}>
-                    <Image
-                      src={product.images[0] || '/images/products/hello-kitty-open.png'}
-                      alt={product.name}
-                      fill
-                      className="object-cover group-hover:scale-103 transition-transform duration-300"
-                    />
-                  </Link>
+            {products
+              .filter((p) => p.isActive !== false && p.isFeatured === true && isProductInStock(p))
+              .map((product) => {
+                const inStock = isProductInStock(product);
 
-                  <button
-                    onClick={() => {
-                      if (isInWishlist(product.slug)) {
-                        removeFromWishlist(product.slug);
-                      } else {
-                        addToWishlist({
-                          id: product.id,
-                          productSlug: product.slug,
-                          productName: product.name,
-                          productNameBn: product.nameBn,
-                          image: product.images[0],
-                          price: product.basePrice,
-                          rating: product.rating,
-                        });
-                      }
-                    }}
-                    className="absolute top-3 right-3 p-2 rounded-full bg-white/90 text-slate-400 hover:text-rose-500 shadow-xs transition-colors cursor-pointer"
-                    title="Wishlist"
+                return (
+                  <div
+                    key={product.slug}
+                    className="group rounded-2xl border border-slate-200 overflow-hidden bg-white hover:border-slate-400 transition-all flex flex-col justify-between"
                   >
-                    <Heart
-                      className={`w-4 h-4 ${
-                        isInWishlist(product.slug) ? 'fill-rose-500 text-rose-500' : ''
-                      }`}
-                    />
-                  </button>
+                    <div className="relative aspect-square bg-slate-50 overflow-hidden">
+                      <Link href={`/products/${product.slug}`}>
+                        <Image
+                          src={product.images[0] || '/images/products/hello-kitty-open.png'}
+                          alt={product.name}
+                          fill
+                          className="object-cover group-hover:scale-103 transition-transform duration-300"
+                        />
+                      </Link>
 
-                  <span className="absolute top-3 left-3 bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
-                    {product.category}
-                  </span>
-                </div>
+                      {/* Wishlist Button */}
+                      <button
+                        onClick={() => {
+                          if (isInWishlist(product.slug)) {
+                            removeFromWishlist(product.slug);
+                          } else {
+                            addToWishlist({
+                              id: product.id,
+                              productSlug: product.slug,
+                              productName: product.name,
+                              productNameBn: product.nameBn,
+                              image: product.images[0],
+                              price: product.basePrice,
+                              rating: product.rating,
+                            });
+                          }
+                        }}
+                        className="absolute top-3 right-3 p-2 rounded-full bg-white/90 text-slate-400 hover:text-rose-500 shadow-xs transition-colors cursor-pointer"
+                        title="Wishlist"
+                      >
+                        <Heart
+                          className={`w-4 h-4 ${
+                            isInWishlist(product.slug) ? 'fill-rose-500 text-rose-500' : ''
+                          }`}
+                        />
+                      </button>
 
-                <div className="p-5 space-y-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1 text-amber-500 text-xs">
-                      <Star className="w-3.5 h-3.5 fill-amber-500" />
-                      <span className="font-semibold text-slate-800">{product.rating}</span>
-                      <span className="text-slate-400">({product.reviewCount})</span>
+                      {/* Category Badge */}
+                      <span className="absolute top-3 left-3 bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
+                        {product.category}
+                      </span>
+
+                      {/* Stock Status Badge */}
+                      <span
+                        className={`absolute bottom-3 left-3 text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-xs backdrop-blur-xs ${
+                          inStock
+                            ? 'bg-emerald-500/90 text-white'
+                            : 'bg-rose-500/90 text-white'
+                        }`}
+                      >
+                        {inStock ? (
+                          <>
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                            <span>In Stock</span>
+                          </>
+                        ) : (
+                          <span>Out of Stock</span>
+                        )}
+                      </span>
                     </div>
-                    <Link href={`/products/${product.slug}`}>
-                      <h3 className="font-semibold text-slate-900 text-base group-hover:text-rose-600 transition-colors">
-                        {product.name || product.nameBn}
-                      </h3>
-                    </Link>
-                    <p className="text-xs text-slate-500 line-clamp-2">{product.taglineBn}</p>
-                  </div>
 
-                  <div className="flex items-baseline justify-between pt-2 border-t border-slate-100">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-xl font-bold text-slate-900">৳{product.basePrice}</span>
-                      <span className="text-xs line-through text-slate-400">৳{product.originalPrice}</span>
+                    <div className="p-5 space-y-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1 text-amber-500 text-xs">
+                          <Star className="w-3.5 h-3.5 fill-amber-500" />
+                          <span className="font-semibold text-slate-800">{product.rating}</span>
+                          <span className="text-slate-400">({product.reviewCount})</span>
+                        </div>
+                        <Link href={`/products/${product.slug}`}>
+                          <h3 className="font-semibold text-slate-900 text-base group-hover:text-rose-600 transition-colors">
+                            {product.name || product.nameBn}
+                          </h3>
+                        </Link>
+                        <p className="text-xs text-slate-500 line-clamp-2">{product.taglineBn}</p>
+                      </div>
+
+                      <div className="flex items-baseline justify-between pt-2 border-t border-slate-100">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xl font-bold text-slate-900">৳{product.basePrice}</span>
+                          <span className="text-xs line-through text-slate-400">৳{product.originalPrice}</span>
+                        </div>
+                        <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded">
+                          Save ৳{product.originalPrice - product.basePrice}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <button
+                          disabled={!inStock}
+                          onClick={() => {
+                            addToCart({
+                              productSlug: product.slug,
+                              productName: product.name,
+                              productNameBn: product.nameBn,
+                              image: product.images[0],
+                              comboId: product.combos?.[0]?.id || 'combo-single',
+                              comboTitleBn: product.combos?.[0]?.title || '1 Piece Single Pack',
+                              selectedVariants: [product.variants?.[0]?.name || 'Default'],
+                              price: product.basePrice,
+                              quantity: 1,
+                            });
+                          }}
+                          className={`border font-semibold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors ${
+                            inStock
+                              ? 'bg-white hover:bg-slate-50 border-slate-300 text-slate-800 cursor-pointer'
+                              : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                          }`}
+                        >
+                          <ShoppingBag className="w-3.5 h-3.5" />
+                          <span>{inStock ? 'Add to Cart' : 'Out of Stock'}</span>
+                        </button>
+
+                        <Link
+                          href={`/products/${product.slug}`}
+                          className="bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2 px-3 rounded-xl text-xs text-center flex items-center justify-center transition-colors"
+                        >
+                          <span>{inStock ? 'Order Now' : 'View Details'}</span>
+                        </Link>
+                      </div>
                     </div>
-                    <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded">
-                      Save ৳{product.originalPrice - product.basePrice}
-                    </span>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <button
-                      onClick={() => {
-                        addToCart({
-                          productSlug: product.slug,
-                          productName: product.name,
-                          productNameBn: product.nameBn,
-                          image: product.images[0],
-                          comboId: product.combos?.[0]?.id || 'combo-single',
-                          comboTitleBn: product.combos?.[0]?.title || '1 Piece Single Pack',
-                          selectedVariants: [product.variants?.[0]?.name || 'Default'],
-                          price: product.basePrice,
-                          quantity: 1,
-                        });
-                      }}
-                      className="bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-semibold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                    >
-                      <ShoppingBag className="w-3.5 h-3.5" />
-                      <span>Add to Cart</span>
-                    </button>
-
-                    <Link
-                      href={`/products/${product.slug}`}
-                      className="bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2 px-3 rounded-xl text-xs text-center flex items-center justify-center transition-colors"
-                    >
-                      <span>Order Now</span>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            ))}
+                );
+              })}
           </div>
         )}
       </section>
