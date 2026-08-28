@@ -677,7 +677,82 @@ function DashboardContent() {
     }
   };
 
-  // Handle 16:9 Dedicated Hero Banner Upload with Strict 16:9 Aspect Ratio Validation
+  // Helper: Auto-Crop any image into a high-res 16:9 aspect ratio File
+  const cropImageTo16by9 = (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const img = new window.Image();
+      const objectUrl = URL.createObjectURL(file);
+
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const naturalWidth = img.naturalWidth;
+        const naturalHeight = img.naturalHeight;
+        const targetRatio = 16 / 9;
+        const currentRatio = naturalWidth / naturalHeight;
+
+        let sx = 0;
+        let sy = 0;
+        let sWidth = naturalWidth;
+        let sHeight = naturalHeight;
+
+        if (currentRatio > targetRatio) {
+          // Wider than 16:9 -> crop left & right
+          sHeight = naturalHeight;
+          sWidth = naturalHeight * targetRatio;
+          sx = (naturalWidth - sWidth) / 2;
+          sy = 0;
+        } else {
+          // Taller than 16:9 -> crop top & bottom
+          sWidth = naturalWidth;
+          sHeight = naturalWidth / targetRatio;
+          sx = 0;
+          sy = (naturalHeight - sHeight) / 2;
+        }
+
+        // Target canvas resolution (minimum 1600x900, or scaled proportional to source)
+        const canvasWidth = Math.max(1600, Math.round(sWidth));
+        const canvasHeight = Math.round(canvasWidth / targetRatio);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+          resolve(file); // fallback to original file if canvas context unavailable
+          return;
+        }
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, canvasWidth, canvasHeight);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve(file);
+              return;
+            }
+            const croppedFile = new File([blob], file.name.replace(/\.[^/.]+$/, '') + '-16x9.webp', {
+              type: 'image/webp',
+            });
+            resolve(croppedFile);
+          },
+          'image/webp',
+          0.92
+        );
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(file); // fallback on error
+      };
+
+      img.src = objectUrl;
+    });
+  };
+
+  // Handle 16:9 Dedicated Hero Banner Upload with Automatic 16:9 Auto-Crop
   const [uploadingBannerSlug, setUploadingBannerSlug] = useState<string | null>(null);
 
   const handleHeroBannerUpload = async (prod: Product, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -685,44 +760,14 @@ function DashboardContent() {
     if (!file) return;
 
     const targetInput = e.target;
-
-    // Step 1: Pre-validate Image Aspect Ratio (16:9 format)
-    const validateAspectRatio = (): Promise<{ valid: boolean; width: number; height: number; ratio: number }> => {
-      return new Promise((resolve) => {
-        const img = new window.Image();
-        const objectUrl = URL.createObjectURL(file);
-        img.onload = () => {
-          URL.revokeObjectURL(objectUrl);
-          const width = img.naturalWidth;
-          const height = img.naturalHeight;
-          const ratio = width / height;
-          const targetRatio = 16 / 9; // ~1.7778
-          // Allow reasonable tolerance (+/- 0.08) for minor rounding variations (e.g. 1920x1080, 1600x900, 1280x720)
-          const isValidRatio = Math.abs(ratio - targetRatio) <= 0.08;
-          resolve({ valid: isValidRatio, width, height, ratio });
-        };
-        img.onerror = () => {
-          URL.revokeObjectURL(objectUrl);
-          resolve({ valid: false, width: 0, height: 0, ratio: 0 });
-        };
-        img.src = objectUrl;
-      });
-    };
-
-    const validation = await validateAspectRatio();
-    if (!validation.valid) {
-      alert(
-        `⚠️ Invalid Image Aspect Ratio!\n\nদয়া করে ১৬:৯ (16:9) রেশিওর ব্যানার ইমেজ আপলোড করুন (যেমন: 1920x1080, 1600x900 বা 1280x720)।\n\nআপনার সিলেক্ট করা ইমেজের সাইজ: ${validation.width}x${validation.height} (Ratio: ${validation.ratio.toFixed(2)})`
-      );
-      if (targetInput) targetInput.value = '';
-      return;
-    }
-
     setUploadingBannerSlug(prod.slug);
 
     try {
+      // Auto-crop and format to exact 16:9 aspect ratio in high resolution
+      const formatted16by9File = await cropImageTo16by9(file);
+
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', formatted16by9File);
       const res = await axios.post('/api/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -734,8 +779,9 @@ function DashboardContent() {
           updatedAt: new Date().toISOString(),
         });
       }
-    } catch {
-      alert('Failed to upload 16:9 banner image.');
+    } catch (err) {
+      console.error('Banner upload error:', err);
+      alert('Failed to process and upload 16:9 banner image.');
     } finally {
       setUploadingBannerSlug(null);
       if (targetInput) targetInput.value = '';
