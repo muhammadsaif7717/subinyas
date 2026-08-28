@@ -1,14 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Mail, Lock, User as UserIcon, ArrowRight, Loader2, Phone } from 'lucide-react';
+import React, { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Mail, Lock, User as UserIcon, ArrowRight, Loader2, Phone, ShoppingBag, Heart, ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { GoogleAuthButton } from '@/components/GoogleAuthButton';
 import axios from 'axios';
 
-export default function LoginPage() {
+function LoginFormContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '';
+  const authRequired = searchParams.get('authRequired') === 'true';
+  const actionType = searchParams.get('action');
+
   const { login } = useAuth();
   const [isRegister, setIsRegister] = useState(false);
 
@@ -19,6 +24,16 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const handleRedirect = (userRole?: string) => {
+    if (userRole === 'admin' || email.trim().toLowerCase() === 'admin@subinyas.shop') {
+      router.push('/dashboard');
+    } else if (callbackUrl && !callbackUrl.startsWith('/login')) {
+      router.push(callbackUrl);
+    } else {
+      router.push('/');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -28,18 +43,14 @@ export default function LoginPage() {
       if (isRegister) {
         const res = await axios.post('/api/auth/register', { name, email, password, phone });
         if (res.data?.success) {
-          router.push('/');
+          handleRedirect(res.data?.user?.role);
         } else {
           setError(res.data?.message || 'Registration failed');
         }
       } else {
         const res = await login(email, password);
         if (res.success) {
-          if (email.trim().toLowerCase() === 'admin@subinyas.shop') {
-            router.push('/dashboard');
-          } else {
-            router.push('/');
-          }
+          handleRedirect();
         } else {
           setError(res.message || 'Login failed');
         }
@@ -74,6 +85,23 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {/* Action Required Banner */}
+        {authRequired && (
+          <div className="bg-rose-50/80 border border-rose-200 text-rose-800 text-xs p-3.5 rounded-2xl flex items-start gap-2.5 shadow-xs">
+            {actionType === 'cart' ? (
+              <ShoppingBag className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+            ) : (
+              <Heart className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+            )}
+            <div>
+              <p className="font-bold text-rose-900">লগইন প্রয়োজন</p>
+              <p className="text-[11px] text-rose-700 mt-0.5 leading-relaxed">
+                পণ্য কার্ট বা উইশলিস্টে যুক্ত করতে এবং অর্ডার সম্পন্ন করতে অনুগ্রহ করে আগে সাইন ইন করুন। লগইন করার সাথে সাথে আপনি পূর্বের পেজে ফিরে যাবেন।
+              </p>
+            </div>
+          </div>
+        )}
+
         {error && (
           <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs p-3 rounded-xl font-medium leading-relaxed">
             ⚠️ {error}
@@ -100,10 +128,26 @@ export default function LoginPage() {
                 <input
                   type="text"
                   required
+                  placeholder="e.g. Nusrat Jahan"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Your Name"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-slate-900 focus:outline-none focus:border-slate-900"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-3.5 outline-none focus:border-rose-500 focus:bg-white transition-all text-xs"
+                />
+              </div>
+            </div>
+          )}
+
+          {isRegister && (
+            <div>
+              <label className="block font-medium text-slate-700 mb-1">Phone Number</label>
+              <div className="relative">
+                <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <input
+                  type="tel"
+                  placeholder="e.g. 01700000000"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-3.5 outline-none focus:border-rose-500 focus:bg-white transition-all text-xs font-mono"
                 />
               </div>
             </div>
@@ -116,29 +160,13 @@ export default function LoginPage() {
               <input
                 type="email"
                 required
+                placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@example.com"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-slate-900 focus:outline-none focus:border-slate-900"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-3.5 outline-none focus:border-rose-500 focus:bg-white transition-all text-xs font-mono"
               />
             </div>
           </div>
-
-          {isRegister && (
-            <div>
-              <label className="block font-medium text-slate-700 mb-1">Phone Number (Optional)</label>
-              <div className="relative">
-                <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="017XXXXXXXX"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-slate-900 focus:outline-none focus:border-slate-900 font-mono"
-                />
-              </div>
-            </div>
-          )}
 
           <div>
             <label className="block font-medium text-slate-700 mb-1">Password</label>
@@ -147,10 +175,10 @@ export default function LoginPage() {
               <input
                 type="password"
                 required
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 rounded-xl border border-slate-200 text-slate-900 focus:outline-none focus:border-slate-900"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-3.5 outline-none focus:border-rose-500 focus:bg-white transition-all text-xs"
               />
             </div>
           </div>
@@ -158,43 +186,47 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-4 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md active:scale-98 disabled:opacity-50 cursor-pointer text-xs sm:text-sm"
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <>
-                <span>{isRegister ? 'Sign Up' : 'Log In'}</span>
+                <span>{isRegister ? 'Create Account' : 'Sign In'}</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
           </button>
         </form>
 
-        <div className="pt-2 text-center text-xs text-slate-500">
-          {isRegister ? (
-            <p>
-              Already have an account?{' '}
-              <button
-                onClick={() => setIsRegister(false)}
-                className="font-bold text-slate-900 hover:underline cursor-pointer"
-              >
-                Log In
-              </button>
-            </p>
-          ) : (
-            <p>
-              Don't have an account?{' '}
-              <button
-                onClick={() => setIsRegister(true)}
-                className="font-bold text-slate-900 hover:underline cursor-pointer"
-              >
-                Sign Up
-              </button>
-            </p>
-          )}
+        {/* Toggle Register/Login */}
+        <div className="text-center pt-2 border-t border-slate-100">
+          <button
+            type="button"
+            onClick={() => {
+              setIsRegister(!isRegister);
+              setError('');
+            }}
+            className="text-xs text-rose-600 hover:text-rose-700 font-semibold cursor-pointer"
+          >
+            {isRegister ? 'Already have an account? Sign In' : "Don't have an account? Create one"}
+          </button>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="py-24 text-center">
+          <Loader2 className="w-6 h-6 animate-spin mx-auto text-slate-400" />
+        </div>
+      }
+    >
+      <LoginFormContent />
+    </Suspense>
   );
 }

@@ -333,64 +333,69 @@ export function Navbar() {
             <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
           </Link>
 
-          <Link
-            href="/my-orders"
-            onClick={() => setIsDrawerOpen(false)}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
-              isNavActive('/my-orders')
-                ? 'bg-rose-50 text-rose-600 font-bold'
-                : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <Package className="w-4 h-4 text-slate-500" />
-              <span>My Orders / Order Tracking</span>
-            </div>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-          </Link>
+          {/* Protected Customer Routes - Only shown when logged in */}
+          {user && (
+            <>
+              <Link
+                href="/my-orders"
+                onClick={() => setIsDrawerOpen(false)}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                  isNavActive('/my-orders')
+                    ? 'bg-rose-50 text-rose-600 font-bold'
+                    : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Package className="w-4 h-4 text-slate-500" />
+                  <span>My Orders / Order Tracking</span>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+              </Link>
 
-          <Link
-            href="/wishlist"
-            onClick={() => setIsDrawerOpen(false)}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
-              isNavActive('/wishlist')
-                ? 'bg-rose-50 text-rose-600 font-bold'
-                : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <Heart className="w-4 h-4 text-rose-500" />
-              <span>Wishlist</span>
-            </div>
-            {wishlistCount > 0 ? (
-              <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-600 text-[10px] font-bold">
-                {wishlistCount}
-              </span>
-            ) : (
-              <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-            )}
-          </Link>
+              <Link
+                href="/wishlist"
+                onClick={() => setIsDrawerOpen(false)}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                  isNavActive('/wishlist')
+                    ? 'bg-rose-50 text-rose-600 font-bold'
+                    : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Heart className="w-4 h-4 text-rose-500" />
+                  <span>Wishlist</span>
+                </div>
+                {wishlistCount > 0 ? (
+                  <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-600 text-[10px] font-bold">
+                    {wishlistCount}
+                  </span>
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                )}
+              </Link>
 
-          <button
-            type="button"
-            onClick={() => {
-              setIsDrawerOpen(false);
-              setIsCartOpen(true);
-            }}
-            className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-all cursor-pointer text-left"
-          >
-            <div className="flex items-center gap-3">
-              <ShoppingBag className="w-4 h-4 text-slate-500" />
-              <span>Shopping Cart</span>
-            </div>
-            {cartCount > 0 ? (
-              <span className="px-2 py-0.5 rounded-full bg-slate-900 text-white text-[10px] font-bold">
-                {cartCount}
-              </span>
-            ) : (
-              <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-            )}
-          </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDrawerOpen(false);
+                  setIsCartOpen(true);
+                }}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-all cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <ShoppingBag className="w-4 h-4 text-slate-500" />
+                  <span>Shopping Cart</span>
+                </div>
+                {cartCount > 0 ? (
+                  <span className="px-2 py-0.5 rounded-full bg-slate-900 text-white text-[10px] font-bold">
+                    {cartCount}
+                  </span>
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                )}
+              </button>
+            </>
+          )}
 
           {/* ADMIN SHORTCUTS (IF ADMIN USER) */}
           {isAdmin && (

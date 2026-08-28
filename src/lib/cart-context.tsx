@@ -1,6 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { CartItem, WishlistItem } from './types';
 import { useAuth } from './auth-context';
 import axios from 'axios';
@@ -10,13 +11,13 @@ interface CartContextType {
   wishlist: WishlistItem[];
   isCartOpen: boolean;
   setIsCartOpen: (open: boolean) => void;
-  addToCart: (item: Omit<CartItem, 'id'>) => void;
+  addToCart: (item: Omit<CartItem, 'id'>, redirectIfLoggedOut?: boolean) => boolean;
   removeFromCart: (itemId: string) => void;
   updateQuantity: (itemId: string, delta: number) => void;
   clearCart: () => void;
   cartCount: number;
   cartSubtotal: number;
-  addToWishlist: (item: WishlistItem) => void;
+  addToWishlist: (item: WishlistItem, redirectIfLoggedOut?: boolean) => boolean;
   removeFromWishlist: (productSlug: string) => void;
   isInWishlist: (productSlug: string) => boolean;
   wishlistCount: number;
@@ -25,6 +26,8 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const { user } = useAuth();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
@@ -67,7 +70,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [cart, wishlist, user?.id]);
 
-  const addToCart = (newItem: Omit<CartItem, 'id'>) => {
+  // Direct internal add item without auth check (used for restore & logged-in users)
+  const executeAddToCart = useCallback((newItem: Omit<CartItem, 'id'>) => {
     setCart((prev) => {
       const existingIndex = prev.findIndex(
         (item) =>
@@ -86,6 +90,86 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       return [...prev, { ...newItem, id }];
     });
     setIsCartOpen(true);
+  }, []);
+
+  const executeAddToWishlist = useCallback((item: WishlistItem) => {
+    setWishlist((prev) => {
+      if (prev.some((w) => w.productSlug === item.productSlug)) return prev;
+      return [...prev, item];
+    });
+  }, []);
+
+  // Check and execute pending action on user login
+  useEffect(() => {
+    if (user?.id) {
+      try {
+        const rawPending = sessionStorage.getItem('subinyas_pending_action');
+        if (rawPending) {
+          const pending = JSON.parse(rawPending);
+          sessionStorage.removeItem('subinyas_pending_action');
+
+          if (pending && Date.now() - (pending.timestamp || 0) < 15 * 60 * 1000) {
+            if (pending.type === 'cart' && pending.item) {
+              executeAddToCart(pending.item);
+            } else if (pending.type === 'wishlist' && pending.item) {
+              executeAddToWishlist(pending.item);
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, [user?.id, executeAddToCart, executeAddToWishlist]);
+
+  // Public addToCart with Login Requirement
+  const addToCart = (newItem: Omit<CartItem, 'id'>, redirectIfLoggedOut = true): boolean => {
+    if (!user) {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(
+          'subinyas_pending_action',
+          JSON.stringify({
+            type: 'cart',
+            item: newItem,
+            timestamp: Date.now(),
+          })
+        );
+
+        if (redirectIfLoggedOut) {
+          const currentUrl = window.location.pathname + window.location.search;
+          router.push(`/login?callbackUrl=${encodeURIComponent(currentUrl)}&authRequired=true&action=cart`);
+        }
+      }
+      return false;
+    }
+
+    executeAddToCart(newItem);
+    return true;
+  };
+
+  // Public addToWishlist with Login Requirement
+  const addToWishlist = (item: WishlistItem, redirectIfLoggedOut = true): boolean => {
+    if (!user) {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(
+          'subinyas_pending_action',
+          JSON.stringify({
+            type: 'wishlist',
+            item,
+            timestamp: Date.now(),
+          })
+        );
+
+        if (redirectIfLoggedOut) {
+          const currentUrl = window.location.pathname + window.location.search;
+          router.push(`/login?callbackUrl=${encodeURIComponent(currentUrl)}&authRequired=true&action=wishlist`);
+        }
+      }
+      return false;
+    }
+
+    executeAddToWishlist(item);
+    return true;
   };
 
   const removeFromCart = (itemId: string) => {
@@ -108,13 +192,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = () => {
     setCart([]);
-  };
-
-  const addToWishlist = (item: WishlistItem) => {
-    setWishlist((prev) => {
-      if (prev.some((w) => w.productSlug === item.productSlug)) return prev;
-      return [...prev, item];
-    });
   };
 
   const removeFromWishlist = (productSlug: string) => {

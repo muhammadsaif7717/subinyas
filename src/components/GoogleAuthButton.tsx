@@ -55,8 +55,13 @@ export function GoogleAuthButton({ onError }: { onError?: (msg: string) => void 
             if (res.data?.success) {
               await refetchUser();
               const userRole = res.data?.user?.role;
+              const searchParams = new URLSearchParams(window.location.search);
+              const callbackUrl = searchParams.get('callbackUrl');
+
               if (userRole === 'admin') {
                 router.push('/dashboard');
+              } else if (callbackUrl && !callbackUrl.startsWith('/login')) {
+                router.push(callbackUrl);
               } else {
                 router.push('/');
               }

@@ -282,7 +282,7 @@ export default function ProductDetailPage() {
   const handleAddToCart = () => {
     if (isVariantOutOfStock) return;
 
-    addToCart({
+    const added = addToCart({
       productSlug: product.slug,
       productName: product.name,
       productNameBn: product.nameBn,
@@ -294,15 +294,17 @@ export default function ProductDetailPage() {
       quantity,
     });
 
-    trackAddToCart(product.name, currentPrice * quantity);
-    setAddedToast(true);
-    setTimeout(() => setAddedToast(false), 3000);
+    if (added) {
+      trackAddToCart(product.name, currentPrice * quantity);
+      setAddedToast(true);
+      setTimeout(() => setAddedToast(false), 3000);
+    }
   };
 
   const handleBuyNow = () => {
     if (isVariantOutOfStock) return;
 
-    addToCart({
+    const added = addToCart({
       productSlug: product.slug,
       productName: product.name,
       productNameBn: product.nameBn,
@@ -314,8 +316,10 @@ export default function ProductDetailPage() {
       quantity,
     });
 
-    trackInitiateCheckout(1, currentPrice * quantity);
-    router.push('/checkout');
+    if (added) {
+      trackInitiateCheckout(1, currentPrice * quantity);
+      router.push('/checkout');
+    }
   };
 
   return (
