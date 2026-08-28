@@ -52,6 +52,8 @@ export interface Product {
     value: string;
   }[];
   isFeatured?: boolean;
+  isHeroSlider?: boolean;
+  heroOrder?: number;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;

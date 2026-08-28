@@ -33,10 +33,20 @@ export default function HomePage() {
 
   const products = productsData || [];
 
-  // Top 3 or 4 Featured products with the highest reviews/ratings
+  // Controlled Hero Slider Selection from Admin Dashboard (isHeroSlider & heroOrder)
   const slides = React.useMemo(() => {
     if (!products || products.length === 0) return [];
 
+    // 1. Products explicitly marked for Hero Slider in Dashboard
+    const heroProducts = products.filter(
+      (p) => p.isHeroSlider === true && p.isActive !== false
+    );
+
+    if (heroProducts.length > 0) {
+      return [...heroProducts].sort((a, b) => (a.heroOrder || 1) - (b.heroOrder || 1));
+    }
+
+    // 2. Fallback: featured products sorted by reviews & rating
     const featured = products.filter((p) => p.isFeatured !== false && p.isActive !== false);
     const sortedFeatured = [...featured].sort(
       (a, b) => (b.reviewCount || 0) - (a.reviewCount || 0) || (b.rating || 5) - (a.rating || 5)
@@ -46,6 +56,7 @@ export default function HomePage() {
       return sortedFeatured.slice(0, 4);
     }
 
+    // 3. Fallback: all active products
     const active = products.filter((p) => p.isActive !== false);
     return [...active]
       .sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0) || (b.rating || 5) - (a.rating || 5))
@@ -136,7 +147,7 @@ export default function HomePage() {
                       href={`/products/${activeProduct.slug}`}
                       className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm py-3.5 px-6 rounded-xl transition-all shadow-xs"
                     >
-                      <span>Order {activeProduct.nameBn.split(' ')[0]}</span>
+                      <span>এখনই অর্ডার করুন (Order Now)</span>
                       <ArrowRight className="w-4 h-4" />
                     </Link>
 

@@ -77,6 +77,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, message: 'Product saved successfully!' });
     }
 
+    // Hero Slider toggle request
+    if (body.toggleHeroSlider) {
+      const { slug, isHeroSlider, heroOrder } = body;
+      if (!slug) {
+        return NextResponse.json({ success: false, message: 'Product slug is required' }, { status: 400 });
+      }
+
+      const db = await getDb();
+      if (db) {
+        const updateFields: Record<string, unknown> = {
+          isHeroSlider: Boolean(isHeroSlider),
+          updatedAt: new Date().toISOString(),
+        };
+        if (heroOrder !== undefined) {
+          updateFields.heroOrder = Number(heroOrder);
+        }
+        await db.collection('products').updateOne({ slug }, { $set: updateFields });
+      }
+
+      return NextResponse.json({ success: true, message: 'Hero slider visibility updated!' });
+    }
+
     // Stock update request
     const { slug, variantId, inStock, stockCount } = body;
     if (!slug || !variantId) {

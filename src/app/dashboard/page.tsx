@@ -113,6 +113,8 @@ function DashboardContent() {
   const [prodBasePrice, setProdBasePrice] = useState<number>(499);
   const [prodOriginalPrice, setProdOriginalPrice] = useState<number>(800);
   const [prodIsFeatured, setProdIsFeatured] = useState<boolean>(true);
+  const [prodIsHeroSlider, setProdIsHeroSlider] = useState<boolean>(true);
+  const [prodHeroOrder, setProdHeroOrder] = useState<number>(1);
   const [prodIsActive, setProdIsActive] = useState<boolean>(true);
   const [prodImages, setProdImages] = useState<string[]>([]);
   const [prodVariants, setProdVariants] = useState<ProductVariant[]>([]);
@@ -367,6 +369,18 @@ function DashboardContent() {
     },
   });
 
+  // Hero Slider toggle mutation
+  const toggleHeroSliderMutation = useMutation({
+    mutationFn: async ({ slug, isHeroSlider }: { slug: string; isHeroSlider: boolean }) => {
+      const res = await axios.post('/api/products', { toggleHeroSlider: true, slug, isHeroSlider });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+  });
+
   // Delete Product Mutation
   const deleteProductMutation = useMutation({
     mutationFn: async (slug: string) => {
@@ -441,6 +455,8 @@ function DashboardContent() {
     setProdBasePrice(499);
     setProdOriginalPrice(800);
     setProdIsFeatured(true);
+    setProdIsHeroSlider(true);
+    setProdHeroOrder(1);
     setProdIsActive(true);
     setProdRating(5.0);
     setProdReviewCount(0);
@@ -517,6 +533,8 @@ function DashboardContent() {
     setProdBasePrice(prod.basePrice || 499);
     setProdOriginalPrice(prod.originalPrice || 800);
     setProdIsFeatured(prod.isFeatured !== false);
+    setProdIsHeroSlider(prod.isHeroSlider !== false);
+    setProdHeroOrder(prod.heroOrder || 1);
     setProdIsActive(prod.isActive !== false);
     setProdRating(prod.rating || 5.0);
     setProdReviewCount(prod.reviewCount || 0);
@@ -627,6 +645,8 @@ function DashboardContent() {
       featuresBn: prodFeaturesBn,
       specificationsBn: prodSpecificationsBn,
       isFeatured: prodIsFeatured,
+      isHeroSlider: prodIsHeroSlider,
+      heroOrder: Number(prodHeroOrder) || 1,
       isActive: prodIsActive,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -1184,6 +1204,25 @@ function DashboardContent() {
                       </div>
 
                       <div className="flex items-center gap-2">
+                        {/* Quick Hero Slider Switch */}
+                        <button
+                          onClick={() =>
+                            toggleHeroSliderMutation.mutate({
+                              slug: prod.slug,
+                              isHeroSlider: !prod.isHeroSlider,
+                            })
+                          }
+                          className={`text-[10px] font-bold px-2.5 py-1.5 rounded-lg border flex items-center gap-1.5 transition-all cursor-pointer ${
+                            prod.isHeroSlider
+                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-xs ring-1 ring-amber-500/30'
+                              : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
+                          }`}
+                          title="Click to toggle Homepage Hero Slider banner"
+                        >
+                          <Sparkles className="w-3 h-3 text-amber-400" />
+                          <span>{prod.isHeroSlider ? `In Hero Slider (#${prod.heroOrder || 1})` : '+ Add to Hero'}</span>
+                        </button>
+
                         <span className="text-xs font-bold text-rose-400 bg-rose-500/10 px-3 py-1.5 rounded-lg border border-rose-500/20">
                           Base: ৳{prod.basePrice} (Orig: ৳{prod.originalPrice})
                         </span>
@@ -1740,15 +1779,15 @@ function DashboardContent() {
                 </div>
               </div>
 
-              {/* Status Toggles (isFeatured & isActive) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Status Toggles (isFeatured, isHeroSlider & isActive) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
                   <div>
                     <label className="font-bold text-white text-xs flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-amber-400" />
-                      <span>Featured Product (Homepage Hero Slider)</span>
+                      <Star className="w-4 h-4 text-rose-400" />
+                      <span>Featured Product</span>
                     </label>
-                    <p className="text-[10px] text-slate-400">Featured products appear in the homepage slider & top showcase</p>
+                    <p className="text-[10px] text-slate-400">Featured badge & showcase</p>
                   </div>
                   <input
                     type="checkbox"
@@ -1761,10 +1800,42 @@ function DashboardContent() {
                 <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
                   <div>
                     <label className="font-bold text-white text-xs flex items-center gap-1.5">
-                      <CheckSquare className="w-4 h-4 text-emerald-400" />
-                      <span>Is Active (Publish Live on Storefront)</span>
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                      <span>Hero Slider</span>
                     </label>
-                    <p className="text-[10px] text-slate-400">Uncheck to keep product in hidden draft mode</p>
+                    <p className="text-[10px] text-slate-400">Top homepage auto-slider</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {prodIsHeroSlider && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-slate-400 font-mono">#</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max="20"
+                          value={prodHeroOrder}
+                          onChange={(e) => setProdHeroOrder(Number(e.target.value))}
+                          className="w-10 px-1.5 py-1 bg-slate-900 border border-slate-700 rounded-lg text-amber-300 text-xs font-mono font-bold text-center"
+                          title="Slide display sequence"
+                        />
+                      </div>
+                    )}
+                    <input
+                      type="checkbox"
+                      checked={prodIsHeroSlider}
+                      onChange={(e) => setProdIsHeroSlider(e.target.checked)}
+                      className="w-5 h-5 accent-amber-500 rounded cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
+                  <div>
+                    <label className="font-bold text-white text-xs flex items-center gap-1.5">
+                      <CheckSquare className="w-4 h-4 text-emerald-400" />
+                      <span>Is Active</span>
+                    </label>
+                    <p className="text-[10px] text-slate-400">Publish live on storefront</p>
                   </div>
                   <input
                     type="checkbox"
