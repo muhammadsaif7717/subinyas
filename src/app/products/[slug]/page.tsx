@@ -517,16 +517,10 @@ export default function ProductDetailPage() {
                   {product.category || 'Exclusive'}
                 </span>
 
-                {/* Rating & Reviews */}
+                {/* Rating Badge */}
                 <div className="flex items-center gap-1.5 text-xs text-amber-500 font-bold bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200/60">
                   <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                   <span>{product.rating?.toFixed(1) || '5.0'}</span>
-                  <button
-                    onClick={() => setActiveTab('reviews')}
-                    className="text-slate-400 font-normal hover:underline cursor-pointer"
-                  >
-                    ({product.reviewCount || 0} reviews)
-                  </button>
                 </div>
               </div>
 
