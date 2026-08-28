@@ -193,7 +193,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-3">
             {user?.avatar ? (
               <div className="relative w-11 h-11 rounded-2xl overflow-hidden border-2 border-[#C4587A]/40 shrink-0">
-                <Image src={user.avatar} alt={user.name} fill className="object-cover" />
+                <Image src={user.avatar} alt={user.name} fill unoptimized className="object-cover" />
               </div>
             ) : (
               <div className="w-11 h-11 rounded-2xl bg-[#C4587A]/20 border border-[#C4587A]/40 flex items-center justify-center text-[#E39BB4] text-base font-bold font-mono shrink-0">
