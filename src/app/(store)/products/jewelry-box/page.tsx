@@ -18,13 +18,23 @@ import {
   Check,
   Eye,
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { OrderReceiptModal } from '@/components/OrderReceiptModal';
 import { INITIAL_JEWELRY_BOX_PRODUCT } from '@/lib/constants';
-import { Order, DeliveryArea } from '@/lib/types';
+import { Order, DeliveryArea, Product } from '@/lib/types';
 import { trackViewContent, trackInitiateCheckout, trackPurchase } from '@/lib/pixel';
 
 export default function JewelryBoxLandingPage() {
-  const product = INITIAL_JEWELRY_BOX_PRODUCT;
+  const { data: dynamicProduct } = useQuery<Product>({
+    queryKey: ['product', 'jewelry-box'],
+    queryFn: async () => {
+      const res = await axios.get('/api/products?slug=jewelry-box');
+      return res.data?.product;
+    },
+    initialData: INITIAL_JEWELRY_BOX_PRODUCT,
+  });
+
+  const product = dynamicProduct || INITIAL_JEWELRY_BOX_PRODUCT;
 
   // Selected state
   const [selectedImage, setSelectedImage] = useState(product.images[0]);
