@@ -1711,7 +1711,7 @@ function DashboardContent() {
             <form onSubmit={handleSaveProductForm} className="space-y-5 text-xs sm:text-sm">
               {/* Product Name */}
               <div>
-                <label className={labelCls}>প্রোডাক্ট টাইটেল / নাম *</label>
+                <label className={labelCls}>Product Name *</label>
                 <input
                   type="text"
                   required
@@ -1738,7 +1738,7 @@ function DashboardContent() {
               {/* Slug, Category, Pricing */}
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div>
-                  <label className={labelCls}>URL Slug *</label>
+                  <label className={labelCls}>Slug *</label>
                   <input
                     type="text"
                     required
@@ -1782,7 +1782,7 @@ function DashboardContent() {
                 </div>
 
                 <div>
-                  <label className={labelCls}>Base Price (৳) *</label>
+                  <label className={labelCls}>Base Price *</label>
                   <input
                     type="number"
                     required
@@ -1793,7 +1793,7 @@ function DashboardContent() {
                 </div>
 
                 <div>
-                  <label className={labelCls}>Original / Scratch Price (৳) *</label>
+                  <label className={labelCls}>Original Price *</label>
                   <input
                     type="number"
                     required
@@ -1810,9 +1810,9 @@ function DashboardContent() {
                   <div>
                     <label className="font-bold text-white text-xs flex items-center gap-1.5">
                       <Star className="w-4 h-4 text-[#E39BB4]" />
-                      <span>Featured Product</span>
+                      <span>Featured</span>
                     </label>
-                    <p className="text-[10px] text-[#8A7D97]">Featured badge & showcase</p>
+                    <p className="text-[10px] text-[#8A7D97]">Enable or Disable</p>
                   </div>
                   <input
                     type="checkbox"
@@ -1828,7 +1828,7 @@ function DashboardContent() {
                       <Sparkles className="w-4 h-4 text-[#D3A45E]" />
                       <span>Hero Slider</span>
                     </label>
-                    <p className="text-[10px] text-[#8A7D97]">Top homepage auto-slider</p>
+                    <p className="text-[10px] text-[#8A7D97]">Enable or Disable</p>
                   </div>
                   <div className="flex items-center gap-2">
                     {prodIsHeroSlider && (
@@ -1860,7 +1860,7 @@ function DashboardContent() {
                       <CheckSquare className="w-4 h-4 text-[#8FC7A9]" />
                       <span>Is Active</span>
                     </label>
-                    <p className="text-[10px] text-[#8A7D97]">Publish live on storefront</p>
+                    <p className="text-[10px] text-[#8A7D97]">Enable or Disable</p>
                   </div>
                   <input
                     type="checkbox"
@@ -1873,7 +1873,7 @@ function DashboardContent() {
 
               {/* Tagline & Description */}
               <div>
-                <label className={labelCls}>Short Tagline / Subtitle *</label>
+                <label className={labelCls}>Subtitle *</label>
                 <input
                   type="text"
                   required
@@ -1885,7 +1885,7 @@ function DashboardContent() {
               </div>
 
               <div>
-                <label className={labelCls}>Detailed Description *</label>
+                <label className={labelCls}>Description *</label>
                 <textarea
                   rows={3}
                   required
@@ -1900,7 +1900,7 @@ function DashboardContent() {
               <div className="bg-[#14111A] p-4 rounded-2xl border border-[#2E2733] space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-bold text-white text-xs">Color Variants & Inventory Stock</h3>
+                    <h3 className="font-bold text-white text-xs">Variants & Stock</h3>
                     <p className="text-[11px] text-[#8A7D97]">Add color variants, hex colors, and individual stock counts</p>
                   </div>
                   <button
@@ -2097,11 +2097,11 @@ function DashboardContent() {
                 </div>
               </div>
 
-              {/* Combo Deals Builder */}
+              {/* Packages Builder */}
               <div className="bg-[#14111A] p-4 rounded-2xl border border-[#2E2733] space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-bold text-white text-xs">Combo Packages & Quantity Deals</h3>
+                    <h3 className="font-bold text-white text-xs">Packages</h3>
                     <p className="text-[11px] text-[#8A7D97]">Setup 1-Pack, 2-Pack quantity deals with discounted pricing</p>
                   </div>
                   <button
@@ -2126,7 +2126,7 @@ function DashboardContent() {
                     className="bg-[#211C28] hover:bg-[#2A2430] text-[#D8CFE0] text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-[#2E2733]"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Add Combo Deal</span>
+                    <span>Add Package</span>
                   </button>
                 </div>
 
@@ -2217,11 +2217,11 @@ function DashboardContent() {
                 </div>
               </div>
 
-              {/* Key Features Builder */}
+              {/* Features Builder */}
               <div className="bg-[#14111A] p-4 rounded-2xl border border-[#2E2733] space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-bold text-white text-xs">Key Highlights & Features</h3>
+                    <h3 className="font-bold text-white text-xs">Features</h3>
                     <p className="text-[11px] text-[#8A7D97]">Add highlight bullet cards for the product page</p>
                   </div>
                   <button
@@ -2297,7 +2297,7 @@ function DashboardContent() {
               <div className="bg-[#14111A] p-4 rounded-2xl border border-[#2E2733] space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-bold text-white text-xs">Technical Specifications</h3>
+                    <h3 className="font-bold text-white text-xs">Specifications</h3>
                     <p className="text-[11px] text-[#8A7D97]">Material, size, warranty and specifications</p>
                   </div>
                   <button
