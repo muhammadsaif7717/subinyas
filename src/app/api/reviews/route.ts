@@ -4,6 +4,40 @@ import { getDb } from '@/lib/mongodb';
 import { Review, Product } from '@/lib/types';
 import { ObjectId } from 'mongodb';
 
+// Helper for admin auth check with DB fallback
+async function checkIsAdmin(request: NextRequest): Promise<boolean> {
+  try {
+    const token =
+      request.cookies.get('subinyas_admin_token')?.value ||
+      request.headers.get('authorization')?.replace('Bearer ', '');
+
+    if (!token) return false;
+
+    const payload = verifyJwtToken(token);
+    if (!payload) return false;
+
+    if (payload.role && payload.role.toLowerCase() === 'admin') {
+      return true;
+    }
+
+    const db = await getDb();
+    if (db && (payload.email || payload.userId)) {
+      const query: Record<string, unknown> = {};
+      if (payload.email) query.email = payload.email;
+      else if (payload.userId) query.userId = payload.userId;
+
+      const user = await db.collection('users').findOne(query);
+      if (user && user.role && user.role.toLowerCase() === 'admin') {
+        return true;
+      }
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -76,24 +110,21 @@ export async function POST(request: NextRequest) {
     let productId = '';
 
     if (db) {
-      const product = (await db.collection('products').findOne({ slug: productSlug })) as unknown as Product | null;
+      const product = await db.collection('products').findOne({ slug: productSlug });
       if (product) {
         productId = product._id?.toString() || product.id || '';
       }
     }
 
-    // New reviews start in 'Pending' status awaiting Admin Approval
     const newReview: Review = {
       id: `rev-${Date.now()}`,
-      productId,
+      productId: productId || undefined,
       productSlug,
       userId: payload.userId,
-      userName: payload.name || 'Customer',
-      userAvatar: payload.avatar,
-      rating: Number(rating) || 5,
+      userName: payload.name || payload.email?.split('@')[0] || 'Customer',
+      rating: Number(rating),
       comment: comment.trim(),
       mediaUrls: Array.isArray(mediaUrls) ? mediaUrls : [],
-      isVerifiedPurchase: true,
       status: 'Pending',
       createdAt: new Date().toISOString(),
     };
@@ -105,7 +136,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'আপনার রিভিউটি সফলভাবে সাবমিট হয়েছে। অ্যাডমিনের পর্যালোচনার পর এটি প্রকাশিত হবে।',
+      message: 'Review submitted successfully and is pending admin approval.',
       review: newReview,
     }, { status: 201 });
   } catch (error) {
@@ -117,14 +148,9 @@ export async function POST(request: NextRequest) {
 // Admin Moderation: Approve or Decline
 export async function PATCH(request: NextRequest) {
   try {
-    const token = request.cookies.get('subinyas_admin_token')?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    }
-
-    const payload = verifyJwtToken(token);
-    if (payload?.role !== 'admin') {
-      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
+    const isAdmin = await checkIsAdmin(request);
+    if (!isAdmin) {
+      return NextResponse.json({ success: false, message: 'Unauthorized - Admin access required' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -182,14 +208,9 @@ export async function PATCH(request: NextRequest) {
 // Admin delete review
 export async function DELETE(request: NextRequest) {
   try {
-    const token = request.cookies.get('subinyas_admin_token')?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    }
-
-    const payload = verifyJwtToken(token);
-    if (payload?.role !== 'admin') {
-      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
+    const isAdmin = await checkIsAdmin(request);
+    if (!isAdmin) {
+      return NextResponse.json({ success: false, message: 'Unauthorized - Admin access required' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);

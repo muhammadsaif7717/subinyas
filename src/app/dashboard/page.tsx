@@ -35,6 +35,14 @@ import {
   Folder,
   ChevronDown,
   GripVertical,
+  ArrowUpRight,
+  ShieldCheck,
+  ShoppingBag,
+  Store,
+  DollarSign,
+  Truck,
+  AlertCircle,
+  Eye,
 } from 'lucide-react';
 import { Order, OrderStatus, StoreSettings, Product, Review, ProductVariant, ComboOption } from '@/lib/types';
 import { CategoryItem } from '@/app/api/categories/route';
@@ -83,9 +91,8 @@ function DashboardContent() {
   const [reviewStatusFilter, setReviewStatusFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Category Add / Form State (Left Form)
+  // Category Add State (English Only UI)
   const [newCatName, setNewCatName] = useState('');
-  const [newCatNameBn, setNewCatNameBn] = useState('');
   const [catError, setCatError] = useState('');
   const [catSuccess, setCatSuccess] = useState('');
 
@@ -137,7 +144,7 @@ function DashboardContent() {
     },
   });
 
-  // Fetch categories from MongoDB (sorted by order)
+  // Fetch categories from MongoDB
   const { data: categoriesData, isLoading: isCategoriesLoading, refetch: refetchCategories } = useQuery<{
     success: boolean;
     categories: CategoryItem[];
@@ -150,8 +157,6 @@ function DashboardContent() {
   });
 
   const categories = categoriesData?.categories || [];
-
-  // Update default order when categories change
 
   // Fetch reviews for moderation
   const { data: reviewsData, isLoading: isReviewsLoading, refetch: refetchReviews } = useQuery<Review[]>({
@@ -171,7 +176,7 @@ function DashboardContent() {
     },
   });
 
-  // Settings form local state
+  // Settings form state
   const [metaPixelId, setMetaPixelId] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [phone, setPhone] = useState('');
@@ -236,14 +241,14 @@ function DashboardContent() {
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       setNewCatName('');
-      setCatSuccess('ক্যাটাগরি সফলভাবে সংরক্ষিত হয়েছে!');
+      setCatSuccess('Category created successfully!');
       setTimeout(() => setCatSuccess(''), 3000);
     },
     onError: (err: unknown) => {
       const msg =
         axios.isAxiosError(err) && err.response?.data?.message
           ? err.response.data.message
-          : 'ক্যাটাগরি যুক্ত করতে সমস্যা হয়েছে।';
+          : 'Failed to create category.';
       setCatError(msg);
     },
   });
@@ -269,14 +274,14 @@ function DashboardContent() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
-      setCatSuccess('ক্যাটাগরি মুছে ফেলা হয়েছে');
+      setCatSuccess('Category deleted successfully');
       setTimeout(() => setCatSuccess(''), 2500);
     },
     onError: (err: unknown) => {
       const msg =
         axios.isAxiosError(err) && err.response?.data?.message
           ? err.response.data.message
-          : 'ক্যাটাগরি মুছতে সমস্যা হয়েছে।';
+          : 'Failed to delete category.';
       setCatError(msg);
     },
   });
@@ -383,7 +388,7 @@ function DashboardContent() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
-      setProductFormSuccess('প্রোডাক্ট সফলভাবে ডাটাবেসে সেভ হয়েছে!');
+      setProductFormSuccess('Product successfully saved to MongoDB database!');
       setTimeout(() => {
         setProductFormSuccess('');
         setIsProductModalOpen(false);
@@ -393,7 +398,7 @@ function DashboardContent() {
       const msg =
         axios.isAxiosError(err) && err.response?.data?.message
           ? err.response.data.message
-          : 'প্রোডাক্ট সেভ করতে সমস্যা হয়েছে।';
+          : 'Failed to save product.';
       setProductFormError(msg);
     },
   });
@@ -407,7 +412,7 @@ function DashboardContent() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
       queryClient.invalidateQueries({ queryKey: ['store-settings'] });
-      setSettingsSuccess('সেটিংস সফলভাবে সংরক্ষিত হয়েছে!');
+      setSettingsSuccess('Settings saved successfully!');
       setTimeout(() => setSettingsSuccess(''), 4000);
     },
   });
@@ -576,7 +581,7 @@ function DashboardContent() {
         }
       }
     } catch {
-      setProductFormError('ইমেজ আপলোড করতে সমস্যা হয়েছে।');
+      setProductFormError('Failed to upload image.');
     } finally {
       setIsUploadingImage(false);
     }
@@ -588,7 +593,7 @@ function DashboardContent() {
     setProductFormError('');
 
     if (!prodName.trim() || !prodNameBn.trim() || !prodSlug.trim()) {
-      setProductFormError('পণ্যের নাম (English & Bangla) এবং স্লাগ আবশ্যক।');
+      setProductFormError('Product Name (English), Name (Bangla), and Slug are required.');
       return;
     }
 
@@ -625,7 +630,7 @@ function DashboardContent() {
     e.preventDefault();
     setCatError('');
     if (!newCatName.trim()) {
-      setCatError('ক্যাটাগরির নাম দিন।');
+      setCatError('Please enter a category name.');
       return;
     }
     const nextOrder =
@@ -663,18 +668,20 @@ function DashboardContent() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans">
-      {/* Sleek Admin Navbar with Profile Dropdown */}
-      <header className="bg-slate-950/90 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-md">
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-rose-500 selection:text-white">
+      {/* Top Navbar with Profile Dropdown */}
+      <header className="bg-slate-900/80 border-b border-slate-800/80 sticky top-0 z-30 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm shadow-md shadow-rose-500/20">
-                স
+            <Link href="/dashboard" className="flex items-center gap-2.5 group">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-rose-500 to-pink-500 flex items-center justify-center text-white font-black text-base shadow-lg shadow-rose-500/25 group-hover:scale-105 transition-transform">
+                S
               </div>
               <div>
-                <span className="font-extrabold text-white text-base">সুবিন্যাস</span>
-                <span className="text-xs text-rose-400 ml-1.5 font-semibold">Admin Panel</span>
+                <span className="font-black text-white text-base tracking-tight">SUBINYAS</span>
+                <span className="text-[11px] text-rose-400 ml-2 font-bold px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 uppercase tracking-wider">
+                  Admin Console
+                </span>
               </div>
             </Link>
           </div>
@@ -688,8 +695,8 @@ function DashboardContent() {
                 refetchProducts();
                 refetchCategories();
               }}
-              className="p-2 text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 rounded-lg border border-slate-700 cursor-pointer transition-colors"
-              title="তথ্য রিফ্রেশ করুন"
+              className="p-2 text-slate-400 hover:text-white bg-slate-800/60 hover:bg-slate-800 rounded-xl border border-slate-700/70 cursor-pointer transition-all hover:border-slate-600 shadow-xs"
+              title="Refresh Data"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
@@ -698,22 +705,22 @@ function DashboardContent() {
             <div className="relative" ref={profileDropdownRef}>
               <button
                 onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className="flex items-center gap-2 text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 py-1.5 px-3 rounded-full border border-slate-700 transition-all cursor-pointer shadow-xs"
+                className="flex items-center gap-2.5 text-xs font-semibold text-slate-200 bg-slate-800/80 hover:bg-slate-800 py-1.5 pl-2 pr-3 rounded-full border border-slate-700/80 transition-all cursor-pointer shadow-xs hover:border-slate-600"
               >
                 {user?.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={user.avatar}
                     alt={user.name || 'Admin'}
-                    className="w-5 h-5 rounded-full object-cover border border-rose-500/50"
+                    className="w-6 h-6 rounded-full object-cover border border-rose-500/60 shadow-xs"
                   />
                 ) : (
-                  <div className="w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center text-[10px] font-bold">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-rose-500 to-pink-600 text-white flex items-center justify-center text-xs font-black">
                     {user?.name ? user.name.slice(0, 1).toUpperCase() : 'A'}
                   </div>
                 )}
-                <span className="max-w-[100px] truncate hidden sm:inline">{user?.name || 'Admin'}</span>
-                <span className="bg-rose-500/20 text-rose-300 text-[10px] font-bold px-1.5 py-0.2 rounded border border-rose-500/30">
+                <span className="max-w-[120px] truncate hidden sm:inline font-medium">{user?.name || 'Administrator'}</span>
+                <span className="bg-rose-500/20 text-rose-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-rose-500/30">
                   Admin
                 </span>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
@@ -721,16 +728,16 @@ function DashboardContent() {
 
               {/* Dropdown Menu */}
               {isProfileDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-slate-950 rounded-2xl shadow-2xl border border-slate-800 py-2 text-xs text-slate-200 z-50 animate-in fade-in duration-150">
+                <div className="absolute right-0 mt-2 w-64 bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 py-2 text-xs text-slate-200 z-50 animate-in fade-in duration-150">
                   {/* Admin Info Header */}
-                  <div className="px-4 py-2.5 border-b border-slate-800/80">
+                  <div className="px-4 py-3 border-b border-slate-800">
                     <div className="flex items-center justify-between">
                       <p className="font-bold text-white text-sm truncate">{user?.name || 'Store Admin'}</p>
-                      <span className="bg-rose-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                      <span className="bg-rose-600 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded">
                         Admin
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-400 font-mono truncate">{user?.email || 'admin@subinyas.shop'}</p>
+                    <p className="text-[11px] text-slate-400 font-mono truncate mt-0.5">{user?.email || 'admin@subinyas.shop'}</p>
                   </div>
 
                   {/* Navigation Links inside Dropdown */}
@@ -740,12 +747,12 @@ function DashboardContent() {
                         switchTab('orders');
                         setIsProfileDropdownOpen(false);
                       }}
-                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-900 transition-colors text-left cursor-pointer ${
-                        activeTab === 'orders' ? 'text-rose-400 font-bold bg-slate-900/50' : 'text-slate-300'
+                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-800 transition-colors text-left cursor-pointer ${
+                        activeTab === 'orders' ? 'text-rose-400 font-bold bg-slate-800/60' : 'text-slate-300'
                       }`}
                     >
                       <Package className="w-4 h-4 text-rose-400" />
-                      <span>অর্ডার ম্যানেজমেন্ট ({orders.length})</span>
+                      <span>Orders Management ({orders.length})</span>
                     </button>
 
                     <button
@@ -753,12 +760,12 @@ function DashboardContent() {
                         switchTab('products');
                         setIsProfileDropdownOpen(false);
                       }}
-                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-900 transition-colors text-left cursor-pointer ${
-                        activeTab === 'products' ? 'text-rose-400 font-bold bg-slate-900/50' : 'text-slate-300'
+                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-800 transition-colors text-left cursor-pointer ${
+                        activeTab === 'products' ? 'text-rose-400 font-bold bg-slate-800/60' : 'text-slate-300'
                       }`}
                     >
                       <Layers className="w-4 h-4 text-teal-400" />
-                      <span>প্রোডাক্ট ও স্টক কন্ট্রোল ({products.length})</span>
+                      <span>Products & Stock ({products.length})</span>
                     </button>
 
                     <button
@@ -766,12 +773,12 @@ function DashboardContent() {
                         switchTab('categories');
                         setIsProfileDropdownOpen(false);
                       }}
-                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-900 transition-colors text-left cursor-pointer ${
-                        activeTab === 'categories' ? 'text-rose-400 font-bold bg-slate-900/50' : 'text-slate-300'
+                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-800 transition-colors text-left cursor-pointer ${
+                        activeTab === 'categories' ? 'text-rose-400 font-bold bg-slate-800/60' : 'text-slate-300'
                       }`}
                     >
                       <Folder className="w-4 h-4 text-amber-400" />
-                      <span>ক্যাটাগরি সেটিংস ({categories.length})</span>
+                      <span>Categories ({categories.length})</span>
                     </button>
 
                     <button
@@ -779,14 +786,14 @@ function DashboardContent() {
                         switchTab('reviews');
                         setIsProfileDropdownOpen(false);
                       }}
-                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-900 transition-colors text-left cursor-pointer ${
-                        activeTab === 'reviews' ? 'text-rose-400 font-bold bg-slate-900/50' : 'text-slate-300'
+                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-800 transition-colors text-left cursor-pointer ${
+                        activeTab === 'reviews' ? 'text-rose-400 font-bold bg-slate-800/60' : 'text-slate-300'
                       }`}
                     >
                       <MessageSquare className="w-4 h-4 text-purple-400" />
-                      <span>রিভিউ মডারেশন ({reviews.length})</span>
+                      <span>Reviews Moderation ({reviews.length})</span>
                       {pendingReviews > 0 && (
-                        <span className="ml-auto bg-amber-400 text-slate-950 text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+                        <span className="ml-auto bg-amber-400 text-slate-950 text-[10px] font-black px-1.5 py-0.2 rounded-full">
                           {pendingReviews}
                         </span>
                       )}
@@ -797,34 +804,34 @@ function DashboardContent() {
                         switchTab('settings');
                         setIsProfileDropdownOpen(false);
                       }}
-                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-900 transition-colors text-left cursor-pointer ${
-                        activeTab === 'settings' ? 'text-rose-400 font-bold bg-slate-900/50' : 'text-slate-300'
+                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-800 transition-colors text-left cursor-pointer ${
+                        activeTab === 'settings' ? 'text-rose-400 font-bold bg-slate-800/60' : 'text-slate-300'
                       }`}
                     >
                       <SettingsIcon className="w-4 h-4 text-blue-400" />
-                      <span>স্টোর ও মেটা পিক্সেল কনফিগ</span>
+                      <span>Store & Meta Pixel Config</span>
                     </button>
 
-                    {/* Website view inside dropdown */}
+                    {/* Website View */}
                     <Link
                       href="/"
                       target="_blank"
                       onClick={() => setIsProfileDropdownOpen(false)}
-                      className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-900 text-emerald-400 font-medium transition-colors border-t border-slate-800/80"
+                      className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-800 text-emerald-400 font-medium transition-colors border-t border-slate-800"
                     >
                       <div className="flex items-center gap-2">
                         <ExternalLink className="w-4 h-4" />
-                        <span>ওয়েবসাইট দেখুন</span>
+                        <span>View Live Store</span>
                       </div>
                       <span className="text-[10px] text-slate-500 font-mono">↗</span>
                     </Link>
 
                     <button
                       onClick={() => logout()}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-900 text-rose-400 font-semibold border-t border-slate-800 cursor-pointer text-left transition-colors"
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-800 text-rose-400 font-semibold border-t border-slate-800 cursor-pointer text-left transition-colors"
                     >
                       <LogOut className="w-4 h-4" />
-                      <span>লগআউট (Log Out)</span>
+                      <span>Log Out</span>
                     </button>
                   </div>
                 </div>
@@ -837,40 +844,40 @@ function DashboardContent() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Metric Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-          <div className="bg-slate-800/60 p-5 rounded-2xl border border-slate-700 shadow-md">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-medium mb-2">
-              <span>মোট রেভিনিউ</span>
-              <TrendingUp className="w-4 h-4 text-emerald-400" />
+          <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 shadow-md backdrop-blur-sm relative overflow-hidden">
+            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
+              <span>Total Revenue</span>
+              <DollarSign className="w-4 h-4 text-emerald-400" />
             </div>
             <div className="text-2xl sm:text-3xl font-black text-white">৳{totalRevenue.toLocaleString()}</div>
-            <span className="text-[11px] text-emerald-400 mt-1 block">ক্যাশ অন ডেলিভারি</span>
+            <span className="text-[11px] text-emerald-400 mt-1 block font-medium">Cash On Delivery</span>
           </div>
 
-          <div className="bg-slate-800/60 p-5 rounded-2xl border border-slate-700 shadow-md">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-medium mb-2">
-              <span>মোট অর্ডার সংখ্যা</span>
+          <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 shadow-md backdrop-blur-sm relative overflow-hidden">
+            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
+              <span>Total Orders</span>
               <Package className="w-4 h-4 text-rose-400" />
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-white">{orders.length} টি</div>
-            <span className="text-[11px] text-slate-400 mt-1 block">সকল কাস্টমার অর্ডার</span>
+            <div className="text-2xl sm:text-3xl font-black text-white">{orders.length}</div>
+            <span className="text-[11px] text-slate-400 mt-1 block font-medium">All Customer Orders</span>
           </div>
 
-          <div className="bg-slate-800/60 p-5 rounded-2xl border border-slate-700 shadow-md">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-medium mb-2">
-              <span>অপেক্ষমাণ (Pending)</span>
+          <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 shadow-md backdrop-blur-sm relative overflow-hidden">
+            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
+              <span>Pending Orders</span>
               <Clock className="w-4 h-4 text-amber-400" />
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-amber-400">{pendingOrders} টি</div>
-            <span className="text-[11px] text-slate-400 mt-1 block">পেন্ডিং রিভিউ: {pendingReviews} টি</span>
+            <div className="text-2xl sm:text-3xl font-black text-amber-400">{pendingOrders}</div>
+            <span className="text-[11px] text-slate-400 mt-1 block font-medium">Pending Reviews: {pendingReviews}</span>
           </div>
 
-          <div className="bg-slate-800/60 p-5 rounded-2xl border border-slate-700 shadow-md">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-medium mb-2">
-              <span>মোট প্রডাক্ট সংখ্যা</span>
+          <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 shadow-md backdrop-blur-sm relative overflow-hidden">
+            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
+              <span>Active Products</span>
               <Layers className="w-4 h-4 text-teal-400" />
             </div>
-            <div className="text-2xl sm:text-3xl font-black text-teal-400">{products.length} টি</div>
-            <span className="text-[11px] text-slate-400 mt-1 block">ক্যাটাগরি: {categories.length} টি</span>
+            <div className="text-2xl sm:text-3xl font-black text-teal-400">{products.length}</div>
+            <span className="text-[11px] text-slate-400 mt-1 block font-medium">Categories: {categories.length}</span>
           </div>
         </div>
 
@@ -878,52 +885,52 @@ function DashboardContent() {
         <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-3">
           <button
             onClick={() => switchTab('orders')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'orders'
-                ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30'
-                : 'bg-slate-800/80 text-slate-400 hover:text-slate-200'
+                ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30 ring-1 ring-rose-500'
+                : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border border-slate-800/80 hover:bg-slate-800'
             }`}
           >
             <Package className="w-4 h-4" />
-            <span>অর্ডার ম্যানেজমেন্ট ({orders.length})</span>
+            <span>Orders ({orders.length})</span>
           </button>
 
           <button
             onClick={() => switchTab('products')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'products'
-                ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30'
-                : 'bg-slate-800/80 text-slate-400 hover:text-slate-200'
+                ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30 ring-1 ring-rose-500'
+                : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border border-slate-800/80 hover:bg-slate-800'
             }`}
           >
             <Layers className="w-4 h-4" />
-            <span>প্রোডাক্ট ও স্টক কন্ট্রোল ({products.length})</span>
+            <span>Products & Stock ({products.length})</span>
           </button>
 
           <button
             onClick={() => switchTab('categories')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'categories'
-                ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30'
-                : 'bg-slate-800/80 text-slate-400 hover:text-slate-200'
+                ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30 ring-1 ring-rose-500'
+                : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border border-slate-800/80 hover:bg-slate-800'
             }`}
           >
             <Folder className="w-4 h-4" />
-            <span>ক্যাটাগরি সেটিংস ({categories.length})</span>
+            <span>Categories ({categories.length})</span>
           </button>
 
           <button
             onClick={() => switchTab('reviews')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'reviews'
-                ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30'
-                : 'bg-slate-800/80 text-slate-400 hover:text-slate-200'
+                ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30 ring-1 ring-rose-500'
+                : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border border-slate-800/80 hover:bg-slate-800'
             }`}
           >
             <MessageSquare className="w-4 h-4" />
-            <span>রিভিউ মডারেশন ({reviews.length})</span>
+            <span>Review Moderation ({reviews.length})</span>
             {pendingReviews > 0 && (
-              <span className="bg-amber-400 text-slate-950 text-[10px] font-extrabold px-1.5 py-0.2 rounded-full">
+              <span className="bg-amber-400 text-slate-950 text-[10px] font-black px-1.5 py-0.2 rounded-full">
                 {pendingReviews} new
               </span>
             )}
@@ -931,41 +938,41 @@ function DashboardContent() {
 
           <button
             onClick={() => switchTab('settings')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'settings'
-                ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30'
-                : 'bg-slate-800/80 text-slate-400 hover:text-slate-200'
+                ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30 ring-1 ring-rose-500'
+                : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border border-slate-800/80 hover:bg-slate-800'
             }`}
           >
             <SettingsIcon className="w-4 h-4" />
-            <span>স্টোর ও মেটা পিক্সেল কনফিগ</span>
+            <span>Store & Meta Pixel</span>
           </button>
         </div>
 
         {/* TAB 1: ORDERS */}
         {activeTab === 'orders' && (
           <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-800/40 p-4 rounded-2xl border border-slate-700">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
               <div className="relative flex-1">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                 <input
                   type="text"
-                  placeholder="অর্ডার আইডি, ফোন বা কাস্টমারের নাম দিয়ে খুঁজুন..."
+                  placeholder="Search by Order ID, Phone, or Customer Name..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
+                  className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
                 />
               </div>
 
-              <div className="flex items-center gap-2 overflow-x-auto">
+              <div className="flex items-center gap-1.5 overflow-x-auto">
                 {['All', 'Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled', 'Returned'].map((st) => (
                   <button
                     key={st}
                     onClick={() => setStatusFilter(st)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                       statusFilter === st
-                        ? 'bg-slate-200 text-slate-900'
-                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                        ? 'bg-slate-100 text-slate-900'
+                        : 'bg-slate-800/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                     }`}
                   >
                     {st}
@@ -976,39 +983,39 @@ function DashboardContent() {
               <a
                 href="/api/orders/export"
                 download="subinyas_orders.csv"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap shadow-md shadow-emerald-600/20"
               >
                 <Download className="w-4 h-4" />
-                <span>কুরিয়ার CSV এক্সপোর্ট</span>
+                <span>Courier CSV Export</span>
               </a>
             </div>
 
             {/* Orders Table */}
-            <div className="bg-slate-800/60 rounded-2xl border border-slate-700 overflow-hidden shadow-lg">
+            <div className="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
               {isOrdersLoading ? (
-                <div className="p-12 text-center text-slate-400 text-sm">অর্ডার লোড হচ্ছে...</div>
+                <div className="p-12 text-center text-slate-400 text-sm">Loading orders from database...</div>
               ) : orders.length === 0 ? (
-                <div className="p-12 text-center text-slate-400 text-sm">কোনো অর্ডার পাওয়া যায়নি।</div>
+                <div className="p-12 text-center text-slate-400 text-sm">No customer orders found matching criteria.</div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs text-slate-300">
-                    <thead className="bg-slate-950/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-700">
+                    <thead className="bg-slate-950/90 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
                       <tr>
-                        <th className="py-3 px-4">অর্ডার আইডি</th>
-                        <th className="py-3 px-4">কাস্টমার</th>
-                        <th className="py-3 px-4">পণ্য ও ভ্যারিয়েন্ট</th>
-                        <th className="py-3 px-4">মোট টাকা</th>
-                        <th className="py-3 px-4">স্ট্যাটাস</th>
-                        <th className="py-3 px-4 text-right">কুইক অ্যাকশন</th>
+                        <th className="py-3.5 px-4 font-bold">Order ID & Date</th>
+                        <th className="py-3.5 px-4 font-bold">Customer Details</th>
+                        <th className="py-3.5 px-4 font-bold">Product & Variant</th>
+                        <th className="py-3.5 px-4 font-bold">Total Amount</th>
+                        <th className="py-3.5 px-4 font-bold">Status</th>
+                        <th className="py-3.5 px-4 text-right font-bold">Quick Contact</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-700/60">
+                    <tbody className="divide-y divide-slate-800/80">
                       {orders.map((ord) => (
                         <tr key={ord.orderId} className="hover:bg-slate-800/40 transition-colors">
                           <td className="py-4 px-4 font-mono font-bold text-white">
                             {ord.orderId}
-                            <span className="block text-[10px] font-normal text-slate-400">
-                              {new Date(ord.createdAt).toLocaleDateString('bn-BD', {
+                            <span className="block text-[10px] font-normal text-slate-400 font-sans mt-0.5">
+                              {new Date(ord.createdAt).toLocaleDateString('en-GB', {
                                 day: 'numeric',
                                 month: 'short',
                                 hour: '2-digit',
@@ -1019,7 +1026,7 @@ function DashboardContent() {
                           <td className="py-4 px-4">
                             <div className="font-bold text-white text-sm">{ord.customerName}</div>
                             <div className="text-slate-400 font-mono mt-0.5">{ord.phone}</div>
-                            <div className="text-[11px] text-slate-400 max-w-[180px] truncate mt-0.5" title={ord.address}>
+                            <div className="text-[11px] text-slate-400 max-w-[200px] truncate mt-0.5" title={ord.address}>
                               📍 {ord.address}
                             </div>
                           </td>
@@ -1027,13 +1034,13 @@ function DashboardContent() {
                             <div className="font-semibold text-rose-300">{ord.productNameBn}</div>
                             <div className="text-[11px] text-slate-300">{ord.comboTitleBn}</div>
                             <div className="text-[10px] text-slate-400 font-mono">
-                              কালার: {ord.selectedVariants?.join(', ')}
+                              Colors: {ord.selectedVariants?.join(', ')}
                             </div>
                           </td>
                           <td className="py-4 px-4">
-                            <div className="font-extrabold text-white text-sm">৳{ord.totalAmount}</div>
+                            <div className="font-black text-white text-sm">৳{ord.totalAmount}</div>
                             <div className="text-[10px] text-slate-400">
-                              {ord.deliveryArea === 'inside_dhaka' ? 'ঢাকা (৳৭০)' : 'ঢাকার বাইরে (৳১৩০)'}
+                              {ord.deliveryArea === 'inside_dhaka' ? 'Inside Dhaka (৳70)' : 'Outside Dhaka (৳130)'}
                             </div>
                           </td>
                           <td className="py-4 px-4">
@@ -1066,8 +1073,8 @@ function DashboardContent() {
                             <div className="flex items-center justify-end gap-2">
                               <a
                                 href={`tel:${ord.phone}`}
-                                className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-200"
-                                title="কল করুন"
+                                className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 transition-colors"
+                                title="Call Customer"
                               >
                                 <Phone className="w-3.5 h-3.5" />
                               </a>
@@ -1077,8 +1084,8 @@ function DashboardContent() {
                                 )}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-2 bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded-lg transition-colors"
-                                title="হোয়াটসঅ্যাপে মেসেজ পাঠান"
+                                className="p-2 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded-lg transition-colors border border-emerald-500/20"
+                                title="WhatsApp Customer"
                               >
                                 <MessageCircle className="w-3.5 h-3.5" />
                               </a>
@@ -1097,24 +1104,24 @@ function DashboardContent() {
         {/* TAB 2: PRODUCTS & INVENTORY CONTROL */}
         {activeTab === 'products' && (
           <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-800/40 p-4 rounded-2xl border border-slate-700">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
               <div>
-                <h3 className="text-base font-bold text-white">Products Management</h3>
-                <p className="text-xs text-slate-400">Manage products, dynamic categories, pricing, variants, and live inventory in MongoDB</p>
+                <h3 className="text-base font-bold text-white">Products & Inventory Control</h3>
+                <p className="text-xs text-slate-400">Manage all products, pricing, stock levels, variants, and featured status in MongoDB</p>
               </div>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => switchTab('categories')}
-                  className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 border border-slate-700 transition-colors cursor-pointer"
+                  className="bg-slate-800/80 hover:bg-slate-800 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 border border-slate-700 transition-colors cursor-pointer"
                 >
                   <FolderPlus className="w-4 h-4 text-amber-400" />
-                  <span>ক্যাটাগরি ম্যানেজমেন্ট ({categories.length})</span>
+                  <span>Manage Categories ({categories.length})</span>
                 </button>
 
                 <button
                   onClick={handleOpenAddProduct}
-                  className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-rose-600/20 transition-all cursor-pointer"
+                  className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-rose-600/25 transition-all cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Add New Product</span>
@@ -1123,10 +1130,10 @@ function DashboardContent() {
             </div>
 
             {isProductsLoading ? (
-              <div className="p-12 text-center text-slate-400">Loading products...</div>
+              <div className="p-12 text-center text-slate-400">Loading products from MongoDB...</div>
             ) : products.length === 0 ? (
-              <div className="p-12 text-center text-slate-400 bg-slate-800/40 rounded-2xl border border-slate-700 space-y-3">
-                <Layers className="w-12 h-12 mx-auto text-slate-500 stroke-1" />
+              <div className="p-12 text-center text-slate-400 bg-slate-900/40 rounded-2xl border border-slate-800 space-y-3">
+                <Layers className="w-12 h-12 mx-auto text-slate-600 stroke-1" />
                 <p>No products found in MongoDB database.</p>
                 <button
                   onClick={handleOpenAddProduct}
@@ -1138,16 +1145,16 @@ function DashboardContent() {
             ) : (
               <div className="space-y-6">
                 {products.map((prod) => (
-                  <div key={prod.slug} className="bg-slate-800/60 p-6 rounded-2xl border border-slate-700 space-y-5">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-700 pb-4">
+                  <div key={prod.slug} className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 space-y-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
                       <div className="flex items-center gap-3">
-                        <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-slate-900 border border-slate-700 shrink-0">
-                          <Image src={prod.images[0] || '/images/products/hello-kitty-pair.png'} alt={prod.nameBn} fill className="object-cover" />
+                        <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-slate-950 border border-slate-800 shrink-0">
+                          <Image src={prod.images[0] || '/images/products/hello-kitty-pair.png'} alt={prod.name} fill className="object-cover" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <h3 className="font-bold text-white text-base">{prod.nameBn}</h3>
-                            <span className="bg-slate-700 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded">
+                            <h3 className="font-bold text-white text-base">{prod.name}</h3>
+                            <span className="bg-slate-800 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded border border-slate-700">
                               {prod.category}
                             </span>
                             {prod.isFeatured && (
@@ -1157,7 +1164,7 @@ function DashboardContent() {
                               </span>
                             )}
                             {!prod.isActive && (
-                              <span className="bg-slate-700 text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded">
+                              <span className="bg-slate-800 text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded border border-slate-700">
                                 Draft / Hidden
                               </span>
                             )}
@@ -1173,7 +1180,7 @@ function DashboardContent() {
 
                         <button
                           onClick={() => handleOpenEditProduct(prod)}
-                          className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                          className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-700"
                         >
                           <Edit className="w-3.5 h-3.5" />
                           <span>Edit</span>
@@ -1182,7 +1189,7 @@ function DashboardContent() {
                         <Link
                           href={`/products/${prod.slug}`}
                           target="_blank"
-                          className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors"
+                          className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors border border-slate-700"
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
                           <span>Live</span>
@@ -1190,11 +1197,11 @@ function DashboardContent() {
 
                         <button
                           onClick={() => {
-                            if (confirm(`Are you sure you want to delete "${prod.nameBn}"?`)) {
+                            if (confirm(`Are you sure you want to delete "${prod.name}"?`)) {
                               deleteProductMutation.mutate(prod.slug);
                             }
                           }}
-                          className="p-2 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white rounded-lg transition-colors cursor-pointer"
+                          className="p-2 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white rounded-lg transition-colors cursor-pointer border border-rose-500/20"
                           title="Delete Product"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -1205,18 +1212,18 @@ function DashboardContent() {
                     {/* Variants and Stock */}
                     <div>
                       <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-                        Color Variants & Stock Status
+                        Color Variants & Live Stock Inventory
                       </h4>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         {prod.variants?.map((v) => (
-                          <div key={v.id} className="bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 space-y-2.5">
+                          <div key={v.id} className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800 space-y-2.5">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2.5">
                                 <div
                                   className="w-4 h-4 rounded-full border border-slate-600 shrink-0"
                                   style={{ backgroundColor: v.colorHex }}
                                 />
-                                <span className="font-bold text-white text-xs truncate">{v.nameBn}</span>
+                                <span className="font-bold text-white text-xs truncate">{v.name}</span>
                               </div>
                               <span className="text-[10px] font-mono text-slate-400">Stock: {v.stockCount || 0}</span>
                             </div>
@@ -1252,30 +1259,32 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* TAB 3: CATEGORY SETTINGS (LEFT FORM, RIGHT LIST WITH RE-ORDER) */}
+        {/* TAB 3: CATEGORY SETTINGS (LEFT FORM, RIGHT LIST WITH DRAG & DROP) */}
         {activeTab === 'categories' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* LEFT SIDE: Add Category Form (5 cols) */}
-            <div className="lg:col-span-5 bg-slate-800/60 p-6 rounded-2xl border border-slate-700 space-y-5 shadow-lg">
+            <div className="lg:col-span-5 bg-slate-900/60 p-6 rounded-2xl border border-slate-800 space-y-5 shadow-xl">
               <div>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
                   <FolderPlus className="w-5 h-5 text-amber-400" />
-                  <span>নতুন ক্যাটাগরি তৈরি করুন</span>
+                  <span>Create New Category</span>
                 </h3>
                 <p className="text-xs text-slate-400 mt-1">
-                  ক্যাটাগরির নাম দিন (এটি স্বয়ংক্রিয়ভাবে তালিকার শেষে যুক্ত হবে)
+                  Enter the category name. It will automatically be placed at the end of the order sequence.
                 </p>
               </div>
 
               {catError && (
-                <div className="bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs p-3.5 rounded-xl font-medium">
-                  ⚠️ {catError}
+                <div className="bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs p-3.5 rounded-xl font-medium flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{catError}</span>
                 </div>
               )}
 
               {catSuccess && (
-                <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs p-3.5 rounded-xl font-medium">
-                  ✅ {catSuccess}
+                <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs p-3.5 rounded-xl font-medium flex items-center gap-2">
+                  <Check className="w-4 h-4 shrink-0" />
+                  <span>{catSuccess}</span>
                 </div>
               )}
 
@@ -1287,47 +1296,47 @@ function DashboardContent() {
                     required
                     value={newCatName}
                     onChange={(e) => setNewCatName(e.target.value)}
-                    placeholder="যেমন: Travel, Organizers, Jewelry Box..."
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-amber-500 text-sm"
+                    placeholder="e.g. Travel, Organizers, Jewelry Box, Pouches..."
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-amber-500 text-sm"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={addCategoryMutation.isPending}
-                  className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl shadow-lg transition-colors cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl shadow-lg transition-colors cursor-pointer flex items-center justify-center gap-2 shadow-amber-600/20"
                 >
                   {addCategoryMutation.isPending ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <Plus className="w-4 h-4" />
                   )}
-                  <span>ক্যাটাগরি ডাটাবেসে সেভ করুন</span>
+                  <span>Save Category</span>
                 </button>
               </form>
             </div>
 
             {/* RIGHT SIDE: Categories List & Drag-and-Drop Reordering (7 cols) */}
-            <div className="lg:col-span-7 bg-slate-800/60 rounded-2xl border border-slate-700 overflow-hidden shadow-lg space-y-4">
-              <div className="p-5 border-b border-slate-700 flex items-center justify-between">
+            <div className="lg:col-span-7 bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden shadow-xl space-y-4">
+              <div className="p-5 border-b border-slate-800 flex items-center justify-between">
                 <div>
                   <h4 className="text-sm font-bold text-white flex items-center gap-2">
                     <Folder className="w-4 h-4 text-amber-400" />
-                    <span>সকল ক্যাটাগরি তালিকা ({categories.length} টি)</span>
+                    <span>Category List ({categories.length})</span>
                   </h4>
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    যেকোনো ক্যাটাগরি মাউস দিয়ে ড্র্যাগ (Drag & Drop) করে উপরে বা নিচে সাজিয়ে নিন
+                    Drag and drop any category item up or down to reorder sequence
                   </p>
                 </div>
               </div>
 
               {isCategoriesLoading ? (
-                <div className="p-12 text-center text-slate-400 text-xs">ক্যাটাগরি লোড হচ্ছে...</div>
+                <div className="p-12 text-center text-slate-400 text-xs">Loading categories...</div>
               ) : categories.length === 0 ? (
                 <div className="p-12 text-center text-slate-400 text-xs space-y-2">
                   <Folder className="w-10 h-10 mx-auto text-slate-600 stroke-1" />
-                  <p>ডাটাবেসে কোনো ক্যাটাগরি নেই।</p>
-                  <p className="text-[11px] text-slate-500">বামপাশের ফর্মটি ব্যবহার করে প্রথম ক্যাটাগরি যুক্ত করুন।</p>
+                  <p>No categories in database.</p>
+                  <p className="text-[11px] text-slate-500">Use the form on the left to add your first category.</p>
                 </div>
               ) : (
                 <div className="p-4 space-y-2.5 max-h-[600px] overflow-y-auto">
@@ -1351,7 +1360,7 @@ function DashboardContent() {
                       <div className="flex items-center gap-3">
                         <div
                           className="text-slate-500 hover:text-amber-400 cursor-grab active:cursor-grabbing p-1 rounded transition-colors shrink-0"
-                          title="ড্র্যাগ করে ক্রম পরিবর্তন করুন (Drag to Reorder)"
+                          title="Drag to Reorder"
                         >
                           <GripVertical className="w-4 h-4" />
                         </div>
@@ -1370,12 +1379,12 @@ function DashboardContent() {
                         <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">Drag to move</span>
                         <button
                           onClick={() => {
-                            if (confirm(`"${cat.name}" ক্যাটাগরি মুছে ফেলতে চান?`)) {
+                            if (confirm(`Are you sure you want to delete category "${cat.name}"?`)) {
                               deleteCategoryMutation.mutate(cat._id || (cat.id as string) || cat.name);
                             }
                           }}
-                          className="p-1.5 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white rounded-lg transition-colors cursor-pointer"
-                          title="ক্যাটাগরি মুছুন"
+                          className="p-1.5 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white rounded-lg transition-colors cursor-pointer border border-rose-500/20"
+                          title="Delete Category"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -1391,9 +1400,9 @@ function DashboardContent() {
         {/* TAB 4: REVIEW MODERATION */}
         {activeTab === 'reviews' && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between bg-slate-800/40 p-4 rounded-2xl border border-slate-700">
+            <div className="flex items-center justify-between bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-400">ফিল্টার:</span>
+                <span className="text-xs font-bold text-slate-400">Filter Status:</span>
                 {['All', 'Pending', 'Approved', 'Declined'].map((st) => (
                   <button
                     key={st}
@@ -1401,7 +1410,7 @@ function DashboardContent() {
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                       reviewStatusFilter === st
                         ? 'bg-rose-600 text-white'
-                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                        : 'bg-slate-800/80 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                     }`}
                   >
                     {st}
@@ -1410,22 +1419,22 @@ function DashboardContent() {
               </div>
 
               <span className="text-xs text-slate-400">
-                মোট রিভিউ: <strong className="text-white">{reviews.length} টি</strong>
+                Total Reviews: <strong className="text-white">{reviews.length}</strong>
               </span>
             </div>
 
             {isReviewsLoading ? (
-              <div className="p-12 text-center text-slate-400 text-sm">রিভিউ লোড হচ্ছে...</div>
+              <div className="p-12 text-center text-slate-400 text-sm">Loading reviews from MongoDB...</div>
             ) : reviews.length === 0 ? (
-              <div className="p-12 text-center text-slate-400 text-sm bg-slate-800/40 rounded-2xl border border-slate-700">
-                কোনো রিভিউ পাওয়া যায়নি।
+              <div className="p-12 text-center text-slate-400 text-sm bg-slate-900/40 rounded-2xl border border-slate-800">
+                No customer reviews found matching criteria.
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {reviews.map((rev) => (
                   <div
                     key={rev.id}
-                    className="bg-slate-800/60 p-5 rounded-2xl border border-slate-700 space-y-3 flex flex-col justify-between"
+                    className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 space-y-3 flex flex-col justify-between"
                   >
                     <div className="space-y-2">
                       <div className="flex items-start justify-between gap-2">
@@ -1445,8 +1454,8 @@ function DashboardContent() {
                             </span>
                           </div>
                           <span className="text-[10px] text-slate-400">
-                            Product: <strong className="text-slate-300">{rev.productSlug}</strong> •{' '}
-                            {new Date(rev.createdAt).toLocaleDateString('bn-BD')}
+                            Product Slug: <strong className="text-slate-300">{rev.productSlug}</strong> •{' '}
+                            {new Date(rev.createdAt).toLocaleDateString('en-GB')}
                           </span>
                         </div>
 
@@ -1457,7 +1466,7 @@ function DashboardContent() {
                         </div>
                       </div>
 
-                      <p className="text-xs text-slate-300 leading-relaxed bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                      <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
                         "{rev.comment}"
                       </p>
 
@@ -1467,7 +1476,7 @@ function DashboardContent() {
                           {rev.mediaUrls.map((url, idx) => (
                             <div
                               key={idx}
-                              className="relative w-14 h-14 rounded-lg overflow-hidden border border-slate-700 bg-slate-900"
+                              className="relative w-14 h-14 rounded-lg overflow-hidden border border-slate-800 bg-slate-950"
                             >
                               <Image src={url} alt="Review media" fill className="object-cover" />
                             </div>
@@ -1477,30 +1486,30 @@ function DashboardContent() {
                     </div>
 
                     {/* Action buttons */}
-                    <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-700/60">
+                    <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
                       {rev.status !== 'Approved' && (
                         <button
                           onClick={() => updateReviewStatusMutation.mutate({ reviewId: rev.id, status: 'Approved' })}
                           className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
                         >
                           <Check className="w-3.5 h-3.5" />
-                          <span>Approve (এপ্রুভ)</span>
+                          <span>Approve Review</span>
                         </button>
                       )}
 
                       {rev.status !== 'Declined' && (
                         <button
                           onClick={() => updateReviewStatusMutation.mutate({ reviewId: rev.id, status: 'Declined' })}
-                          className="bg-amber-600/30 hover:bg-amber-600 text-amber-300 hover:text-white font-bold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                          className="bg-amber-600/30 hover:bg-amber-600 text-amber-300 hover:text-white font-bold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-amber-500/30"
                         >
                           <X className="w-3.5 h-3.5" />
-                          <span>Decline (ডিক্লাইন)</span>
+                          <span>Decline</span>
                         </button>
                       )}
 
                       <button
                         onClick={() => deleteReviewMutation.mutate(rev.id)}
-                        className="bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white p-1.5 rounded-lg transition-colors cursor-pointer"
+                        className="bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white p-1.5 rounded-lg transition-colors cursor-pointer border border-rose-500/20"
                         title="Delete Review"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1515,58 +1524,58 @@ function DashboardContent() {
 
         {/* TAB 5: SETTINGS */}
         {activeTab === 'settings' && (
-          <div className="max-w-2xl bg-slate-800/60 p-6 rounded-2xl border border-slate-700 space-y-6">
+          <div className="max-w-2xl bg-slate-900/60 p-6 rounded-2xl border border-slate-800 space-y-6 shadow-xl">
             <h3 className="text-base font-bold text-white flex items-center gap-2">
               <Sliders className="w-5 h-5 text-rose-400" />
-              <span>স্টোর সেটিংস ও মেটা পিক্সেল কনফিগারেশন</span>
+              <span>Store Configuration & Meta Pixel Integration</span>
             </h3>
 
             {settingsSuccess && (
-              <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs p-3 rounded-xl">
+              <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs p-3.5 rounded-xl font-medium">
                 {settingsSuccess}
               </div>
             )}
 
             <form onSubmit={handleSaveSettings} className="space-y-4 text-xs sm:text-sm">
               <div>
-                <label className="block text-slate-300 font-medium mb-1">Meta Pixel ID (Facebook Ads Pixel)</label>
+                <label className="block text-slate-300 font-medium mb-1">Meta Pixel ID (Facebook Ads Tracking)</label>
                 <input
                   type="text"
                   value={metaPixelId}
                   onChange={(e) => setMetaPixelId(e.target.value)}
-                  placeholder="যেমন: 1234567890123456"
-                  className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500 font-mono"
+                  placeholder="e.g. 1234567890123456"
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500 font-mono text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-medium mb-1">অফিসিয়াল হোয়াটসঅ্যাপ নম্বর (৮৮০...)</label>
+                <label className="block text-slate-300 font-medium mb-1">Official WhatsApp Support Number (with Country Code)</label>
                 <input
                   type="text"
                   value={whatsappNumber}
                   onChange={(e) => setWhatsappNumber(e.target.value)}
                   placeholder="8801617492486"
-                  className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500 font-mono"
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500 font-mono text-xs"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1">ঢাকার ভিতরে ডেলিভারি চার্জ (৳)</label>
+                  <label className="block text-slate-300 font-medium mb-1">Inside Dhaka Delivery Fee (৳)</label>
                   <input
                     type="number"
                     value={deliveryInside}
                     onChange={(e) => setDeliveryInside(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1">ঢাকার বাইরে ডেলিভারি চার্জ (৳)</label>
+                  <label className="block text-slate-300 font-medium mb-1">Outside Dhaka Delivery Fee (৳)</label>
                   <input
                     type="number"
                     value={deliveryOutside}
                     onChange={(e) => setDeliveryOutside(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500"
                   />
                 </div>
               </div>
@@ -1574,9 +1583,9 @@ function DashboardContent() {
               <button
                 type="submit"
                 disabled={saveSettingsMutation.isPending}
-                className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl shadow-lg transition-colors cursor-pointer"
+                className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl shadow-lg transition-colors cursor-pointer shadow-rose-600/25"
               >
-                {saveSettingsMutation.isPending ? 'সংরক্ষণ হচ্ছে...' : 'সেটিংস আপডেট করুন'}
+                {saveSettingsMutation.isPending ? 'Saving Settings...' : 'Save Store Configuration'}
               </button>
             </form>
           </div>
@@ -1586,11 +1595,11 @@ function DashboardContent() {
       {/* FULL-FEATURED ADD / EDIT PRODUCT MODAL */}
       {isProductModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-4xl p-6 sm:p-8 space-y-6 shadow-2xl animate-in fade-in duration-200 max-h-[90vh] overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-4xl p-6 sm:p-8 space-y-6 shadow-2xl animate-in fade-in duration-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
                 <Plus className="w-5 h-5 text-rose-500" />
-                <span>{editingProductSlug ? 'প্রোডাক্ট এডিট ও আপডেট করুন' : 'নতুন প্রোডাক্ট যুক্ত করুন (Add Product)'}</span>
+                <span>{editingProductSlug ? 'Edit Product Details' : 'Add New Product (MongoDB)'}</span>
               </h2>
               <button
                 onClick={() => setIsProductModalOpen(false)}
@@ -1616,7 +1625,7 @@ function DashboardContent() {
               {/* Names */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1">Product Name (English) *</label>
+                  <label className="block text-slate-300 font-medium mb-1">Product Title (English) *</label>
                   <input
                     type="text"
                     required
@@ -1634,20 +1643,20 @@ function DashboardContent() {
                         setProdSlug(autoSlug);
                       }
                     }}
-                    placeholder="e.g. Velvet Cosmetic Travel Pouch"
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                    placeholder="e.g. Velvet Cosmetic Travel Organizer Pouch"
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1">Product Name (বাংলা) *</label>
+                  <label className="block text-slate-300 font-medium mb-1">Product Title (Bangla) *</label>
                   <input
                     type="text"
                     required
                     value={prodNameBn}
                     onChange={(e) => setProdNameBn(e.target.value)}
                     placeholder="যেমন: প্রিমিয়াম ভেলভেট ট্রাভেল মেকআপ ব্যাগ"
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500"
                   />
                 </div>
               </div>
@@ -1656,7 +1665,7 @@ function DashboardContent() {
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-slate-300 font-medium mb-1">
-                    Product Slug *
+                    URL Slug *
                   </label>
                   <input
                     type="text"
@@ -1664,7 +1673,7 @@ function DashboardContent() {
                     value={prodSlug}
                     onChange={(e) => setProdSlug(e.target.value)}
                     placeholder="velvet-pouch"
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-rose-300 focus:outline-none focus:border-rose-500 font-mono text-xs font-semibold"
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-rose-300 focus:outline-none focus:border-rose-500 font-mono text-xs font-semibold"
                   />
                 </div>
 
@@ -1685,10 +1694,10 @@ function DashboardContent() {
                   <select
                     value={prodCategory}
                     onChange={(e) => setProdCategory(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500 cursor-pointer"
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500 cursor-pointer"
                   >
                     {categories.length === 0 ? (
-                      <option value="">কোনো ক্যাটাগরি নেই (প্রথমে ক্যাটাগরি তৈরি করুন)</option>
+                      <option value="">No categories (Create one first)</option>
                     ) : (
                       categories.map((cat, i) => (
                         <option key={cat._id || cat.id || i} value={cat.name}>
@@ -1706,17 +1715,17 @@ function DashboardContent() {
                     required
                     value={prodBasePrice}
                     onChange={(e) => setProdBasePrice(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1">Original Price (৳)</label>
+                  <label className="block text-slate-300 font-medium mb-1">Original / Scratch Price (৳)</label>
                   <input
                     type="number"
                     value={prodOriginalPrice}
                     onChange={(e) => setProdOriginalPrice(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500"
                   />
                 </div>
               </div>
@@ -1727,9 +1736,9 @@ function DashboardContent() {
                   <div>
                     <label className="font-bold text-white text-xs flex items-center gap-1.5">
                       <Sparkles className="w-4 h-4 text-amber-400" />
-                      <span>Featured Product (হোমপেজ স্লাইডার)</span>
+                      <span>Featured Product (Homepage Hero Slider)</span>
                     </label>
-                    <p className="text-[10px] text-slate-400">হোমপেজের হিরো স্লাইডার ও কালেকশনে প্রদর্শন করবে</p>
+                    <p className="text-[10px] text-slate-400">Featured products appear in the homepage slider & top showcase</p>
                   </div>
                   <input
                     type="checkbox"
@@ -1743,9 +1752,9 @@ function DashboardContent() {
                   <div>
                     <label className="font-bold text-white text-xs flex items-center gap-1.5">
                       <CheckSquare className="w-4 h-4 text-emerald-400" />
-                      <span>Is Active (ওয়েবসাইটে সক্রিয় রাখুন)</span>
+                      <span>Is Active (Publish Live on Storefront)</span>
                     </label>
-                    <p className="text-[10px] text-slate-400">আনচেক করলে প্রোডাক্টটি ড্রাফট থাকবে</p>
+                    <p className="text-[10px] text-slate-400">Uncheck to keep product in hidden draft mode</p>
                   </div>
                   <input
                     type="checkbox"
@@ -1758,24 +1767,24 @@ function DashboardContent() {
 
               {/* Tagline & Description */}
               <div>
-                <label className="block text-slate-300 font-medium mb-1">Tagline (বাংলা ছোট বিবরণ)</label>
+                <label className="block text-slate-300 font-medium mb-1">Tagline (Bangla)</label>
                 <input
                   type="text"
                   value={prodTaglineBn}
                   onChange={(e) => setProdTaglineBn(e.target.value)}
                   placeholder="যেমন: আপনার প্রসাধনী ও জুয়েলারি সুরক্ষিত ও পরিপাটি রাখার জন্য"
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-medium mb-1">Description (বাংলা বিস্তারিত বিবরণ)</label>
+                <label className="block text-slate-300 font-medium mb-1">Detailed Description (Bangla)</label>
                 <textarea
                   rows={2}
                   value={prodDescriptionBn}
                   onChange={(e) => setProdDescriptionBn(e.target.value)}
                   placeholder="প্রোডাক্টের বিবরণ লিখুন..."
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500 resize-none"
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500 resize-none"
                 />
               </div>
 
@@ -1783,8 +1792,8 @@ function DashboardContent() {
               <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-bold text-white text-xs">কালার ভ্যারিয়েন্ট ও স্টক সংখ্যা (Color Variants)</h3>
-                    <p className="text-[11px] text-slate-400">প্রতিটি কালারের নাম, রঙ এবং লাইভ স্টক সংখ্যা দিন</p>
+                    <h3 className="font-bold text-white text-xs">Color Variants & Inventory Stock</h3>
+                    <p className="text-[11px] text-slate-400">Add color variants, hex colors, and individual stock counts</p>
                   </div>
                   <button
                     type="button"
@@ -1804,7 +1813,7 @@ function DashboardContent() {
                         },
                       ]);
                     }}
-                    className="bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                    className="bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-rose-500/20"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>➕ Add Color</span>
@@ -1818,7 +1827,7 @@ function DashboardContent() {
                       className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 p-3 rounded-xl bg-slate-900 border border-slate-800 items-center"
                     >
                       <div className="sm:col-span-5">
-                        <label className="text-[10px] text-slate-400 block mb-0.5">কালারের নাম (বাংলা/ইংলিশ)</label>
+                        <label className="text-[10px] text-slate-400 block mb-0.5">Color Name (Bangla / English)</label>
                         <input
                           type="text"
                           required
@@ -1847,13 +1856,13 @@ function DashboardContent() {
                               )
                             );
                           }}
-                          placeholder="যেমন: কালো (Black), সাদা (White)"
-                          className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
+                          placeholder="e.g. Black (কালো), White (সাদা), Pink..."
+                          className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
                         />
                       </div>
 
                       <div className="sm:col-span-3">
-                        <label className="text-[10px] text-slate-400 block mb-0.5">রঙের কোড (Color)</label>
+                        <label className="text-[10px] text-slate-400 block mb-0.5">Hex Color</label>
                         <div className="flex items-center gap-1.5">
                           <input
                             type="color"
@@ -1875,13 +1884,13 @@ function DashboardContent() {
                                 prev.map((item, i) => (i === idx ? { ...item, colorHex: hex } : item))
                               );
                             }}
-                            className="w-full px-2 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-white text-[11px] font-mono"
+                            className="w-full px-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-[11px] font-mono"
                           />
                         </div>
                       </div>
 
                       <div className="sm:col-span-2">
-                        <label className="text-[10px] text-slate-400 block mb-0.5">স্টক সংখ্যা</label>
+                        <label className="text-[10px] text-slate-400 block mb-0.5">Stock Count</label>
                         <input
                           type="number"
                           min="0"
@@ -1894,7 +1903,7 @@ function DashboardContent() {
                               )
                             );
                           }}
-                          className="w-full px-2 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
+                          className="w-full px-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs font-mono font-bold"
                         />
                       </div>
 
@@ -1919,7 +1928,7 @@ function DashboardContent() {
                             type="button"
                             onClick={() => setProdVariants((prev) => prev.filter((_, i) => i !== idx))}
                             className="p-1.5 text-slate-500 hover:text-rose-400 transition-colors"
-                            title="মুছে ফেলুন"
+                            title="Delete Variant"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1934,8 +1943,8 @@ function DashboardContent() {
               <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-bold text-white text-xs">কম্বো ও অফার প্যাকেজ (Combo Deals)</h3>
-                    <p className="text-[11px] text-slate-400">১টি বা ২টি প্যাকের স্পেশাল ডিসকাউন্ট মূল্য সেট করুন</p>
+                    <h3 className="font-bold text-white text-xs">Combo Packages & Quantity Deals</h3>
+                    <p className="text-[11px] text-slate-400">Setup 1-Pack, 2-Pack bestie deals with discounted pricing</p>
                   </div>
                   <button
                     type="button"
@@ -1956,7 +1965,7 @@ function DashboardContent() {
                         },
                       ]);
                     }}
-                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-slate-700"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>➕ Add Combo Deal</span>
@@ -1970,7 +1979,7 @@ function DashboardContent() {
                       className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800 items-center text-xs"
                     >
                       <div className="sm:col-span-4">
-                        <label className="text-[10px] text-slate-400 block">কম্বো টাইটেল (বাংলা)</label>
+                        <label className="text-[10px] text-slate-400 block">Combo Title (Bangla)</label>
                         <input
                           type="text"
                           value={c.titleBn}
@@ -1980,12 +1989,12 @@ function DashboardContent() {
                               prev.map((item, i) => (i === idx ? { ...item, titleBn: val } : item))
                             );
                           }}
-                          className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
+                          className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
                         />
                       </div>
 
                       <div className="sm:col-span-2">
-                        <label className="text-[10px] text-slate-400 block">পরিমাণ (Qty)</label>
+                        <label className="text-[10px] text-slate-400 block">Quantity (Qty)</label>
                         <input
                           type="number"
                           value={c.quantity}
@@ -1995,12 +2004,12 @@ function DashboardContent() {
                               prev.map((item, i) => (i === idx ? { ...item, quantity: val } : item))
                             );
                           }}
-                          className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
+                          className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
                         />
                       </div>
 
                       <div className="sm:col-span-3">
-                        <label className="text-[10px] text-slate-400 block">অফার প্রাইস (৳)</label>
+                        <label className="text-[10px] text-slate-400 block">Deal Price (৳)</label>
                         <input
                           type="number"
                           value={c.price}
@@ -2010,13 +2019,13 @@ function DashboardContent() {
                               prev.map((item, i) => (i === idx ? { ...item, price: val } : item))
                             );
                           }}
-                          className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
+                          className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
                         />
                       </div>
 
                       <div className="sm:col-span-3 flex items-center justify-between gap-1">
                         <div>
-                          <label className="text-[10px] text-slate-400 block">ব্যাজ (ঐচ্ছিক)</label>
+                          <label className="text-[10px] text-slate-400 block">Badge (Optional)</label>
                           <input
                             type="text"
                             value={c.badge || ''}
@@ -2027,7 +2036,7 @@ function DashboardContent() {
                                 prev.map((item, i) => (i === idx ? { ...item, badge: val } : item))
                               );
                             }}
-                            className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
+                            className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
                           />
                         </div>
 
@@ -2050,8 +2059,8 @@ function DashboardContent() {
               <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-bold text-white text-xs">প্রধান বৈশিষ্ট্যসমূহ (Features Bn)</h3>
-                    <p className="text-[11px] text-slate-400">প্রোডাক্টের হাইলাইটস ও আকর্ষণীয় বৈশিষ্ট্য যোগ করুন</p>
+                    <h3 className="font-bold text-white text-xs">Key Highlights (featuresBn)</h3>
+                    <p className="text-[11px] text-slate-400">Add highlight bullet cards for the product page</p>
                   </div>
                   <button
                     type="button"
@@ -2061,7 +2070,7 @@ function DashboardContent() {
                         { icon: 'Sparkles', title: 'নতুন বৈশিষ্ট্য', description: 'বিস্তারিত বিবরণ' },
                       ]);
                     }}
-                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-slate-700"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>➕ Add Feature</span>
@@ -2075,7 +2084,7 @@ function DashboardContent() {
                       className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800 items-center text-xs"
                     >
                       <div className="sm:col-span-4">
-                        <label className="text-[10px] text-slate-400 block">শিরোনাম (Title)</label>
+                        <label className="text-[10px] text-slate-400 block">Title (Bangla)</label>
                         <input
                           type="text"
                           value={feat.title}
@@ -2085,12 +2094,12 @@ function DashboardContent() {
                               prev.map((item, i) => (i === idx ? { ...item, title: val } : item))
                             );
                           }}
-                          className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
+                          className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
                         />
                       </div>
 
                       <div className="sm:col-span-7">
-                        <label className="text-[10px] text-slate-400 block">বিবরণ (Description)</label>
+                        <label className="text-[10px] text-slate-400 block">Description (Bangla)</label>
                         <input
                           type="text"
                           value={feat.description}
@@ -2100,7 +2109,7 @@ function DashboardContent() {
                               prev.map((item, i) => (i === idx ? { ...item, description: val } : item))
                             );
                           }}
-                          className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
+                          className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
                         />
                       </div>
 
@@ -2122,15 +2131,15 @@ function DashboardContent() {
               <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-bold text-white text-xs">স্পেসিফিকেশন (Specifications Bn)</h3>
-                    <p className="text-[11px] text-slate-400">উপাদান, সাইজ, ওজন ইত্যাদি কি-ভ্যালু তথ্য</p>
+                    <h3 className="font-bold text-white text-xs">Technical Specifications (specificationsBn)</h3>
+                    <p className="text-[11px] text-slate-400">Material, size, weight and specifications</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => {
-                      setProdSpecificationsBn((prev) => [...prev, { key: 'নতুন তথ্য', value: 'মান' }]);
+                      setProdSpecificationsBn((prev) => [...prev, { key: 'উপাদান', value: 'মান' }]);
                     }}
-                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-slate-700"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>➕ Add Spec</span>
@@ -2144,7 +2153,7 @@ function DashboardContent() {
                       className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800 items-center text-xs"
                     >
                       <div className="sm:col-span-5">
-                        <label className="text-[10px] text-slate-400 block">কী (Key যেমন: উপাদান)</label>
+                        <label className="text-[10px] text-slate-400 block">Key (e.g. উপাদান)</label>
                         <input
                           type="text"
                           value={spec.key}
@@ -2154,12 +2163,12 @@ function DashboardContent() {
                               prev.map((item, i) => (i === idx ? { ...item, key: val } : item))
                             );
                           }}
-                          className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
+                          className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
                         />
                       </div>
 
                       <div className="sm:col-span-6">
-                        <label className="text-[10px] text-slate-400 block">ভ্যালু (Value যেমন: লেদার)</label>
+                        <label className="text-[10px] text-slate-400 block">Value (e.g. লেদার)</label>
                         <input
                           type="text"
                           value={spec.value}
@@ -2169,7 +2178,7 @@ function DashboardContent() {
                               prev.map((item, i) => (i === idx ? { ...item, value: val } : item))
                             );
                           }}
-                          className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
+                          className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
                         />
                       </div>
 
@@ -2189,7 +2198,7 @@ function DashboardContent() {
 
               {/* Image Upload */}
               <div>
-                <label className="block text-slate-300 font-medium mb-1.5">Product Images (Upload via Cloudinary)</label>
+                <label className="block text-slate-300 font-medium mb-1.5">Product Images (Cloudinary CDN Upload)</label>
                 <div className="flex flex-wrap items-center gap-3">
                   <label className="inline-flex items-center gap-2 bg-slate-800 border border-slate-700 hover:border-slate-500 text-slate-200 px-3.5 py-2 rounded-xl text-xs cursor-pointer">
                     {isUploadingImage ? <Loader2 className="w-4 h-4 animate-spin text-rose-500" /> : <Camera className="w-4 h-4 text-rose-400" />}
@@ -2198,7 +2207,7 @@ function DashboardContent() {
                   </label>
 
                   {prodImages.map((url, idx) => (
-                    <div key={idx} className="relative w-12 h-12 rounded-xl overflow-hidden border border-slate-700 bg-slate-950">
+                    <div key={idx} className="relative w-12 h-12 rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
                       <Image src={url} alt={`Preview ${idx}`} fill className="object-cover" />
                       <button
                         type="button"
@@ -2226,7 +2235,7 @@ function DashboardContent() {
                   className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg shadow-rose-600/30 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-60"
                 >
                   {saveProductMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                  <span>{editingProductSlug ? 'Update Product' : 'Save Product to Database'}</span>
+                  <span>{editingProductSlug ? 'Update Product' : 'Save Product to MongoDB'}</span>
                 </button>
               </div>
             </form>
@@ -2241,8 +2250,8 @@ export default function AdminDashboardPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-slate-900 text-slate-400 flex items-center justify-center text-sm">
-          ড্যাশবোর্ড লোড হচ্ছে...
+        <div className="min-h-screen bg-slate-950 text-slate-400 flex items-center justify-center text-sm font-sans">
+          Loading Dashboard...
         </div>
       }
     >

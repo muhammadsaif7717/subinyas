@@ -11,19 +11,19 @@ export async function PATCH(
     const body = await request.json();
     const { status, notes } = body;
 
-    const validStatuses: OrderStatus[] = ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'];
+    const validStatuses: OrderStatus[] = ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled', 'Returned'];
     if (status && !validStatuses.includes(status)) {
-      return NextResponse.json({ success: false, message: 'অকার্যকর স্ট্যাটাস' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Invalid order status' }, { status: 400 });
     }
 
     const success = await updateOrderStatus(id, status, notes);
     if (!success) {
-      return NextResponse.json({ success: false, message: 'অর্ডার পাওয়া যায়নি' }, { status: 404 });
+      return NextResponse.json({ success: false, message: 'Order not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, message: 'অর্ডার সফলভাবে আপডেট হয়েছে' });
+    return NextResponse.json({ success: true, message: 'Order updated successfully' });
   } catch (error) {
     console.error('Error updating order:', error);
-    return NextResponse.json({ success: false, message: 'অর্ডার আপডেট করতে সমস্যা হয়েছে' }, { status: 500 });
+    return NextResponse.json({ success: false, message: 'Failed to update order' }, { status: 500 });
   }
 }

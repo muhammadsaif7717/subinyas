@@ -2,6 +2,41 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getProducts, getProductBySlug, updateProductStock, saveProduct, deleteProduct } from '@/lib/data-store';
 import { verifyJwtToken } from '@/lib/jwt';
 import { Product } from '@/lib/types';
+import { getDb } from '@/lib/mongodb';
+
+// Helper for admin auth check with DB fallback
+async function checkIsAdmin(request: NextRequest): Promise<boolean> {
+  try {
+    const token =
+      request.cookies.get('subinyas_admin_token')?.value ||
+      request.headers.get('authorization')?.replace('Bearer ', '');
+
+    if (!token) return false;
+
+    const payload = verifyJwtToken(token);
+    if (!payload) return false;
+
+    if (payload.role && payload.role.toLowerCase() === 'admin') {
+      return true;
+    }
+
+    const db = await getDb();
+    if (db && (payload.email || payload.userId)) {
+      const query: Record<string, unknown> = {};
+      if (payload.email) query.email = payload.email;
+      else if (payload.userId) query.userId = payload.userId;
+
+      const user = await db.collection('users').findOne(query);
+      if (user && user.role && user.role.toLowerCase() === 'admin') {
+        return true;
+      }
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +46,7 @@ export async function GET(request: NextRequest) {
     if (slug) {
       const product = await getProductBySlug(slug);
       if (!product) {
-        return NextResponse.json({ success: false, message: 'প্রোডাক্ট পাওয়া যায়নি' }, { status: 404 });
+        return NextResponse.json({ success: false, message: 'Product not found' }, { status: 404 });
       }
       return NextResponse.json({ success: true, product });
     }
@@ -20,7 +55,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, products });
   } catch (error) {
     console.error('Error fetching products:', error);
-    return NextResponse.json({ success: false, message: 'প্রোডাক্ট লোড করতে ব্যর্থ হয়েছে' }, { status: 500 });
+    return NextResponse.json({ success: false, message: 'Failed to load products' }, { status: 500 });
   }
 }
 
@@ -31,42 +66,40 @@ export async function POST(request: NextRequest) {
     // Check if it's a full product save request
     if (body.product) {
       const productData = body.product as Product;
-      if (!productData.nameBn || !productData.slug || !productData.basePrice) {
-        return NextResponse.json({ success: false, message: 'পণ্যের নাম, স্লাগ এবং মূল্য বাধ্যতামূলক।' }, { status: 400 });
+      if (!productData.name || !productData.slug || !productData.basePrice) {
+        return NextResponse.json(
+          { success: false, message: 'Product name, slug, and price are required.' },
+          { status: 400 }
+        );
       }
 
       await saveProduct(productData);
-      return NextResponse.json({ success: true, message: 'প্রোডাক্ট সফলভাবে সংরক্ষণ করা হয়েছে!' });
+      return NextResponse.json({ success: true, message: 'Product saved successfully!' });
     }
 
     // Stock update request
     const { slug, variantId, inStock, stockCount } = body;
     if (!slug || !variantId) {
-      return NextResponse.json({ success: false, message: 'সঠিক তথ্য দিন' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Invalid stock parameters' }, { status: 400 });
     }
 
     const success = await updateProductStock(slug, variantId, Boolean(inStock), Number(stockCount) || 0);
     if (!success) {
-      return NextResponse.json({ success: false, message: 'স্টক আপডেট করা সম্ভব হয়নি' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Failed to update stock' }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true, message: 'স্টক সফলভাবে আপডেট হয়েছে' });
+    return NextResponse.json({ success: true, message: 'Stock updated successfully' });
   } catch (error) {
     console.error('Error in product POST:', error);
-    return NextResponse.json({ success: false, message: 'সার্ভার ত্রুটি' }, { status: 500 });
+    return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-    const token = request.cookies.get('subinyas_admin_token')?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    }
-
-    const payload = verifyJwtToken(token);
-    if (payload?.role !== 'admin') {
-      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
+    const isAdmin = await checkIsAdmin(request);
+    if (!isAdmin) {
+      return NextResponse.json({ success: false, message: 'Unauthorized - Admin access required' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -77,7 +110,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     await deleteProduct(slug);
-    return NextResponse.json({ success: true, message: 'প্রোডাক্ট সফলভাবে মুছে ফেলা হয়েছে' });
+    return NextResponse.json({ success: true, message: 'Product deleted successfully' });
   } catch (error) {
     console.error('Error deleting product:', error);
     return NextResponse.json({ success: false, message: 'Failed to delete product' }, { status: 500 });
