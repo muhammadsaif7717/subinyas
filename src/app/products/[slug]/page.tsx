@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   RefreshCw,
   Award,
+  AlertCircle,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useCart } from '@/lib/cart-context';
@@ -72,7 +73,10 @@ export default function ProductDetailPage() {
     if (product) {
       setSelectedImage(product.images?.[0] || '/images/products/hello-kitty-pair.png');
       if (product.variants?.length > 0) {
-        setSelectedVariant(product.variants[0]);
+        const firstInStock = product.variants.find(
+          (v) => v.inStock !== false && (v.stockCount === undefined || Number(v.stockCount) > 0)
+        );
+        setSelectedVariant(firstInStock || product.variants[0]);
       }
       if (product.combos?.length > 0) {
         setSelectedCombo(product.combos[0]);
@@ -109,6 +113,12 @@ export default function ProductDetailPage() {
     currentOriginalPrice > 0 ? Math.round(((currentOriginalPrice - currentPrice) / currentOriginalPrice) * 100) : 0;
   const inWish = isInWishlist(product.slug);
 
+  const isVariantOutOfStock = Boolean(
+    selectedVariant &&
+      (selectedVariant.inStock === false ||
+        (selectedVariant.stockCount !== undefined && Number(selectedVariant.stockCount) <= 0))
+  );
+
   const handleVariantSelect = (variant: ProductVariant) => {
     setSelectedVariant(variant);
     if (variant.image) {
@@ -117,6 +127,8 @@ export default function ProductDetailPage() {
   };
 
   const handleAddToCart = () => {
+    if (isVariantOutOfStock) return;
+
     addToCart({
       productSlug: product.slug,
       productName: product.name,
@@ -124,17 +136,19 @@ export default function ProductDetailPage() {
       image: selectedImage || product.images[0],
       comboId: selectedCombo?.id || 'standard',
       comboTitleBn: selectedCombo?.titleBn || 'Single Pack',
-      selectedVariants: selectedVariant ? [selectedVariant.nameBn] : ['Standard'],
+      selectedVariants: selectedVariant ? [selectedVariant.name || selectedVariant.nameBn] : ['Standard'],
       price: currentPrice,
       quantity,
     });
 
-    trackAddToCart(product.nameBn, currentPrice * quantity);
+    trackAddToCart(product.name, currentPrice * quantity);
     setAddedToast(true);
     setTimeout(() => setAddedToast(false), 3000);
   };
 
   const handleBuyNow = () => {
+    if (isVariantOutOfStock) return;
+
     addToCart({
       productSlug: product.slug,
       productName: product.name,
@@ -142,7 +156,7 @@ export default function ProductDetailPage() {
       image: selectedImage || product.images[0],
       comboId: selectedCombo?.id || 'standard',
       comboTitleBn: selectedCombo?.titleBn || 'Single Pack',
-      selectedVariants: selectedVariant ? [selectedVariant.nameBn] : ['Standard'],
+      selectedVariants: selectedVariant ? [selectedVariant.name || selectedVariant.nameBn] : ['Standard'],
       price: currentPrice,
       quantity,
     });
@@ -296,33 +310,103 @@ export default function ProductDetailPage() {
 
             {/* Color / Variant Selection */}
             {product.variants && product.variants.length > 0 && (
-              <div className="space-y-2.5">
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  Select Color / Variant:{' '}
-                  <span className="text-slate-900 font-bold ml-1">
-                    {selectedVariant?.nameBn || selectedVariant?.name}
-                  </span>
-                </label>
-                <div className="flex flex-wrap gap-2.5">
-                  {product.variants.map((v) => (
-                    <button
-                      key={v.id}
-                      type="button"
-                      onClick={() => handleVariantSelect(v)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                        selectedVariant?.id === v.id
-                          ? 'border-orange-500 bg-orange-50 text-orange-950 ring-1 ring-orange-500'
-                          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Select Color / Variant:{' '}
+                    <span className="text-slate-900 font-bold ml-1">
+                      {selectedVariant?.name || selectedVariant?.nameBn}
+                    </span>
+                  </label>
+
+                  {/* Stock Status Badge */}
+                  {selectedVariant && (
+                    <span
+                      className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                        isVariantOutOfStock
+                          ? 'bg-rose-100 text-rose-700 border border-rose-200'
+                          : selectedVariant.stockCount !== undefined && selectedVariant.stockCount <= 5
+                          ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                          : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                       }`}
                     >
-                      <span
-                        className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-2xs"
-                        style={{ backgroundColor: v.colorHex || '#ddd' }}
-                      />
-                      <span>{v.nameBn || v.name}</span>
-                    </button>
-                  ))}
+                      {isVariantOutOfStock
+                        ? 'Out of Stock'
+                        : selectedVariant.stockCount !== undefined
+                        ? `${selectedVariant.stockCount} in Stock`
+                        : 'In Stock'}
+                    </span>
+                  )}
                 </div>
+
+                <div className="flex flex-wrap gap-2.5">
+                  {product.variants.map((v) => {
+                    const isOutOfStock =
+                      v.inStock === false || (v.stockCount !== undefined && Number(v.stockCount) <= 0);
+                    const isSelected = selectedVariant?.id === v.id;
+
+                    return (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => handleVariantSelect(v)}
+                        className={`relative flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                          isSelected
+                            ? isOutOfStock
+                              ? 'border-rose-400 bg-rose-50/80 text-rose-950 ring-2 ring-rose-400 shadow-xs'
+                              : 'border-orange-500 bg-orange-50 text-orange-950 ring-2 ring-orange-500 shadow-xs'
+                            : isOutOfStock
+                            ? 'border-slate-200 bg-slate-100/70 text-slate-400 hover:border-slate-300'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-400'
+                        }`}
+                      >
+                        <span
+                          className="w-4 h-4 rounded-full border border-slate-300 shadow-2xs relative shrink-0 overflow-hidden"
+                          style={{ backgroundColor: v.colorHex || '#ddd' }}
+                        >
+                          {isOutOfStock && (
+                            <span className="absolute inset-0 bg-slate-900/30 flex items-center justify-center">
+                              <span className="w-full h-0.5 bg-rose-600 rotate-45 transform block" />
+                            </span>
+                          )}
+                        </span>
+
+                        <span className={isOutOfStock ? 'line-through text-slate-400' : ''}>
+                          {v.name || v.nameBn}
+                        </span>
+
+                        {isOutOfStock && (
+                          <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 bg-rose-200 text-rose-800 rounded">
+                            Sold Out
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Real-time Out-of-stock Alert Message */}
+                {isVariantOutOfStock ? (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-700 animate-in fade-in duration-200">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="font-bold">This color is currently out of stock!</strong>
+                      <p className="text-[11px] text-rose-600 mt-0.5">
+                        Please select an alternative available color/variant to proceed with your order.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  selectedVariant &&
+                  selectedVariant.stockCount !== undefined &&
+                  selectedVariant.stockCount > 0 &&
+                  selectedVariant.stockCount <= 5 && (
+                    <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2 text-xs font-semibold text-amber-800">
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                      <span>Hurry! Only {selectedVariant.stockCount} items left in stock for this variant.</span>
+                    </div>
+                  )
+                )}
               </div>
             )}
 
@@ -368,11 +452,14 @@ export default function ProductDetailPage() {
             <div className="space-y-3.5 pt-2">
               <div className="flex items-center gap-3">
                 {/* Quantity Stepper */}
-                <div className="flex items-center border border-slate-200 rounded-xl bg-slate-50 overflow-hidden shadow-2xs h-12">
+                <div className={`flex items-center border rounded-xl overflow-hidden shadow-2xs h-12 ${
+                  isVariantOutOfStock ? 'border-slate-200 bg-slate-100 opacity-60' : 'border-slate-200 bg-slate-50'
+                }`}>
                   <button
                     type="button"
+                    disabled={isVariantOutOfStock}
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    className="px-3.5 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                    className="px-3.5 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors disabled:cursor-not-allowed"
                   >
                     <Minus className="w-4 h-4" />
                   </button>
@@ -381,8 +468,9 @@ export default function ProductDetailPage() {
                   </span>
                   <button
                     type="button"
+                    disabled={isVariantOutOfStock}
                     onClick={() => setQuantity((q) => q + 1)}
-                    className="px-3.5 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                    className="px-3.5 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors disabled:cursor-not-allowed"
                   >
                     <Plus className="w-4 h-4" />
                   </button>
@@ -391,21 +479,31 @@ export default function ProductDetailPage() {
                 {/* Add To Cart Button */}
                 <button
                   type="button"
+                  disabled={isVariantOutOfStock}
                   onClick={handleAddToCart}
-                  className="flex-1 h-12 bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs sm:text-sm px-4 rounded-xl transition-all shadow-md shadow-orange-500/20 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                  className={`flex-1 h-12 font-extrabold text-xs sm:text-sm px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 active:scale-[0.99] ${
+                    isVariantOutOfStock
+                      ? 'bg-slate-200 text-slate-400 border border-slate-300 shadow-none cursor-not-allowed'
+                      : 'bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20 cursor-pointer'
+                  }`}
                 >
                   <ShoppingBag className="w-4 h-4" />
-                  <span>Add To Cart</span>
+                  <span>{isVariantOutOfStock ? 'Out of Stock' : 'Add To Cart'}</span>
                 </button>
 
                 {/* Buy Now Button (Instant Checkout) */}
                 <button
                   type="button"
+                  disabled={isVariantOutOfStock}
                   onClick={handleBuyNow}
-                  className="flex-1 h-12 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-extrabold text-xs sm:text-sm px-4 rounded-xl transition-all shadow-md shadow-orange-600/25 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                  className={`flex-1 h-12 font-extrabold text-xs sm:text-sm px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 active:scale-[0.99] ${
+                    isVariantOutOfStock
+                      ? 'bg-slate-200 text-slate-400 border border-slate-300 shadow-none cursor-not-allowed'
+                      : 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white shadow-orange-600/25 cursor-pointer'
+                  }`}
                 >
-                  <span>Buy Now</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span>{isVariantOutOfStock ? 'Currently Unavailable' : 'Buy Now'}</span>
+                  {!isVariantOutOfStock && <ArrowRight className="w-4 h-4" />}
                 </button>
               </div>
 

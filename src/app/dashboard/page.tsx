@@ -50,6 +50,31 @@ import { useAuth } from '@/lib/auth-context';
 
 type TabType = 'orders' | 'products' | 'categories' | 'reviews' | 'settings';
 
+const NAV_ITEMS: { id: TabType; label: string; icon: React.ElementType }[] = [
+  { id: 'orders', label: 'অর্ডার', icon: Package },
+  { id: 'products', label: 'প্রোডাক্ট ও স্টক', icon: ShoppingBag },
+  { id: 'categories', label: 'ক্যাটাগরি', icon: Folder },
+  { id: 'reviews', label: 'রিভিউ মডারেশন', icon: MessageSquare },
+  { id: 'settings', label: 'সেটিংস', icon: SettingsIcon },
+];
+
+const TAB_TITLES: Record<TabType, string> = {
+  orders: 'অর্ডার ম্যানেজমেন্ট',
+  products: 'প্রোডাক্ট ও ইনভেন্টরি',
+  categories: 'ক্যাটাগরি সেটিংস',
+  reviews: 'কাস্টমার রিভিউ',
+  settings: 'স্টোর কনফিগারেশন',
+};
+
+const STATUS_STYLES: Record<string, string> = {
+  Pending: 'bg-[#D6A24E]/15 text-[#E4BC79] border-[#D6A24E]/30',
+  Confirmed: 'bg-[#6C93C4]/15 text-[#8FB0D9] border-[#6C93C4]/30',
+  Shipped: 'bg-[#9C7FC4]/15 text-[#BAA3DE] border-[#9C7FC4]/30',
+  Delivered: 'bg-[#6FAE8C]/15 text-[#8FC7A9] border-[#6FAE8C]/30',
+  Returned: 'bg-[#CB8A4E]/15 text-[#DDA876] border-[#CB8A4E]/30',
+  Cancelled: 'bg-[#C1495A]/15 text-[#DD8A94] border-[#C1495A]/30',
+};
+
 function DashboardContent() {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
@@ -714,975 +739,940 @@ function DashboardContent() {
     });
   };
 
+  // Shared style tokens
+  const inputCls =
+    'w-full px-3.5 py-2.5 bg-[#14111A] border border-[#332B3D] rounded-xl text-[#F3EFEC] placeholder-[#6E6278] focus:outline-none focus:border-[#C4587A] focus:ring-1 focus:ring-[#C4587A]/40 transition-colors';
+  const labelCls = 'block text-[#B7ACC4] font-medium mb-1.5 text-xs';
+  const cardCls = 'bg-[#1C1821] border border-[#2E2733] rounded-2xl';
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-rose-500 selection:text-white">
-      {/* Top Navbar with Profile Dropdown */}
-      <header className="bg-slate-900/80 border-b border-slate-800/80 sticky top-0 z-30 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="flex items-center gap-2.5 group">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-rose-500 to-pink-500 flex items-center justify-center text-white font-black text-base shadow-lg shadow-rose-500/25 group-hover:scale-105 transition-transform">
-                S
-              </div>
-              <div>
-                <span className="font-black text-white text-base tracking-tight">SUBINYAS</span>
-                <span className="text-[11px] text-rose-400 ml-2 font-bold px-1.5 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 uppercase tracking-wider">
-                  Admin Console
-                </span>
-              </div>
-            </Link>
-          </div>
+    <div className="min-h-screen bg-[#14111A] text-[#F3EFEC] font-['Inter',sans-serif] selection:bg-[#C4587A] selection:text-white">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700;800&display=swap');
+        .font-display { font-family: 'Fraunces', Georgia, serif; }
+      `}</style>
 
-          <div className="flex items-center gap-3">
-            {/* Refresh Button */}
-            <button
-              onClick={() => {
-                refetchOrders();
-                refetchReviews();
-                refetchProducts();
-                refetchCategories();
-              }}
-              className="p-2 text-slate-400 hover:text-white bg-slate-800/60 hover:bg-slate-800 rounded-xl border border-slate-700/70 cursor-pointer transition-all hover:border-slate-600 shadow-xs"
-              title="Refresh Data"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
-
-            {/* Admin Profile Dropdown */}
-            <div className="relative" ref={profileDropdownRef}>
-              <button
-                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                className="flex items-center gap-2.5 text-xs font-semibold text-slate-200 bg-slate-800/80 hover:bg-slate-800 py-1.5 pl-2 pr-3 rounded-full border border-slate-700/80 transition-all cursor-pointer shadow-xs hover:border-slate-600"
-              >
-                {user?.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={user.avatar}
-                    alt={user.name || 'Admin'}
-                    className="w-6 h-6 rounded-full object-cover border border-rose-500/60 shadow-xs"
-                  />
-                ) : (
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-rose-500 to-pink-600 text-white flex items-center justify-center text-xs font-black">
-                    {user?.name ? user.name.slice(0, 1).toUpperCase() : 'A'}
-                  </div>
-                )}
-                <span className="max-w-[120px] truncate hidden sm:inline font-medium">{user?.name || 'Administrator'}</span>
-                <span className="bg-rose-500/20 text-rose-300 text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-rose-500/30">
-                  Admin
-                </span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-              </button>
-
-              {/* Dropdown Menu */}
-              {isProfileDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 py-2 text-xs text-slate-200 z-50 animate-in fade-in duration-150">
-                  {/* Admin Info Header */}
-                  <div className="px-4 py-3 border-b border-slate-800">
-                    <div className="flex items-center justify-between">
-                      <p className="font-bold text-white text-sm truncate">{user?.name || 'Store Admin'}</p>
-                      <span className="bg-rose-600 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded">
-                        Admin
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-400 font-mono truncate mt-0.5">{user?.email || 'admin@subinyas.shop'}</p>
-                  </div>
-
-                  {/* Navigation Links inside Dropdown */}
-                  <div className="py-1">
-                    <button
-                      onClick={() => {
-                        switchTab('orders');
-                        setIsProfileDropdownOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-800 transition-colors text-left cursor-pointer ${
-                        activeTab === 'orders' ? 'text-rose-400 font-bold bg-slate-800/60' : 'text-slate-300'
-                      }`}
-                    >
-                      <Package className="w-4 h-4 text-rose-400" />
-                      <span>Orders Management ({orders.length})</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        switchTab('products');
-                        setIsProfileDropdownOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-800 transition-colors text-left cursor-pointer ${
-                        activeTab === 'products' ? 'text-rose-400 font-bold bg-slate-800/60' : 'text-slate-300'
-                      }`}
-                    >
-                      <Layers className="w-4 h-4 text-teal-400" />
-                      <span>Products & Stock ({products.length})</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        switchTab('categories');
-                        setIsProfileDropdownOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-800 transition-colors text-left cursor-pointer ${
-                        activeTab === 'categories' ? 'text-rose-400 font-bold bg-slate-800/60' : 'text-slate-300'
-                      }`}
-                    >
-                      <Folder className="w-4 h-4 text-amber-400" />
-                      <span>Categories ({categories.length})</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        switchTab('reviews');
-                        setIsProfileDropdownOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-800 transition-colors text-left cursor-pointer ${
-                        activeTab === 'reviews' ? 'text-rose-400 font-bold bg-slate-800/60' : 'text-slate-300'
-                      }`}
-                    >
-                      <MessageSquare className="w-4 h-4 text-purple-400" />
-                      <span>Reviews Moderation ({reviews.length})</span>
-                      {pendingReviews > 0 && (
-                        <span className="ml-auto bg-amber-400 text-slate-950 text-[10px] font-black px-1.5 py-0.2 rounded-full">
-                          {pendingReviews}
-                        </span>
-                      )}
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        switchTab('settings');
-                        setIsProfileDropdownOpen(false);
-                      }}
-                      className={`w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-800 transition-colors text-left cursor-pointer ${
-                        activeTab === 'settings' ? 'text-rose-400 font-bold bg-slate-800/60' : 'text-slate-300'
-                      }`}
-                    >
-                      <SettingsIcon className="w-4 h-4 text-blue-400" />
-                      <span>Store & Meta Pixel Config</span>
-                    </button>
-
-                    {/* Website View */}
-                    <Link
-                      href="/"
-                      target="_blank"
-                      onClick={() => setIsProfileDropdownOpen(false)}
-                      className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-800 text-emerald-400 font-medium transition-colors border-t border-slate-800"
-                    >
-                      <div className="flex items-center gap-2">
-                        <ExternalLink className="w-4 h-4" />
-                        <span>View Live Store</span>
-                      </div>
-                      <span className="text-[10px] text-slate-500 font-mono">↗</span>
-                    </Link>
-
-                    <button
-                      onClick={() => logout()}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-800 text-rose-400 font-semibold border-t border-slate-800 cursor-pointer text-left transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>Log Out</span>
-                    </button>
-                  </div>
-                </div>
-              )}
+      <div className="flex">
+        {/* ================= SIDEBAR (desktop) ================= */}
+        <aside className="hidden lg:flex flex-col w-64 shrink-0 h-screen sticky top-0 border-r border-[#2E2733] bg-[#17131C]">
+          <div className="h-16 flex items-center gap-2.5 px-5 border-b border-[#2E2733]">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#C4587A] to-[#8C4064] flex items-center justify-center text-white shadow-lg shadow-[#C4587A]/20 shrink-0">
+              <Store className="w-4.5 h-4.5" strokeWidth={2.25} />
+            </div>
+            <div className="leading-tight">
+              <div className="font-display italic text-[17px] text-white tracking-wide">Subinyas</div>
+              <div className="text-[9.5px] text-[#9C8FA8] uppercase tracking-[0.18em] font-semibold">Admin Console</div>
             </div>
           </div>
-        </div>
-      </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Metric Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-          <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 shadow-md backdrop-blur-sm relative overflow-hidden">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
-              <span>Total Revenue</span>
-              <DollarSign className="w-4 h-4 text-emerald-400" />
-            </div>
-            <div className="text-2xl sm:text-3xl font-black text-white">৳{totalRevenue.toLocaleString()}</div>
-            <span className="text-[11px] text-emerald-400 mt-1 block font-medium">Cash On Delivery</span>
-          </div>
-
-          <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 shadow-md backdrop-blur-sm relative overflow-hidden">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
-              <span>Total Orders</span>
-              <Package className="w-4 h-4 text-rose-400" />
-            </div>
-            <div className="text-2xl sm:text-3xl font-black text-white">{orders.length}</div>
-            <span className="text-[11px] text-slate-400 mt-1 block font-medium">All Customer Orders</span>
-          </div>
-
-          <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 shadow-md backdrop-blur-sm relative overflow-hidden">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
-              <span>Pending Orders</span>
-              <Clock className="w-4 h-4 text-amber-400" />
-            </div>
-            <div className="text-2xl sm:text-3xl font-black text-amber-400">{pendingOrders}</div>
-            <span className="text-[11px] text-slate-400 mt-1 block font-medium">Pending Reviews: {pendingReviews}</span>
-          </div>
-
-          <div className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 shadow-md backdrop-blur-sm relative overflow-hidden">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">
-              <span>Active Products</span>
-              <Layers className="w-4 h-4 text-teal-400" />
-            </div>
-            <div className="text-2xl sm:text-3xl font-black text-teal-400">{products.length}</div>
-            <span className="text-[11px] text-slate-400 mt-1 block font-medium">Categories: {categories.length}</span>
-          </div>
-        </div>
-
-        {/* Tab Navigation (Synchronized with ?tab= query parameter) */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-3">
-          <button
-            onClick={() => switchTab('orders')}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
-              activeTab === 'orders'
-                ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30 ring-1 ring-rose-500'
-                : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border border-slate-800/80 hover:bg-slate-800'
-            }`}
-          >
-            <Package className="w-4 h-4" />
-            <span>Orders ({orders.length})</span>
-          </button>
-
-          <button
-            onClick={() => switchTab('products')}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
-              activeTab === 'products'
-                ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30 ring-1 ring-rose-500'
-                : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border border-slate-800/80 hover:bg-slate-800'
-            }`}
-          >
-            <Layers className="w-4 h-4" />
-            <span>Products & Stock ({products.length})</span>
-          </button>
-
-          <button
-            onClick={() => switchTab('categories')}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
-              activeTab === 'categories'
-                ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30 ring-1 ring-rose-500'
-                : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border border-slate-800/80 hover:bg-slate-800'
-            }`}
-          >
-            <Folder className="w-4 h-4" />
-            <span>Categories ({categories.length})</span>
-          </button>
-
-          <button
-            onClick={() => switchTab('reviews')}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
-              activeTab === 'reviews'
-                ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30 ring-1 ring-rose-500'
-                : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border border-slate-800/80 hover:bg-slate-800'
-            }`}
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span>Review Moderation ({reviews.length})</span>
-            {pendingReviews > 0 && (
-              <span className="bg-amber-400 text-slate-950 text-[10px] font-black px-1.5 py-0.2 rounded-full">
-                {pendingReviews} new
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => switchTab('settings')}
-            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all cursor-pointer ${
-              activeTab === 'settings'
-                ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30 ring-1 ring-rose-500'
-                : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border border-slate-800/80 hover:bg-slate-800'
-            }`}
-          >
-            <SettingsIcon className="w-4 h-4" />
-            <span>Store & Meta Pixel</span>
-          </button>
-        </div>
-
-        {/* TAB 1: ORDERS */}
-        {activeTab === 'orders' && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                <input
-                  type="text"
-                  placeholder="Search by Order ID, Phone, or Customer Name..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
-                />
-              </div>
-
-              <div className="flex items-center gap-1.5 overflow-x-auto">
-                {['All', 'Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled', 'Returned'].map((st) => (
-                  <button
-                    key={st}
-                    onClick={() => setStatusFilter(st)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
-                      statusFilter === st
-                        ? 'bg-slate-100 text-slate-900'
-                        : 'bg-slate-800/60 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                    }`}
-                  >
-                    {st}
-                  </button>
-                ))}
-              </div>
-
-              <a
-                href="/api/orders/export"
-                download="subinyas_orders.csv"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap shadow-md shadow-emerald-600/20"
-              >
-                <Download className="w-4 h-4" />
-                <span>Courier CSV Export</span>
-              </a>
-            </div>
-
-            {/* Orders Table */}
-            <div className="bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
-              {isOrdersLoading ? (
-                <div className="p-12 text-center text-slate-400 text-sm">Loading orders from database...</div>
-              ) : orders.length === 0 ? (
-                <div className="p-12 text-center text-slate-400 text-sm">No customer orders found matching criteria.</div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-slate-300">
-                    <thead className="bg-slate-950/90 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
-                      <tr>
-                        <th className="py-3.5 px-4 font-bold">Order ID & Date</th>
-                        <th className="py-3.5 px-4 font-bold">Customer Details</th>
-                        <th className="py-3.5 px-4 font-bold">Product & Variant</th>
-                        <th className="py-3.5 px-4 font-bold">Total Amount</th>
-                        <th className="py-3.5 px-4 font-bold">Status</th>
-                        <th className="py-3.5 px-4 text-right font-bold">Quick Contact</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/80">
-                      {orders.map((ord) => (
-                        <tr key={ord.orderId} className="hover:bg-slate-800/40 transition-colors">
-                          <td className="py-4 px-4 font-mono font-bold text-white">
-                            {ord.orderId}
-                            <span className="block text-[10px] font-normal text-slate-400 font-sans mt-0.5">
-                              {new Date(ord.createdAt).toLocaleDateString('en-GB', {
-                                day: 'numeric',
-                                month: 'short',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </span>
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="font-bold text-white text-sm">{ord.customerName}</div>
-                            <div className="text-slate-400 font-mono mt-0.5">{ord.phone}</div>
-                            <div className="text-[11px] text-slate-400 max-w-[200px] truncate mt-0.5" title={ord.address}>
-                              📍 {ord.address}
-                            </div>
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="font-semibold text-rose-300">{ord.productNameBn}</div>
-                            <div className="text-[11px] text-slate-300">{ord.comboTitleBn}</div>
-                            <div className="text-[10px] text-slate-400 font-mono">
-                              Colors: {ord.selectedVariants?.join(', ')}
-                            </div>
-                          </td>
-                          <td className="py-4 px-4">
-                            <div className="font-black text-white text-sm">৳{ord.totalAmount}</div>
-                            <div className="text-[10px] text-slate-400">
-                              {ord.deliveryArea === 'inside_dhaka' ? 'Inside Dhaka (৳70)' : 'Outside Dhaka (৳130)'}
-                            </div>
-                          </td>
-                          <td className="py-4 px-4">
-                            <select
-                              value={ord.status}
-                              onChange={(e) => handleStatusChange(ord.orderId, e.target.value as OrderStatus)}
-                              className={`text-xs font-bold py-1.5 px-3 rounded-lg border focus:outline-none cursor-pointer ${
-                                ord.status === 'Pending'
-                                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                                  : ord.status === 'Confirmed'
-                                  ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
-                                  : ord.status === 'Shipped'
-                                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
-                                  : ord.status === 'Delivered'
-                                  ? 'bg-teal-500/20 text-teal-300 border-teal-500/30'
-                                  : ord.status === 'Returned'
-                                  ? 'bg-orange-500/20 text-orange-300 border-orange-500/30'
-                                  : 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                              }`}
-                            >
-                              <option value="Pending" className="bg-slate-900 text-amber-300">Pending</option>
-                              <option value="Confirmed" className="bg-slate-900 text-blue-300">Confirmed (Stock -1)</option>
-                              <option value="Shipped" className="bg-slate-900 text-purple-300">Shipped</option>
-                              <option value="Delivered" className="bg-slate-900 text-teal-300">Delivered</option>
-                              <option value="Returned" className="bg-slate-900 text-orange-300">Returned (Stock +1)</option>
-                              <option value="Cancelled" className="bg-slate-900 text-rose-300">Cancelled (Stock +1)</option>
-                            </select>
-                          </td>
-                          <td className="py-4 px-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <a
-                                href={`tel:${ord.phone}`}
-                                className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-200 transition-colors"
-                                title="Call Customer"
-                              >
-                                <Phone className="w-3.5 h-3.5" />
-                              </a>
-                              <a
-                                href={`https://wa.me/88${ord.phone}?text=${encodeURIComponent(
-                                  `আসসালামু আলাইকুম ${ord.customerName}! সুবিন্যাস (subinyas.shop) থেকে আপনার অর্ডার ${ord.orderId} কনফার্মেশনের জন্য যোগাযোগ করছি।`
-                                )}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-2 bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded-lg transition-colors border border-emerald-500/20"
-                                title="WhatsApp Customer"
-                              >
-                                <MessageCircle className="w-3.5 h-3.5" />
-                              </a>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 2: PRODUCTS & INVENTORY CONTROL */}
-        {activeTab === 'products' && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
-              <div>
-                <h3 className="text-base font-bold text-white">Products & Inventory Control</h3>
-                <p className="text-xs text-slate-400">Manage all products, pricing, stock levels, variants, and featured status in MongoDB</p>
-              </div>
-
-              <div className="flex items-center gap-2">
+          <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
+            <p className="px-3 pb-2 text-[10px] uppercase tracking-[0.18em] text-[#6E6278] font-semibold">পরিচালনা</p>
+            {NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              const count =
+                item.id === 'orders'
+                  ? orders.length
+                  : item.id === 'products'
+                  ? products.length
+                  : item.id === 'categories'
+                  ? categories.length
+                  : item.id === 'reviews'
+                  ? reviews.length
+                  : null;
+              return (
                 <button
-                  onClick={() => switchTab('categories')}
-                  className="bg-slate-800/80 hover:bg-slate-800 text-slate-200 text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 border border-slate-700 transition-colors cursor-pointer"
+                  key={item.id}
+                  onClick={() => switchTab(item.id)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer group ${
+                    isActive
+                      ? 'bg-[#C4587A]/12 text-white border border-[#C4587A]/30'
+                      : 'text-[#B7ACC4] hover:text-white hover:bg-[#211C28] border border-transparent'
+                  }`}
                 >
-                  <FolderPlus className="w-4 h-4 text-amber-400" />
-                  <span>Manage Categories ({categories.length})</span>
-                </button>
-
-                <button
-                  onClick={handleOpenAddProduct}
-                  className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-rose-600/25 transition-all cursor-pointer"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add New Product</span>
-                </button>
-              </div>
-            </div>
-
-            {isProductsLoading ? (
-              <div className="p-12 text-center text-slate-400">Loading products from MongoDB...</div>
-            ) : products.length === 0 ? (
-              <div className="p-12 text-center text-slate-400 bg-slate-900/40 rounded-2xl border border-slate-800 space-y-3">
-                <Layers className="w-12 h-12 mx-auto text-slate-600 stroke-1" />
-                <p>No products found in MongoDB database.</p>
-                <button
-                  onClick={handleOpenAddProduct}
-                  className="bg-rose-600 text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer"
-                >
-                  Create First Product
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {products.map((prod) => (
-                  <div key={prod.slug} className="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 space-y-5">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-slate-950 border border-slate-800 shrink-0">
-                          <Image src={prod.images[0] || '/images/products/hello-kitty-pair.png'} alt={prod.name} fill className="object-cover" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-bold text-white text-base">{prod.name}</h3>
-                            <span className="bg-slate-800 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded border border-slate-700">
-                              {prod.category}
-                            </span>
-                            {prod.isFeatured && (
-                              <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
-                                <Sparkles className="w-3 h-3" />
-                                <span>Featured</span>
-                              </span>
-                            )}
-                            {!prod.isActive && (
-                              <span className="bg-slate-800 text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded border border-slate-700">
-                                Draft / Hidden
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-xs text-slate-400 font-mono">Slug: /products/{prod.slug}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {/* Quick Hero Slider Switch */}
-                        <button
-                          onClick={() =>
-                            toggleHeroSliderMutation.mutate({
-                              slug: prod.slug,
-                              isHeroSlider: !prod.isHeroSlider,
-                            })
-                          }
-                          className={`text-[10px] font-bold px-2.5 py-1.5 rounded-lg border flex items-center gap-1.5 transition-all cursor-pointer ${
-                            prod.isHeroSlider
-                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-xs ring-1 ring-amber-500/30'
-                              : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
-                          }`}
-                          title="Click to toggle Homepage Hero Slider banner"
-                        >
-                          <Sparkles className="w-3 h-3 text-amber-400" />
-                          <span>{prod.isHeroSlider ? `In Hero Slider (#${prod.heroOrder || 1})` : '+ Add to Hero'}</span>
-                        </button>
-
-                        <span className="text-xs font-bold text-rose-400 bg-rose-500/10 px-3 py-1.5 rounded-lg border border-rose-500/20">
-                          Base: ৳{prod.basePrice} (Orig: ৳{prod.originalPrice})
-                        </span>
-
-                        <button
-                          onClick={() => handleOpenEditProduct(prod)}
-                          className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-700"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                          <span>Edit</span>
-                        </button>
-
-                        <Link
-                          href={`/products/${prod.slug}`}
-                          target="_blank"
-                          className="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors border border-slate-700"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                          <span>Live</span>
-                        </Link>
-
-                        <button
-                          onClick={() => {
-                            if (confirm(`Are you sure you want to delete "${prod.name}"?`)) {
-                              deleteProductMutation.mutate(prod.slug);
-                            }
-                          }}
-                          className="p-2 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white rounded-lg transition-colors cursor-pointer border border-rose-500/20"
-                          title="Delete Product"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Variants and Stock */}
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-                        Color Variants & Live Stock Inventory
-                      </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        {prod.variants?.map((v) => (
-                          <div key={v.id} className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800 space-y-2.5">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2.5">
-                                <div
-                                  className="w-4 h-4 rounded-full border border-slate-600 shrink-0"
-                                  style={{ backgroundColor: v.colorHex }}
-                                />
-                                <span className="font-bold text-white text-xs truncate">{v.name}</span>
-                              </div>
-                              <span className="text-[10px] font-mono text-slate-400">Stock: {v.stockCount || 0}</span>
-                            </div>
-
-                            <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
-                              <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={v.inStock}
-                                  onChange={(e) =>
-                                    updateStockMutation.mutate({
-                                      slug: prod.slug,
-                                      variantId: v.id,
-                                      inStock: e.target.checked,
-                                      stockCount: v.stockCount,
-                                    })
-                                  }
-                                  className="accent-rose-500 rounded"
-                                />
-                                <span className={v.inStock ? 'text-emerald-400 font-bold text-[11px]' : 'text-rose-400 text-[11px]'}>
-                                  {v.inStock ? 'In Stock' : 'Out of Stock'}
-                                </span>
-                              </label>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 3: CATEGORY SETTINGS (LEFT FORM, RIGHT LIST WITH DRAG & DROP) */}
-        {activeTab === 'categories' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* LEFT SIDE: Add Category Form (5 cols) */}
-            <div className="lg:col-span-5 bg-slate-900/60 p-6 rounded-2xl border border-slate-800 space-y-5 shadow-xl">
-              <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <FolderPlus className="w-5 h-5 text-amber-400" />
-                  <span>Create New Category</span>
-                </h3>
-                <p className="text-xs text-slate-400 mt-1">
-                  Enter the category name. It will automatically be placed at the end of the order sequence.
-                </p>
-              </div>
-
-              {catError && (
-                <div className="bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs p-3.5 rounded-xl font-medium flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{catError}</span>
-                </div>
-              )}
-
-              {catSuccess && (
-                <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs p-3.5 rounded-xl font-medium flex items-center gap-2">
-                  <Check className="w-4 h-4 shrink-0" />
-                  <span>{catSuccess}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleCreateCategory} className="space-y-4 text-xs sm:text-sm">
-                <div>
-                  <label className="text-slate-300 font-medium block mb-1.5">Category Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newCatName}
-                    onChange={(e) => setNewCatName(e.target.value)}
-                    placeholder="e.g. Travel, Organizers, Jewelry Box, Pouches..."
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-amber-500 text-sm"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={addCategoryMutation.isPending}
-                  className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl shadow-lg transition-colors cursor-pointer flex items-center justify-center gap-2 shadow-amber-600/20"
-                >
-                  {addCategoryMutation.isPending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Plus className="w-4 h-4" />
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#E39BB4]' : 'text-[#8A7D97] group-hover:text-[#C4587A]'}`} />
+                  <span className="flex-1 text-left">{item.label}</span>
+                  {count !== null && (
+                    <span
+                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center ${
+                        isActive ? 'bg-[#C4587A] text-white' : 'bg-[#2A2430] text-[#9C8FA8]'
+                      }`}
+                    >
+                      {count}
+                    </span>
                   )}
-                  <span>Save Category</span>
+                  {item.id === 'reviews' && pendingReviews > 0 && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#D6A24E]" title={`${pendingReviews} pending`} />
+                  )}
                 </button>
-              </form>
-            </div>
+              );
+            })}
+          </nav>
 
-            {/* RIGHT SIDE: Categories List & Drag-and-Drop Reordering (7 cols) */}
-            <div className="lg:col-span-7 bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden shadow-xl space-y-4">
-              <div className="p-5 border-b border-slate-800 flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Folder className="w-4 h-4 text-amber-400" />
-                    <span>Category List ({categories.length})</span>
-                  </h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Drag and drop any category item up or down to reorder sequence
-                  </p>
-                </div>
-              </div>
-
-              {isCategoriesLoading ? (
-                <div className="p-12 text-center text-slate-400 text-xs">Loading categories...</div>
-              ) : categories.length === 0 ? (
-                <div className="p-12 text-center text-slate-400 text-xs space-y-2">
-                  <Folder className="w-10 h-10 mx-auto text-slate-600 stroke-1" />
-                  <p>No categories in database.</p>
-                  <p className="text-[11px] text-slate-500">Use the form on the left to add your first category.</p>
-                </div>
-              ) : (
-                <div className="p-4 space-y-2.5 max-h-[600px] overflow-y-auto">
-                  {categories.map((cat, idx) => (
-                    <div
-                      key={cat._id || cat.id || cat.name || idx}
-                      draggable
-                      onDragStart={(e) => handleCategoryDragStart(e, idx)}
-                      onDragOver={(e) => handleCategoryDragOver(e, idx)}
-                      onDrop={(e) => handleCategoryDrop(e, idx)}
-                      onDragEnd={handleCategoryDragEnd}
-                      className={`p-3.5 bg-slate-950/60 rounded-xl border transition-all cursor-grab active:cursor-grabbing flex items-center justify-between gap-3 select-none ${
-                        draggedCategoryIndex === idx
-                          ? 'opacity-30 border-amber-500/60 bg-amber-500/10 scale-[0.98]'
-                          : dragOverCategoryIndex === idx
-                          ? 'border-amber-400 bg-amber-500/20 shadow-md ring-2 ring-amber-400/30'
-                          : 'border-slate-800 hover:border-slate-700 hover:bg-slate-900/60'
-                      }`}
-                    >
-                      {/* Left: Drag Handle, Order Badge & Name */}
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="text-slate-500 hover:text-amber-400 cursor-grab active:cursor-grabbing p-1 rounded transition-colors shrink-0"
-                          title="Drag to Reorder"
-                        >
-                          <GripVertical className="w-4 h-4" />
-                        </div>
-
-                        <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center justify-center font-mono font-bold text-xs shrink-0">
-                          #{cat.order || idx + 1}
-                        </div>
-
-                        <div>
-                          <span className="font-bold text-white text-sm">{cat.name}</span>
-                        </div>
-                      </div>
-
-                      {/* Right: Individual Delete button */}
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">Drag to move</span>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Are you sure you want to delete category "${cat.name}"?`)) {
-                              deleteCategoryMutation.mutate(cat._id || (cat.id as string) || cat.name);
-                            }
-                          }}
-                          className="p-1.5 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white rounded-lg transition-colors cursor-pointer border border-rose-500/20"
-                          title="Delete Category"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+          <div className="p-3 border-t border-[#2E2733] space-y-1">
+            <Link
+              href="/"
+              target="_blank"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-[#8FC7A9] hover:bg-[#211C28] transition-colors"
+            >
+              <Eye className="w-4 h-4" />
+              <span className="flex-1">লাইভ স্টোর দেখুন</span>
+              <ArrowUpRight className="w-3.5 h-3.5 opacity-60" />
+            </Link>
+            <button
+              onClick={() => logout()}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-[#DD8A94] hover:bg-[#211C28] transition-colors cursor-pointer text-left"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>লগ আউট</span>
+            </button>
           </div>
-        )}
+        </aside>
 
-        {/* TAB 4: REVIEW MODERATION */}
-        {activeTab === 'reviews' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-400">Filter Status:</span>
-                {['All', 'Pending', 'Approved', 'Declined'].map((st) => (
+        {/* ================= MAIN COLUMN ================= */}
+        <div className="flex-1 min-w-0">
+          {/* Topbar */}
+          <header className="sticky top-0 z-30 bg-[#14111A]/90 backdrop-blur-xl border-b border-[#2E2733]">
+            <div className="h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 gap-3">
+              <div className="flex items-center gap-2.5 lg:hidden">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#C4587A] to-[#8C4064] flex items-center justify-center text-white shrink-0">
+                  <Store className="w-4 h-4" />
+                </div>
+                <span className="font-display italic text-white text-base">Subinyas</span>
+              </div>
+
+              <div className="hidden lg:block">
+                <h1 className="font-display text-lg text-white">{TAB_TITLES[activeTab]}</h1>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={() => {
+                    refetchOrders();
+                    refetchReviews();
+                    refetchProducts();
+                    refetchCategories();
+                  }}
+                  className="p-2.5 text-[#B7ACC4] hover:text-white bg-[#1C1821] hover:bg-[#241F2B] rounded-xl border border-[#2E2733] cursor-pointer transition-all"
+                  title="Refresh Data"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+
+                {/* Admin Profile Dropdown */}
+                <div className="relative" ref={profileDropdownRef}>
                   <button
-                    key={st}
-                    onClick={() => setReviewStatusFilter(st)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                      reviewStatusFilter === st
-                        ? 'bg-rose-600 text-white'
-                        : 'bg-slate-800/80 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                    }`}
+                    onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                    className="flex items-center gap-2 text-xs font-semibold text-[#F3EFEC] bg-[#1C1821] hover:bg-[#241F2B] py-1.5 pl-1.5 pr-2.5 rounded-full border border-[#2E2733] transition-all cursor-pointer"
                   >
-                    {st}
+                    {user?.avatar ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={user.avatar}
+                        alt={user.name || 'Admin'}
+                        className="w-7 h-7 rounded-full object-cover border border-[#C4587A]/50"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#C4587A] to-[#8C4064] text-white flex items-center justify-center text-xs font-black">
+                        {user?.name ? user.name.slice(0, 1).toUpperCase() : 'A'}
+                      </div>
+                    )}
+                    <span className="max-w-[100px] truncate hidden sm:inline font-medium">{user?.name || 'Administrator'}</span>
+                    <ChevronDown className="w-3.5 h-3.5 text-[#8A7D97]" />
                   </button>
-                ))}
-              </div>
 
-              <span className="text-xs text-slate-400">
-                Total Reviews: <strong className="text-white">{reviews.length}</strong>
-              </span>
-            </div>
-
-            {isReviewsLoading ? (
-              <div className="p-12 text-center text-slate-400 text-sm">Loading reviews from MongoDB...</div>
-            ) : reviews.length === 0 ? (
-              <div className="p-12 text-center text-slate-400 text-sm bg-slate-900/40 rounded-2xl border border-slate-800">
-                No customer reviews found matching criteria.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {reviews.map((rev) => (
-                  <div
-                    key={rev.id}
-                    className="bg-slate-900/60 p-5 rounded-2xl border border-slate-800 space-y-3 flex flex-col justify-between"
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-white text-sm">{rev.userName}</span>
-                            <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                rev.status === 'Approved'
-                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                  : rev.status === 'Declined'
-                                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                                  : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                              }`}
-                            >
-                              {rev.status || 'Pending'}
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-slate-400">
-                            Product Slug: <strong className="text-slate-300">{rev.productSlug}</strong> •{' '}
-                            {new Date(rev.createdAt).toLocaleDateString('en-GB')}
+                  {isProfileDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-64 bg-[#1C1821] rounded-2xl shadow-2xl border border-[#2E2733] py-2 text-xs text-[#D8CFE0] z-50">
+                      <div className="px-4 py-3 border-b border-[#2E2733]">
+                        <div className="flex items-center justify-between">
+                          <p className="font-bold text-white text-sm truncate">{user?.name || 'Store Admin'}</p>
+                          <span className="bg-[#C4587A] text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded">
+                            Admin
                           </span>
                         </div>
+                        <p className="text-[11px] text-[#8A7D97] font-mono truncate mt-0.5">{user?.email || 'admin@subinyas.shop'}</p>
+                      </div>
+                      <div className="py-1">
+                        <Link
+                          href="/"
+                          target="_blank"
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                          className="flex items-center justify-between px-4 py-2.5 hover:bg-[#241F2B] text-[#8FC7A9] font-medium transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <ExternalLink className="w-4 h-4" />
+                            <span>View Live Store</span>
+                          </div>
+                        </Link>
+                        <button
+                          onClick={() => logout()}
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-[#241F2B] text-[#DD8A94] font-semibold border-t border-[#2E2733] cursor-pointer text-left transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Log Out</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
 
-                        <div className="flex text-amber-400">
-                          {[...Array(rev.rating)].map((_, i) => (
-                            <Star key={i} className="w-3.5 h-3.5 fill-amber-400" />
+            {/* Mobile tab bar */}
+            <div className="lg:hidden flex items-center gap-2 overflow-x-auto px-4 pb-3 pt-1">
+              {NAV_ITEMS.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => switchTab(item.id)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
+                      isActive
+                        ? 'bg-[#C4587A] text-white shadow-lg shadow-[#C4587A]/25'
+                        : 'bg-[#1C1821] text-[#9C8FA8] border border-[#2E2733]'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </header>
+
+          <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-7 space-y-7">
+            {/* Metric Summary Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className={`${cardCls} p-5 relative overflow-hidden`}>
+                <div className="flex items-center justify-between text-[#9C8FA8] text-[10px] font-semibold uppercase tracking-wider mb-3">
+                  <span>মোট বিক্রয়</span>
+                  <div className="w-7 h-7 rounded-lg bg-[#6FAE8C]/15 flex items-center justify-center">
+                    <DollarSign className="w-3.5 h-3.5 text-[#8FC7A9]" />
+                  </div>
+                </div>
+                <div className="font-display text-2xl sm:text-3xl text-white">৳{totalRevenue.toLocaleString()}</div>
+                <span className="text-[11px] text-[#8FC7A9] mt-1.5 block font-medium">Cash On Delivery</span>
+              </div>
+
+              <div className={`${cardCls} p-5 relative overflow-hidden`}>
+                <div className="flex items-center justify-between text-[#9C8FA8] text-[10px] font-semibold uppercase tracking-wider mb-3">
+                  <span>মোট অর্ডার</span>
+                  <div className="w-7 h-7 rounded-lg bg-[#C4587A]/15 flex items-center justify-center">
+                    <Package className="w-3.5 h-3.5 text-[#E39BB4]" />
+                  </div>
+                </div>
+                <div className="font-display text-2xl sm:text-3xl text-white">{orders.length}</div>
+                <span className="text-[11px] text-[#9C8FA8] mt-1.5 block font-medium">সকল কাস্টমার অর্ডার</span>
+              </div>
+
+              <div className={`${cardCls} p-5 relative overflow-hidden`}>
+                <div className="flex items-center justify-between text-[#9C8FA8] text-[10px] font-semibold uppercase tracking-wider mb-3">
+                  <span>পেন্ডিং অর্ডার</span>
+                  <div className="w-7 h-7 rounded-lg bg-[#D6A24E]/15 flex items-center justify-center">
+                    <Clock className="w-3.5 h-3.5 text-[#E4BC79]" />
+                  </div>
+                </div>
+                <div className="font-display text-2xl sm:text-3xl text-[#E4BC79]">{pendingOrders}</div>
+                <span className="text-[11px] text-[#9C8FA8] mt-1.5 block font-medium">রিভিউ পেন্ডিং: {pendingReviews}</span>
+              </div>
+
+              <div className={`${cardCls} p-5 relative overflow-hidden`}>
+                <div className="flex items-center justify-between text-[#9C8FA8] text-[10px] font-semibold uppercase tracking-wider mb-3">
+                  <span>সক্রিয় প্রোডাক্ট</span>
+                  <div className="w-7 h-7 rounded-lg bg-[#6C93C4]/15 flex items-center justify-center">
+                    <Layers className="w-3.5 h-3.5 text-[#8FB0D9]" />
+                  </div>
+                </div>
+                <div className="font-display text-2xl sm:text-3xl text-[#8FB0D9]">{products.length}</div>
+                <span className="text-[11px] text-[#9C8FA8] mt-1.5 block font-medium">ক্যাটাগরি: {categories.length}</span>
+              </div>
+            </div>
+
+            {/* TAB 1: ORDERS */}
+            {activeTab === 'orders' && (
+              <div className="space-y-4">
+                <div className={`flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 ${cardCls} p-4`}>
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 text-[#6E6278] absolute left-3 top-3" />
+                    <input
+                      type="text"
+                      placeholder="অর্ডার আইডি, ফোন নম্বর, বা কাস্টমারের নাম খুঁজুন..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className={`${inputCls} pl-9 py-2 text-xs sm:text-sm`}
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-1.5 overflow-x-auto">
+                    {['All', 'Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled', 'Returned'].map((st) => (
+                      <button
+                        key={st}
+                        onClick={() => setStatusFilter(st)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                          statusFilter === st
+                            ? 'bg-[#C4587A] text-white'
+                            : 'bg-[#211C28] text-[#9C8FA8] hover:bg-[#241F2B] hover:text-[#D8CFE0] border border-[#2E2733]'
+                        }`}
+                      >
+                        {st}
+                      </button>
+                    ))}
+                  </div>
+
+                  <a
+                    href="/api/orders/export"
+                    download="subinyas_orders.csv"
+                    className="bg-[#6FAE8C] hover:bg-[#5F9E7C] text-[#0E1A14] text-xs font-bold px-4 py-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>কুরিয়ার CSV এক্সপোর্ট</span>
+                  </a>
+                </div>
+
+                {/* Orders Table */}
+                <div className={`${cardCls} overflow-hidden`}>
+                  {isOrdersLoading ? (
+                    <div className="p-14 text-center text-[#9C8FA8] text-sm flex flex-col items-center gap-3">
+                      <Loader2 className="w-5 h-5 animate-spin text-[#C4587A]" />
+                      <span>ডেটাবেজ থেকে অর্ডার লোড হচ্ছে...</span>
+                    </div>
+                  ) : orders.length === 0 ? (
+                    <div className="p-14 text-center text-[#9C8FA8] text-sm space-y-2">
+                      <Package className="w-10 h-10 mx-auto text-[#3A323F] stroke-1" />
+                      <p>কোনো অর্ডার পাওয়া যায়নি।</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs text-[#D8CFE0]">
+                        <thead className="bg-[#17131C] text-[#8A7D97] uppercase text-[10px] tracking-wider border-b border-[#2E2733]">
+                          <tr>
+                            <th className="py-3.5 px-4 font-bold">অর্ডার আইডি ও তারিখ</th>
+                            <th className="py-3.5 px-4 font-bold">কাস্টমার তথ্য</th>
+                            <th className="py-3.5 px-4 font-bold">প্রোডাক্ট ও ভ্যারিয়েন্ট</th>
+                            <th className="py-3.5 px-4 font-bold">মোট মূল্য</th>
+                            <th className="py-3.5 px-4 font-bold">স্ট্যাটাস</th>
+                            <th className="py-3.5 px-4 text-right font-bold">যোগাযোগ</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#2A2430]">
+                          {orders.map((ord) => (
+                            <tr key={ord.orderId} className="hover:bg-[#211C28]/60 transition-colors">
+                              <td className="py-4 px-4 font-mono font-bold text-white">
+                                {ord.orderId}
+                                <span className="block text-[10px] font-normal text-[#8A7D97] font-sans mt-0.5">
+                                  {new Date(ord.createdAt).toLocaleDateString('en-GB', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </span>
+                              </td>
+                              <td className="py-4 px-4">
+                                <div className="font-bold text-white text-sm">{ord.customerName}</div>
+                                <div className="text-[#9C8FA8] font-mono mt-0.5">{ord.phone}</div>
+                                <div className="text-[11px] text-[#8A7D97] max-w-[200px] truncate mt-0.5" title={ord.address}>
+                                  📍 {ord.address}
+                                </div>
+                              </td>
+                              <td className="py-4 px-4">
+                                <div className="font-semibold text-[#E39BB4]">{ord.productNameBn}</div>
+                                <div className="text-[11px] text-[#D8CFE0]">{ord.comboTitleBn}</div>
+                                <div className="text-[10px] text-[#8A7D97] font-mono">
+                                  Colors: {ord.selectedVariants?.join(', ')}
+                                </div>
+                              </td>
+                              <td className="py-4 px-4">
+                                <div className="font-black text-white text-sm">৳{ord.totalAmount}</div>
+                                <div className="text-[10px] text-[#8A7D97]">
+                                  {ord.deliveryArea === 'inside_dhaka' ? 'Inside Dhaka (৳70)' : 'Outside Dhaka (৳130)'}
+                                </div>
+                              </td>
+                              <td className="py-4 px-4">
+                                <select
+                                  value={ord.status}
+                                  onChange={(e) => handleStatusChange(ord.orderId, e.target.value as OrderStatus)}
+                                  className={`text-xs font-bold py-1.5 px-3 rounded-lg border focus:outline-none cursor-pointer ${
+                                    STATUS_STYLES[ord.status] || STATUS_STYLES.Pending
+                                  }`}
+                                >
+                                  <option value="Pending" className="bg-[#1C1821] text-[#E4BC79]">Pending</option>
+                                  <option value="Confirmed" className="bg-[#1C1821] text-[#8FB0D9]">Confirmed (Stock -1)</option>
+                                  <option value="Shipped" className="bg-[#1C1821] text-[#BAA3DE]">Shipped</option>
+                                  <option value="Delivered" className="bg-[#1C1821] text-[#8FC7A9]">Delivered</option>
+                                  <option value="Returned" className="bg-[#1C1821] text-[#DDA876]">Returned (Stock +1)</option>
+                                  <option value="Cancelled" className="bg-[#1C1821] text-[#DD8A94]">Cancelled (Stock +1)</option>
+                                </select>
+                              </td>
+                              <td className="py-4 px-4 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <a
+                                    href={`tel:${ord.phone}`}
+                                    className="p-2 bg-[#211C28] hover:bg-[#2A2430] rounded-lg text-[#D8CFE0] transition-colors border border-[#2E2733]"
+                                    title="Call Customer"
+                                  >
+                                    <Phone className="w-3.5 h-3.5" />
+                                  </a>
+                                  <a
+                                    href={`https://wa.me/88${ord.phone}?text=${encodeURIComponent(
+                                      `আসসালামু আলাইকুম ${ord.customerName}! সুবিন্যাস (subinyas.shop) থেকে আপনার অর্ডার ${ord.orderId} কনফার্মেশনের জন্য যোগাযোগ করছি।`
+                                    )}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-2 bg-[#6FAE8C]/15 hover:bg-[#6FAE8C] text-[#8FC7A9] hover:text-[#0E1A14] rounded-lg transition-colors border border-[#6FAE8C]/25"
+                                    title="WhatsApp Customer"
+                                  >
+                                    <MessageCircle className="w-3.5 h-3.5" />
+                                  </a>
+                                </div>
+                              </td>
+                            </tr>
                           ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: PRODUCTS & INVENTORY CONTROL */}
+            {activeTab === 'products' && (
+              <div className="space-y-6">
+                <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${cardCls} p-4`}>
+                  <div>
+                    <h3 className="text-base font-bold text-white">প্রোডাক্ট ও ইনভেন্টরি নিয়ন্ত্রণ</h3>
+                    <p className="text-xs text-[#9C8FA8] mt-0.5">মূল্য, স্টক, ভ্যারিয়েন্ট ও ফিচার্ড স্ট্যাটাস ম্যানেজ করুন</p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => switchTab('categories')}
+                      className="bg-[#211C28] hover:bg-[#2A2430] text-[#D8CFE0] text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 border border-[#2E2733] transition-colors cursor-pointer"
+                    >
+                      <FolderPlus className="w-4 h-4 text-[#D3A45E]" />
+                      <span>ক্যাটাগরি ({categories.length})</span>
+                    </button>
+
+                    <button
+                      onClick={handleOpenAddProduct}
+                      className="bg-[#C4587A] hover:bg-[#B24A6B] text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-[#C4587A]/20 transition-all cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>নতুন প্রোডাক্ট যোগ করুন</span>
+                    </button>
+                  </div>
+                </div>
+
+                {isProductsLoading ? (
+                  <div className="p-14 text-center text-[#9C8FA8] flex flex-col items-center gap-3">
+                    <Loader2 className="w-5 h-5 animate-spin text-[#C4587A]" />
+                    <span>MongoDB থেকে প্রোডাক্ট লোড হচ্ছে...</span>
+                  </div>
+                ) : products.length === 0 ? (
+                  <div className={`p-14 text-center text-[#9C8FA8] ${cardCls} space-y-3`}>
+                    <Layers className="w-12 h-12 mx-auto text-[#3A323F] stroke-1" />
+                    <p>কোনো প্রোডাক্ট পাওয়া যায়নি।</p>
+                    <button
+                      onClick={handleOpenAddProduct}
+                      className="bg-[#C4587A] text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer"
+                    >
+                      প্রথম প্রোডাক্ট তৈরি করুন
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    {products.map((prod) => (
+                      <div key={prod.slug} className={`${cardCls} p-6 space-y-5`}>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#2E2733] pb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-[#14111A] border border-[#2E2733] shrink-0">
+                              <Image src={prod.images[0] || '/images/products/hello-kitty-pair.png'} alt={prod.name} fill className="object-cover" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="font-bold text-white text-base">{prod.name}</h3>
+                                <span className="bg-[#211C28] text-[#D8CFE0] text-[10px] font-bold px-2 py-0.5 rounded border border-[#2E2733]">
+                                  {prod.category}
+                                </span>
+                                {prod.isFeatured && (
+                                  <span className="bg-[#D3A45E]/15 text-[#E4BC79] border border-[#D3A45E]/30 text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1">
+                                    <Sparkles className="w-3 h-3" />
+                                    <span>Featured</span>
+                                  </span>
+                                )}
+                                {!prod.isActive && (
+                                  <span className="bg-[#211C28] text-[#8A7D97] text-[10px] font-bold px-2 py-0.5 rounded border border-[#2E2733]">
+                                    Draft / Hidden
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-xs text-[#8A7D97] font-mono">/products/{prod.slug}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <button
+                              onClick={() =>
+                                toggleHeroSliderMutation.mutate({
+                                  slug: prod.slug,
+                                  isHeroSlider: !prod.isHeroSlider,
+                                })
+                              }
+                              className={`text-[10px] font-bold px-2.5 py-1.5 rounded-lg border flex items-center gap-1.5 transition-all cursor-pointer ${
+                                prod.isHeroSlider
+                                  ? 'bg-[#D3A45E]/15 text-[#E4BC79] border-[#D3A45E]/35'
+                                  : 'bg-[#211C28] text-[#8A7D97] border-[#2E2733] hover:text-[#D8CFE0]'
+                              }`}
+                              title="হোমপেজ হিরো স্লাইডারে টগল করুন"
+                            >
+                              <Sparkles className="w-3 h-3" />
+                              <span>{prod.isHeroSlider ? `Hero Slider #${prod.heroOrder || 1}` : '+ Hero-তে যোগ করুন'}</span>
+                            </button>
+
+                            <span className="text-xs font-bold text-[#E39BB4] bg-[#C4587A]/10 px-3 py-1.5 rounded-lg border border-[#C4587A]/20">
+                              ৳{prod.basePrice} <span className="text-[#8A7D97] line-through font-normal">৳{prod.originalPrice}</span>
+                            </span>
+
+                            <button
+                              onClick={() => handleOpenEditProduct(prod)}
+                              className="bg-[#211C28] hover:bg-[#2A2430] text-[#D8CFE0] text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer border border-[#2E2733]"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                              <span>Edit</span>
+                            </button>
+
+                            <Link
+                              href={`/products/${prod.slug}`}
+                              target="_blank"
+                              className="bg-[#211C28] hover:bg-[#2A2430] text-[#D8CFE0] text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors border border-[#2E2733]"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              <span>Live</span>
+                            </Link>
+
+                            <button
+                              onClick={() => {
+                                if (confirm(`আপনি কি নিশ্চিত "${prod.name}" ডিলিট করতে চান?`)) {
+                                  deleteProductMutation.mutate(prod.slug);
+                                }
+                              }}
+                              className="p-2 bg-[#C1495A]/12 hover:bg-[#C1495A] text-[#DD8A94] hover:text-white rounded-lg transition-colors cursor-pointer border border-[#C1495A]/25"
+                              title="Delete Product"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Variants and Stock */}
+                        <div>
+                          <h4 className="text-[10px] font-bold text-[#8A7D97] uppercase tracking-wider mb-3">
+                            কালার ভ্যারিয়েন্ট ও লাইভ স্টক
+                          </h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            {prod.variants?.map((v) => (
+                              <div key={v.id} className="bg-[#14111A] p-3.5 rounded-xl border border-[#2E2733] space-y-2.5">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2.5">
+                                    <div
+                                      className="w-4 h-4 rounded-full border border-[#3A323F] shrink-0"
+                                      style={{ backgroundColor: v.colorHex }}
+                                    />
+                                    <span className="font-bold text-white text-xs truncate">{v.name}</span>
+                                  </div>
+                                  <span className="text-[10px] font-mono text-[#8A7D97]">Stock: {v.stockCount || 0}</span>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-2 border-t border-[#2A2430] text-xs">
+                                  <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={v.inStock}
+                                      onChange={(e) =>
+                                        updateStockMutation.mutate({
+                                          slug: prod.slug,
+                                          variantId: v.id,
+                                          inStock: e.target.checked,
+                                          stockCount: v.stockCount,
+                                        })
+                                      }
+                                      className="accent-[#C4587A] rounded"
+                                    />
+                                    <span className={v.inStock ? 'text-[#8FC7A9] font-bold text-[11px]' : 'text-[#DD8A94] text-[11px]'}>
+                                      {v.inStock ? 'স্টকে আছে' : 'স্টক নেই'}
+                                    </span>
+                                  </label>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
-                      <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
-                        "{rev.comment}"
-                      </p>
+            {/* TAB 3: CATEGORY SETTINGS */}
+            {activeTab === 'categories' && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                {/* LEFT: Add Category Form */}
+                <div className={`lg:col-span-5 ${cardCls} p-6 space-y-5`}>
+                  <div>
+                    <h3 className="text-base font-bold text-white flex items-center gap-2">
+                      <FolderPlus className="w-5 h-5 text-[#D3A45E]" />
+                      <span>নতুন ক্যাটাগরি তৈরি করুন</span>
+                    </h3>
+                    <p className="text-xs text-[#9C8FA8] mt-1">
+                      ক্যাটাগরির নাম লিখুন। এটি স্বয়ংক্রিয়ভাবে সবার শেষে যুক্ত হবে।
+                    </p>
+                  </div>
 
-                      {/* Photo/video thumbnails */}
-                      {rev.mediaUrls && rev.mediaUrls.length > 0 && (
-                        <div className="flex gap-2 pt-1">
-                          {rev.mediaUrls.map((url, idx) => (
-                            <div
-                              key={idx}
-                              className="relative w-14 h-14 rounded-lg overflow-hidden border border-slate-800 bg-slate-950"
-                            >
-                              <Image src={url} alt="Review media" fill className="object-cover" />
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                  {catError && (
+                    <div className="bg-[#C1495A]/12 border border-[#C1495A]/30 text-[#DD8A94] text-xs p-3.5 rounded-xl font-medium flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{catError}</span>
+                    </div>
+                  )}
+
+                  {catSuccess && (
+                    <div className="bg-[#6FAE8C]/12 border border-[#6FAE8C]/30 text-[#8FC7A9] text-xs p-3.5 rounded-xl font-medium flex items-center gap-2">
+                      <Check className="w-4 h-4 shrink-0" />
+                      <span>{catSuccess}</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleCreateCategory} className="space-y-4 text-xs sm:text-sm">
+                    <div>
+                      <label className={labelCls}>ক্যাটাগরির নাম *</label>
+                      <input
+                        type="text"
+                        required
+                        value={newCatName}
+                        onChange={(e) => setNewCatName(e.target.value)}
+                        placeholder="যেমন: Travel, Organizers, Jewelry Box, Pouches..."
+                        className={inputCls}
+                      />
                     </div>
 
-                    {/* Action buttons */}
-                    <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
-                      {rev.status !== 'Approved' && (
-                        <button
-                          onClick={() => updateReviewStatusMutation.mutate({ reviewId: rev.id, status: 'Approved' })}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                          <span>Approve Review</span>
-                        </button>
+                    <button
+                      type="submit"
+                      disabled={addCategoryMutation.isPending}
+                      className="w-full bg-[#D3A45E] hover:bg-[#C4964F] text-[#1A140A] font-bold py-3 rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      {addCategoryMutation.isPending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Plus className="w-4 h-4" />
                       )}
+                      <span>ক্যাটাগরি সংরক্ষণ করুন</span>
+                    </button>
+                  </form>
+                </div>
 
-                      {rev.status !== 'Declined' && (
-                        <button
-                          onClick={() => updateReviewStatusMutation.mutate({ reviewId: rev.id, status: 'Declined' })}
-                          className="bg-amber-600/30 hover:bg-amber-600 text-amber-300 hover:text-white font-bold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-amber-500/30"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                          <span>Decline</span>
-                        </button>
-                      )}
-
-                      <button
-                        onClick={() => deleteReviewMutation.mutate(rev.id)}
-                        className="bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white p-1.5 rounded-lg transition-colors cursor-pointer border border-rose-500/20"
-                        title="Delete Review"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                {/* RIGHT: Categories List & Drag-and-Drop Reordering */}
+                <div className={`lg:col-span-7 ${cardCls} overflow-hidden space-y-4`}>
+                  <div className="p-5 border-b border-[#2E2733] flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                        <Folder className="w-4 h-4 text-[#D3A45E]" />
+                        <span>ক্যাটাগরি তালিকা ({categories.length})</span>
+                      </h4>
+                      <p className="text-[11px] text-[#8A7D97] mt-0.5">
+                        ক্রম পরিবর্তন করতে যেকোনো আইটেম টেনে উপরে-নিচে করুন
+                      </p>
                     </div>
                   </div>
-                ))}
+
+                  {isCategoriesLoading ? (
+                    <div className="p-14 text-center text-[#9C8FA8] text-xs">লোড হচ্ছে...</div>
+                  ) : categories.length === 0 ? (
+                    <div className="p-14 text-center text-[#9C8FA8] text-xs space-y-2">
+                      <Folder className="w-10 h-10 mx-auto text-[#3A323F] stroke-1" />
+                      <p>কোনো ক্যাটাগরি নেই।</p>
+                      <p className="text-[11px] text-[#6E6278]">বাম পাশের ফর্ম ব্যবহার করে প্রথম ক্যাটাগরি যোগ করুন।</p>
+                    </div>
+                  ) : (
+                    <div className="p-4 space-y-2.5 max-h-[600px] overflow-y-auto">
+                      {categories.map((cat, idx) => (
+                        <div
+                          key={cat._id || cat.id || cat.name || idx}
+                          draggable
+                          onDragStart={(e) => handleCategoryDragStart(e, idx)}
+                          onDragOver={(e) => handleCategoryDragOver(e, idx)}
+                          onDrop={(e) => handleCategoryDrop(e, idx)}
+                          onDragEnd={handleCategoryDragEnd}
+                          className={`p-3.5 bg-[#14111A] rounded-xl border transition-all cursor-grab active:cursor-grabbing flex items-center justify-between gap-3 select-none ${
+                            draggedCategoryIndex === idx
+                              ? 'opacity-30 border-[#D3A45E]/60 bg-[#D3A45E]/10 scale-[0.98]'
+                              : dragOverCategoryIndex === idx
+                              ? 'border-[#D3A45E] bg-[#D3A45E]/10 ring-1 ring-[#D3A45E]/30'
+                              : 'border-[#2E2733] hover:border-[#3A323F] hover:bg-[#1C1821]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="text-[#6E6278] hover:text-[#D3A45E] cursor-grab active:cursor-grabbing p-1 rounded transition-colors shrink-0"
+                              title="Drag to Reorder"
+                            >
+                              <GripVertical className="w-4 h-4" />
+                            </div>
+
+                            <div className="w-7 h-7 rounded-lg bg-[#D3A45E]/15 text-[#E4BC79] border border-[#D3A45E]/30 flex items-center justify-center font-mono font-bold text-xs shrink-0">
+                              #{cat.order || idx + 1}
+                            </div>
+
+                            <span className="font-bold text-white text-sm">{cat.name}</span>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[10px] text-[#6E6278] font-mono hidden sm:inline">টেনে সরান</span>
+                            <button
+                              onClick={() => {
+                                if (confirm(`আপনি কি নিশ্চিত "${cat.name}" ক্যাটাগরি ডিলিট করতে চান?`)) {
+                                  deleteCategoryMutation.mutate(cat._id || (cat.id as string) || cat.name);
+                                }
+                              }}
+                              className="p-1.5 bg-[#C1495A]/12 hover:bg-[#C1495A] text-[#DD8A94] hover:text-white rounded-lg transition-colors cursor-pointer border border-[#C1495A]/25"
+                              title="Delete Category"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
-          </div>
-        )}
 
-        {/* TAB 5: SETTINGS */}
-        {activeTab === 'settings' && (
-          <div className="max-w-2xl bg-slate-900/60 p-6 rounded-2xl border border-slate-800 space-y-6 shadow-xl">
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <Sliders className="w-5 h-5 text-rose-400" />
-              <span>Store Configuration & Meta Pixel Integration</span>
-            </h3>
+            {/* TAB 4: REVIEW MODERATION */}
+            {activeTab === 'reviews' && (
+              <div className="space-y-4">
+                <div className={`flex items-center justify-between ${cardCls} p-4 flex-wrap gap-3`}>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-[#9C8FA8]">ফিল্টার:</span>
+                    {['All', 'Pending', 'Approved', 'Declined'].map((st) => (
+                      <button
+                        key={st}
+                        onClick={() => setReviewStatusFilter(st)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                          reviewStatusFilter === st
+                            ? 'bg-[#C4587A] text-white'
+                            : 'bg-[#211C28] text-[#9C8FA8] hover:bg-[#241F2B] hover:text-[#D8CFE0] border border-[#2E2733]'
+                        }`}
+                      >
+                        {st}
+                      </button>
+                    ))}
+                  </div>
 
-            {settingsSuccess && (
-              <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs p-3.5 rounded-xl font-medium">
-                {settingsSuccess}
+                  <span className="text-xs text-[#9C8FA8]">
+                    মোট রিভিউ: <strong className="text-white">{reviews.length}</strong>
+                  </span>
+                </div>
+
+                {isReviewsLoading ? (
+                  <div className="p-14 text-center text-[#9C8FA8] text-sm flex flex-col items-center gap-3">
+                    <Loader2 className="w-5 h-5 animate-spin text-[#C4587A]" />
+                    <span>MongoDB থেকে রিভিউ লোড হচ্ছে...</span>
+                  </div>
+                ) : reviews.length === 0 ? (
+                  <div className={`p-14 text-center text-[#9C8FA8] text-sm ${cardCls}`}>
+                    কোনো রিভিউ পাওয়া যায়নি।
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {reviews.map((rev) => (
+                      <div
+                        key={rev.id}
+                        className={`${cardCls} p-5 space-y-3 flex flex-col justify-between`}
+                      >
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-white text-sm">{rev.userName}</span>
+                                <span
+                                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                    rev.status === 'Approved'
+                                      ? 'bg-[#6FAE8C]/15 text-[#8FC7A9] border-[#6FAE8C]/30'
+                                      : rev.status === 'Declined'
+                                      ? 'bg-[#C1495A]/15 text-[#DD8A94] border-[#C1495A]/30'
+                                      : 'bg-[#D6A24E]/15 text-[#E4BC79] border-[#D6A24E]/30'
+                                  }`}
+                                >
+                                  {rev.status || 'Pending'}
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-[#8A7D97]">
+                                Slug: <strong className="text-[#D8CFE0]">{rev.productSlug}</strong> •{' '}
+                                {new Date(rev.createdAt).toLocaleDateString('en-GB')}
+                              </span>
+                            </div>
+
+                            <div className="flex text-[#D3A45E]">
+                              {[...Array(rev.rating)].map((_, i) => (
+                                <Star key={i} className="w-3.5 h-3.5 fill-[#D3A45E]" />
+                              ))}
+                            </div>
+                          </div>
+
+                          <p className="text-xs text-[#D8CFE0] leading-relaxed bg-[#14111A] p-3 rounded-xl border border-[#2A2430]">
+                            "{rev.comment}"
+                          </p>
+
+                          {rev.mediaUrls && rev.mediaUrls.length > 0 && (
+                            <div className="flex gap-2 pt-1">
+                              {rev.mediaUrls.map((url, idx) => (
+                                <div
+                                  key={idx}
+                                  className="relative w-14 h-14 rounded-lg overflow-hidden border border-[#2E2733] bg-[#14111A]"
+                                >
+                                  <Image src={url} alt="Review media" fill className="object-cover" />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#2A2430]">
+                          {rev.status !== 'Approved' && (
+                            <button
+                              onClick={() => updateReviewStatusMutation.mutate({ reviewId: rev.id, status: 'Approved' })}
+                              className="bg-[#6FAE8C] hover:bg-[#5F9E7C] text-[#0E1A14] font-bold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Approve</span>
+                            </button>
+                          )}
+
+                          {rev.status !== 'Declined' && (
+                            <button
+                              onClick={() => updateReviewStatusMutation.mutate({ reviewId: rev.id, status: 'Declined' })}
+                              className="bg-[#D6A24E]/15 hover:bg-[#D6A24E] text-[#E4BC79] hover:text-[#1A140A] font-bold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-[#D6A24E]/30"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                              <span>Decline</span>
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => deleteReviewMutation.mutate(rev.id)}
+                            className="bg-[#C1495A]/12 hover:bg-[#C1495A] text-[#DD8A94] hover:text-white p-1.5 rounded-lg transition-colors cursor-pointer border border-[#C1495A]/25"
+                            title="Delete Review"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
-            <form onSubmit={handleSaveSettings} className="space-y-4 text-xs sm:text-sm">
-              <div>
-                <label className="block text-slate-300 font-medium mb-1">Meta Pixel ID (Facebook Ads Tracking)</label>
-                <input
-                  type="text"
-                  value={metaPixelId}
-                  onChange={(e) => setMetaPixelId(e.target.value)}
-                  placeholder="e.g. 1234567890123456"
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500 font-mono text-xs"
-                />
-              </div>
+            {/* TAB 5: SETTINGS */}
+            {activeTab === 'settings' && (
+              <div className={`max-w-2xl ${cardCls} p-6 space-y-6`}>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Sliders className="w-5 h-5 text-[#C4587A]" />
+                  <span>স্টোর কনফিগারেশন ও Meta Pixel ইন্টিগ্রেশন</span>
+                </h3>
 
-              <div>
-                <label className="block text-slate-300 font-medium mb-1">Official WhatsApp Support Number (with Country Code)</label>
-                <input
-                  type="text"
-                  value={whatsappNumber}
-                  onChange={(e) => setWhatsappNumber(e.target.value)}
-                  placeholder="8801617492486"
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500 font-mono text-xs"
-                />
-              </div>
+                {settingsSuccess && (
+                  <div className="bg-[#6FAE8C]/12 border border-[#6FAE8C]/30 text-[#8FC7A9] text-xs p-3.5 rounded-xl font-medium">
+                    {settingsSuccess}
+                  </div>
+                )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-300 font-medium mb-1">Inside Dhaka Delivery Fee (৳)</label>
-                  <input
-                    type="number"
-                    value={deliveryInside}
-                    onChange={(e) => setDeliveryInside(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-300 font-medium mb-1">Outside Dhaka Delivery Fee (৳)</label>
-                  <input
-                    type="number"
-                    value={deliveryOutside}
-                    onChange={(e) => setDeliveryOutside(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500"
-                  />
-                </div>
-              </div>
+                <form onSubmit={handleSaveSettings} className="space-y-4 text-xs sm:text-sm">
+                  <div>
+                    <label className={labelCls}>Meta Pixel ID (Facebook Ads Tracking)</label>
+                    <input
+                      type="text"
+                      value={metaPixelId}
+                      onChange={(e) => setMetaPixelId(e.target.value)}
+                      placeholder="e.g. 1234567890123456"
+                      className={`${inputCls} font-mono text-xs`}
+                    />
+                  </div>
 
-              <button
-                type="submit"
-                disabled={saveSettingsMutation.isPending}
-                className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 rounded-xl shadow-lg transition-colors cursor-pointer shadow-rose-600/25"
-              >
-                {saveSettingsMutation.isPending ? 'Saving Settings...' : 'Save Store Configuration'}
-              </button>
-            </form>
-          </div>
-        )}
-      </main>
+                  <div>
+                    <label className={labelCls}>অফিসিয়াল হোয়াটসঅ্যাপ সাপোর্ট নম্বর (কান্ট্রি কোডসহ)</label>
+                    <input
+                      type="text"
+                      value={whatsappNumber}
+                      onChange={(e) => setWhatsappNumber(e.target.value)}
+                      placeholder="8801617492486"
+                      className={`${inputCls} font-mono text-xs`}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={labelCls}>ঢাকার ভিতরে ডেলিভারি চার্জ (৳)</label>
+                      <input
+                        type="number"
+                        value={deliveryInside}
+                        onChange={(e) => setDeliveryInside(Number(e.target.value))}
+                        className={inputCls}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelCls}>ঢাকার বাইরে ডেলিভারি চার্জ (৳)</label>
+                      <input
+                        type="number"
+                        value={deliveryOutside}
+                        onChange={(e) => setDeliveryOutside(Number(e.target.value))}
+                        className={inputCls}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={saveSettingsMutation.isPending}
+                    className="w-full bg-[#C4587A] hover:bg-[#B24A6B] text-white font-bold py-3 rounded-xl transition-colors cursor-pointer shadow-lg shadow-[#C4587A]/20"
+                  >
+                    {saveSettingsMutation.isPending ? 'সংরক্ষণ হচ্ছে...' : 'স্টোর কনফিগারেশন সংরক্ষণ করুন'}
+                  </button>
+                </form>
+              </div>
+            )}
+          </main>
+        </div>
+      </div>
 
       {/* FULL-FEATURED ADD / EDIT PRODUCT MODAL */}
       {isProductModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-4xl p-6 sm:p-8 space-y-6 shadow-2xl animate-in fade-in duration-200 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Plus className="w-5 h-5 text-rose-500" />
-                <span>{editingProductSlug ? 'Edit Product Details' : 'Add New Product (MongoDB)'}</span>
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-[#0B0910]/85 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#1C1821] border border-[#2E2733] rounded-3xl w-full max-w-4xl p-6 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-[#2E2733] pb-4">
+              <h2 className="font-display text-lg text-white flex items-center gap-2">
+                <Plus className="w-5 h-5 text-[#C4587A]" />
+                <span>{editingProductSlug ? 'প্রোডাক্ট এডিট করুন' : 'নতুন প্রোডাক্ট যোগ করুন (MongoDB)'}</span>
               </h2>
               <button
                 onClick={() => setIsProductModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-white rounded-lg cursor-pointer"
+                className="p-1 text-[#8A7D97] hover:text-white rounded-lg cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {productFormError && (
-              <div className="bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs p-3.5 rounded-xl font-medium">
+              <div className="bg-[#C1495A]/12 border border-[#C1495A]/30 text-[#DD8A94] text-xs p-3.5 rounded-xl font-medium">
                 ⚠️ {productFormError}
               </div>
             )}
 
             {productFormSuccess && (
-              <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs p-3.5 rounded-xl font-medium">
+              <div className="bg-[#6FAE8C]/12 border border-[#6FAE8C]/30 text-[#8FC7A9] text-xs p-3.5 rounded-xl font-medium">
                 ✅ {productFormSuccess}
               </div>
             )}
@@ -1690,9 +1680,7 @@ function DashboardContent() {
             <form onSubmit={handleSaveProductForm} className="space-y-5 text-xs sm:text-sm">
               {/* Product Name */}
               <div>
-                <label className="block text-slate-300 font-medium mb-1">
-                  Product Title / Name *
-                </label>
+                <label className={labelCls}>প্রোডাক্ট টাইটেল / নাম *</label>
                 <input
                   type="text"
                   required
@@ -1712,36 +1700,34 @@ function DashboardContent() {
                     }
                   }}
                   placeholder="e.g. G63 Smart Light Digital Clock with Wireless Charger"
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                  className={inputCls}
                 />
               </div>
 
               {/* Slug, Category, Pricing */}
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1">
-                    URL Slug *
-                  </label>
+                  <label className={labelCls}>URL Slug *</label>
                   <input
                     type="text"
                     required
                     value={prodSlug}
                     onChange={(e) => setProdSlug(e.target.value)}
                     placeholder="velvet-pouch"
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-rose-300 focus:outline-none focus:border-rose-500 font-mono text-xs font-semibold"
+                    className={`${inputCls} text-[#E39BB4] font-mono text-xs font-semibold`}
                   />
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-slate-300 font-medium">Category *</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[#B7ACC4] font-medium text-xs">Category *</label>
                     <button
                       type="button"
                       onClick={() => {
                         setIsProductModalOpen(false);
                         switchTab('categories');
                       }}
-                      className="text-[10px] text-amber-400 hover:underline cursor-pointer"
+                      className="text-[10px] text-[#D3A45E] hover:underline cursor-pointer"
                     >
                       + Manage
                     </button>
@@ -1749,7 +1735,7 @@ function DashboardContent() {
                   <select
                     value={prodCategory}
                     onChange={(e) => setProdCategory(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500 cursor-pointer"
+                    className={`${inputCls} cursor-pointer`}
                   >
                     {categories.length === 0 ? (
                       <option value="">No categories (Create one first)</option>
@@ -1764,64 +1750,64 @@ function DashboardContent() {
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1">Base Price (৳) *</label>
+                  <label className={labelCls}>Base Price (৳) *</label>
                   <input
                     type="number"
                     required
                     value={prodBasePrice}
                     onChange={(e) => setProdBasePrice(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                    className={inputCls}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1">Original / Scratch Price (৳)</label>
+                  <label className={labelCls}>Original / Scratch Price (৳)</label>
                   <input
                     type="number"
                     value={prodOriginalPrice}
                     onChange={(e) => setProdOriginalPrice(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                    className={inputCls}
                   />
                 </div>
               </div>
 
-              {/* Status Toggles (isFeatured, isHeroSlider & isActive) */}
+              {/* Status Toggles */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
+                <div className="bg-[#14111A] p-3.5 rounded-xl border border-[#2E2733] flex items-center justify-between">
                   <div>
                     <label className="font-bold text-white text-xs flex items-center gap-1.5">
-                      <Star className="w-4 h-4 text-rose-400" />
+                      <Star className="w-4 h-4 text-[#E39BB4]" />
                       <span>Featured Product</span>
                     </label>
-                    <p className="text-[10px] text-slate-400">Featured badge & showcase</p>
+                    <p className="text-[10px] text-[#8A7D97]">Featured badge & showcase</p>
                   </div>
                   <input
                     type="checkbox"
                     checked={prodIsFeatured}
                     onChange={(e) => setProdIsFeatured(e.target.checked)}
-                    className="w-5 h-5 accent-rose-500 rounded cursor-pointer"
+                    className="w-5 h-5 accent-[#C4587A] rounded cursor-pointer"
                   />
                 </div>
 
-                <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
+                <div className="bg-[#14111A] p-3.5 rounded-xl border border-[#2E2733] flex items-center justify-between">
                   <div>
                     <label className="font-bold text-white text-xs flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-amber-400" />
+                      <Sparkles className="w-4 h-4 text-[#D3A45E]" />
                       <span>Hero Slider</span>
                     </label>
-                    <p className="text-[10px] text-slate-400">Top homepage auto-slider</p>
+                    <p className="text-[10px] text-[#8A7D97]">Top homepage auto-slider</p>
                   </div>
                   <div className="flex items-center gap-2">
                     {prodIsHeroSlider && (
                       <div className="flex items-center gap-1">
-                        <span className="text-[10px] text-slate-400 font-mono">#</span>
+                        <span className="text-[10px] text-[#8A7D97] font-mono">#</span>
                         <input
                           type="number"
                           min="1"
                           max="20"
                           value={prodHeroOrder}
                           onChange={(e) => setProdHeroOrder(Number(e.target.value))}
-                          className="w-10 px-1.5 py-1 bg-slate-900 border border-slate-700 rounded-lg text-amber-300 text-xs font-mono font-bold text-center"
+                          className="w-10 px-1.5 py-1 bg-[#1C1821] border border-[#332B3D] rounded-lg text-[#E4BC79] text-xs font-mono font-bold text-center"
                           title="Slide display sequence"
                         />
                       </div>
@@ -1830,57 +1816,57 @@ function DashboardContent() {
                       type="checkbox"
                       checked={prodIsHeroSlider}
                       onChange={(e) => setProdIsHeroSlider(e.target.checked)}
-                      className="w-5 h-5 accent-amber-500 rounded cursor-pointer"
+                      className="w-5 h-5 accent-[#D3A45E] rounded cursor-pointer"
                     />
                   </div>
                 </div>
 
-                <div className="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
+                <div className="bg-[#14111A] p-3.5 rounded-xl border border-[#2E2733] flex items-center justify-between">
                   <div>
                     <label className="font-bold text-white text-xs flex items-center gap-1.5">
-                      <CheckSquare className="w-4 h-4 text-emerald-400" />
+                      <CheckSquare className="w-4 h-4 text-[#8FC7A9]" />
                       <span>Is Active</span>
                     </label>
-                    <p className="text-[10px] text-slate-400">Publish live on storefront</p>
+                    <p className="text-[10px] text-[#8A7D97]">Publish live on storefront</p>
                   </div>
                   <input
                     type="checkbox"
                     checked={prodIsActive}
                     onChange={(e) => setProdIsActive(e.target.checked)}
-                    className="w-5 h-5 accent-emerald-500 rounded cursor-pointer"
+                    className="w-5 h-5 accent-[#6FAE8C] rounded cursor-pointer"
                   />
                 </div>
               </div>
 
               {/* Tagline & Description */}
               <div>
-                <label className="block text-slate-300 font-medium mb-1">Short Tagline / Subtitle</label>
+                <label className={labelCls}>Short Tagline / Subtitle</label>
                 <input
                   type="text"
                   value={prodTaglineBn}
                   onChange={(e) => setProdTaglineBn(e.target.value)}
                   placeholder="e.g. Modern multifunctional smart alarm clock with RGB ambient lighting"
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500"
+                  className={inputCls}
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-medium mb-1">Detailed Description</label>
+                <label className={labelCls}>Detailed Description</label>
                 <textarea
                   rows={3}
                   value={prodDescriptionBn}
                   onChange={(e) => setProdDescriptionBn(e.target.value)}
                   placeholder="Write full product description, key features, and package benefits..."
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-rose-500 resize-none"
+                  className={`${inputCls} resize-none`}
                 />
               </div>
 
               {/* Color Variants Builder */}
-              <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-3">
+              <div className="bg-[#14111A] p-4 rounded-2xl border border-[#2E2733] space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-bold text-white text-xs">Color Variants & Inventory Stock</h3>
-                    <p className="text-[11px] text-slate-400">Add color variants, hex colors, and individual stock counts</p>
+                    <p className="text-[11px] text-[#8A7D97]">Add color variants, hex colors, and individual stock counts</p>
                   </div>
                   <button
                     type="button"
@@ -1900,10 +1886,10 @@ function DashboardContent() {
                         },
                       ]);
                     }}
-                    className="bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-rose-500/20"
+                    className="bg-[#C4587A]/12 hover:bg-[#C4587A] text-[#E39BB4] hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-[#C4587A]/25"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>➕ Add Color</span>
+                    <span>Add Color</span>
                   </button>
                 </div>
 
@@ -1911,10 +1897,10 @@ function DashboardContent() {
                   {prodVariants.map((v, idx) => (
                     <div
                       key={v.id || idx}
-                      className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 p-3 rounded-xl bg-slate-900 border border-slate-800 items-center"
+                      className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 p-3 rounded-xl bg-[#1C1821] border border-[#2E2733] items-center"
                     >
                       <div className="sm:col-span-5">
-                        <label className="text-[10px] text-slate-400 block mb-0.5">Color / Variant Name</label>
+                        <label className="text-[10px] text-[#8A7D97] block mb-0.5">Color / Variant Name</label>
                         <input
                           type="text"
                           required
@@ -1945,12 +1931,12 @@ function DashboardContent() {
                             );
                           }}
                           placeholder="e.g. Matte Black, Pearl Silver, Rose Gold..."
-                          className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
+                          className="w-full px-2.5 py-1.5 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs"
                         />
                       </div>
 
                       <div className="sm:col-span-3">
-                        <label className="text-[10px] text-slate-400 block mb-0.5">Color Hex</label>
+                        <label className="text-[10px] text-[#8A7D97] block mb-0.5">Color Hex</label>
                         <div className="flex items-center gap-1.5">
                           <input
                             type="color"
@@ -1961,7 +1947,7 @@ function DashboardContent() {
                                 prev.map((item, i) => (i === idx ? { ...item, colorHex: hex } : item))
                               );
                             }}
-                            className="w-8 h-8 rounded-lg border border-slate-700 bg-transparent cursor-pointer p-0.5 shrink-0"
+                            className="w-8 h-8 rounded-lg border border-[#3A323F] bg-transparent cursor-pointer p-0.5 shrink-0"
                           />
                           <input
                             type="text"
@@ -1972,13 +1958,13 @@ function DashboardContent() {
                                 prev.map((item, i) => (i === idx ? { ...item, colorHex: hex } : item))
                               );
                             }}
-                            className="w-full px-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-[11px] font-mono"
+                            className="w-full px-2 py-1.5 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-[11px] font-mono"
                           />
                         </div>
                       </div>
 
                       <div className="sm:col-span-2">
-                        <label className="text-[10px] text-slate-400 block mb-0.5">Stock Count</label>
+                        <label className="text-[10px] text-[#8A7D97] block mb-0.5">Stock Count</label>
                         <input
                           type="number"
                           min="0"
@@ -1991,12 +1977,12 @@ function DashboardContent() {
                               )
                             );
                           }}
-                          className="w-full px-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs font-mono font-bold"
+                          className="w-full px-2 py-1.5 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs font-mono font-bold"
                         />
                       </div>
 
                       <div className="sm:col-span-2 flex items-center justify-between gap-2 pt-3 sm:pt-0">
-                        <label className="flex items-center gap-1 text-[11px] cursor-pointer text-slate-300">
+                        <label className="flex items-center gap-1 text-[11px] cursor-pointer text-[#D8CFE0]">
                           <input
                             type="checkbox"
                             checked={v.inStock}
@@ -2006,7 +1992,7 @@ function DashboardContent() {
                                 prev.map((item, i) => (i === idx ? { ...item, inStock: chk } : item))
                               );
                             }}
-                            className="accent-rose-500 rounded"
+                            className="accent-[#C4587A] rounded"
                           />
                           <span>{v.inStock ? 'In Stock' : 'Out'}</span>
                         </label>
@@ -2015,7 +2001,7 @@ function DashboardContent() {
                           <button
                             type="button"
                             onClick={() => setProdVariants((prev) => prev.filter((_, i) => i !== idx))}
-                            className="p-1.5 text-slate-500 hover:text-rose-400 transition-colors"
+                            className="p-1.5 text-[#6E6278] hover:text-[#DD8A94] transition-colors"
                             title="Delete Variant"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -2028,11 +2014,11 @@ function DashboardContent() {
               </div>
 
               {/* Combo Deals Builder */}
-              <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-3">
+              <div className="bg-[#14111A] p-4 rounded-2xl border border-[#2E2733] space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-bold text-white text-xs">Combo Packages & Quantity Deals</h3>
-                    <p className="text-[11px] text-slate-400">Setup 1-Pack, 2-Pack quantity deals with discounted pricing</p>
+                    <p className="text-[11px] text-[#8A7D97]">Setup 1-Pack, 2-Pack quantity deals with discounted pricing</p>
                   </div>
                   <button
                     type="button"
@@ -2053,10 +2039,10 @@ function DashboardContent() {
                         },
                       ]);
                     }}
-                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-slate-700"
+                    className="bg-[#211C28] hover:bg-[#2A2430] text-[#D8CFE0] text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-[#2E2733]"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>➕ Add Combo Deal</span>
+                    <span>Add Combo Deal</span>
                   </button>
                 </div>
 
@@ -2064,10 +2050,10 @@ function DashboardContent() {
                   {prodCombos.map((c, idx) => (
                     <div
                       key={c.id || idx}
-                      className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800 items-center text-xs"
+                      className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-[#1C1821] border border-[#2E2733] items-center text-xs"
                     >
                       <div className="sm:col-span-4">
-                        <label className="text-[10px] text-slate-400 block">Combo Title</label>
+                        <label className="text-[10px] text-[#8A7D97] block">Combo Title</label>
                         <input
                           type="text"
                           value={c.title}
@@ -2077,12 +2063,12 @@ function DashboardContent() {
                               prev.map((item, i) => (i === idx ? { ...item, title: val, titleBn: val } : item))
                             );
                           }}
-                          className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
+                          className="w-full px-2 py-1 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs"
                         />
                       </div>
 
                       <div className="sm:col-span-2">
-                        <label className="text-[10px] text-slate-400 block">Quantity (Qty)</label>
+                        <label className="text-[10px] text-[#8A7D97] block">Quantity (Qty)</label>
                         <input
                           type="number"
                           value={c.quantity}
@@ -2092,12 +2078,12 @@ function DashboardContent() {
                               prev.map((item, i) => (i === idx ? { ...item, quantity: val } : item))
                             );
                           }}
-                          className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
+                          className="w-full px-2 py-1 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs"
                         />
                       </div>
 
                       <div className="sm:col-span-3">
-                        <label className="text-[10px] text-slate-400 block">Deal Price (৳)</label>
+                        <label className="text-[10px] text-[#8A7D97] block">Deal Price (৳)</label>
                         <input
                           type="number"
                           value={c.price}
@@ -2107,13 +2093,13 @@ function DashboardContent() {
                               prev.map((item, i) => (i === idx ? { ...item, price: val } : item))
                             );
                           }}
-                          className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
+                          className="w-full px-2 py-1 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs"
                         />
                       </div>
 
                       <div className="sm:col-span-3 flex items-center justify-between gap-1">
                         <div>
-                          <label className="text-[10px] text-slate-400 block">Badge (Optional)</label>
+                          <label className="text-[10px] text-[#8A7D97] block">Badge (Optional)</label>
                           <input
                             type="text"
                             value={c.badge || ''}
@@ -2124,7 +2110,7 @@ function DashboardContent() {
                                 prev.map((item, i) => (i === idx ? { ...item, badge: val } : item))
                               );
                             }}
-                            className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
+                            className="w-full px-2 py-1 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs"
                           />
                         </div>
 
@@ -2132,7 +2118,7 @@ function DashboardContent() {
                           <button
                             type="button"
                             onClick={() => setProdCombos((prev) => prev.filter((_, i) => i !== idx))}
-                            className="p-1 text-slate-500 hover:text-rose-400 mt-3"
+                            className="p-1 text-[#6E6278] hover:text-[#DD8A94] mt-3"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -2143,12 +2129,12 @@ function DashboardContent() {
                 </div>
               </div>
 
-              {/* Key Features Builder (featuresBn) */}
-              <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-3">
+              {/* Key Features Builder */}
+              <div className="bg-[#14111A] p-4 rounded-2xl border border-[#2E2733] space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-bold text-white text-xs">Key Highlights & Features</h3>
-                    <p className="text-[11px] text-slate-400">Add highlight bullet cards for the product page</p>
+                    <p className="text-[11px] text-[#8A7D97]">Add highlight bullet cards for the product page</p>
                   </div>
                   <button
                     type="button"
@@ -2158,10 +2144,10 @@ function DashboardContent() {
                         { icon: 'Sparkles', title: 'Feature Title', description: 'Feature description' },
                       ]);
                     }}
-                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-slate-700"
+                    className="bg-[#211C28] hover:bg-[#2A2430] text-[#D8CFE0] text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-[#2E2733]"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>➕ Add Feature</span>
+                    <span>Add Feature</span>
                   </button>
                 </div>
 
@@ -2169,10 +2155,10 @@ function DashboardContent() {
                   {prodFeaturesBn.map((feat, idx) => (
                     <div
                       key={idx}
-                      className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800 items-center text-xs"
+                      className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-[#1C1821] border border-[#2E2733] items-center text-xs"
                     >
                       <div className="sm:col-span-4">
-                        <label className="text-[10px] text-slate-400 block">Title</label>
+                        <label className="text-[10px] text-[#8A7D97] block">Title</label>
                         <input
                           type="text"
                           value={feat.title}
@@ -2183,12 +2169,12 @@ function DashboardContent() {
                             );
                           }}
                           placeholder="e.g. Long Battery Life"
-                          className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
+                          className="w-full px-2 py-1 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs"
                         />
                       </div>
 
                       <div className="sm:col-span-7">
-                        <label className="text-[10px] text-slate-400 block">Description</label>
+                        <label className="text-[10px] text-[#8A7D97] block">Description</label>
                         <input
                           type="text"
                           value={feat.description}
@@ -2199,7 +2185,7 @@ function DashboardContent() {
                             );
                           }}
                           placeholder="e.g. Up to 10 hours continuous operation"
-                          className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
+                          className="w-full px-2 py-1 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs"
                         />
                       </div>
 
@@ -2207,7 +2193,7 @@ function DashboardContent() {
                         <button
                           type="button"
                           onClick={() => setProdFeaturesBn((prev) => prev.filter((_, i) => i !== idx))}
-                          className="p-1 text-slate-500 hover:text-rose-400 mt-2"
+                          className="p-1 text-[#6E6278] hover:text-[#DD8A94] mt-2"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -2217,22 +2203,22 @@ function DashboardContent() {
                 </div>
               </div>
 
-              {/* Specifications Builder (specificationsBn) */}
-              <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-3">
+              {/* Specifications Builder */}
+              <div className="bg-[#14111A] p-4 rounded-2xl border border-[#2E2733] space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-bold text-white text-xs">Technical Specifications</h3>
-                    <p className="text-[11px] text-slate-400">Material, size, warranty and specifications</p>
+                    <p className="text-[11px] text-[#8A7D97]">Material, size, warranty and specifications</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => {
                       setProdSpecificationsBn((prev) => [...prev, { key: 'Specification', value: 'Detail' }]);
                     }}
-                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-slate-700"
+                    className="bg-[#211C28] hover:bg-[#2A2430] text-[#D8CFE0] text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-[#2E2733]"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>➕ Add Spec</span>
+                    <span>Add Spec</span>
                   </button>
                 </div>
 
@@ -2240,10 +2226,10 @@ function DashboardContent() {
                   {prodSpecificationsBn.map((spec, idx) => (
                     <div
                       key={idx}
-                      className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800 items-center text-xs"
+                      className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-[#1C1821] border border-[#2E2733] items-center text-xs"
                     >
                       <div className="sm:col-span-5">
-                        <label className="text-[10px] text-slate-400 block">Key (e.g. Material / Battery)</label>
+                        <label className="text-[10px] text-[#8A7D97] block">Key (e.g. Material / Battery)</label>
                         <input
                           type="text"
                           value={spec.key}
@@ -2253,12 +2239,12 @@ function DashboardContent() {
                               prev.map((item, i) => (i === idx ? { ...item, key: val } : item))
                             );
                           }}
-                          className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
+                          className="w-full px-2 py-1 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs"
                         />
                       </div>
 
                       <div className="sm:col-span-6">
-                        <label className="text-[10px] text-slate-400 block">Value (e.g. Premium Aluminium)</label>
+                        <label className="text-[10px] text-[#8A7D97] block">Value (e.g. Premium Aluminium)</label>
                         <input
                           type="text"
                           value={spec.value}
@@ -2268,7 +2254,7 @@ function DashboardContent() {
                               prev.map((item, i) => (i === idx ? { ...item, value: val } : item))
                             );
                           }}
-                          className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-white text-xs"
+                          className="w-full px-2 py-1 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs"
                         />
                       </div>
 
@@ -2276,7 +2262,7 @@ function DashboardContent() {
                         <button
                           type="button"
                           onClick={() => setProdSpecificationsBn((prev) => prev.filter((_, i) => i !== idx))}
-                          className="p-1 text-slate-500 hover:text-rose-400 mt-2"
+                          className="p-1 text-[#6E6278] hover:text-[#DD8A94] mt-2"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -2288,21 +2274,21 @@ function DashboardContent() {
 
               {/* Image Upload */}
               <div>
-                <label className="block text-slate-300 font-medium mb-1.5">Product Images (Cloudinary CDN Upload)</label>
+                <label className={labelCls}>Product Images (Cloudinary CDN Upload)</label>
                 <div className="flex flex-wrap items-center gap-3">
-                  <label className="inline-flex items-center gap-2 bg-slate-800 border border-slate-700 hover:border-slate-500 text-slate-200 px-3.5 py-2 rounded-xl text-xs cursor-pointer">
-                    {isUploadingImage ? <Loader2 className="w-4 h-4 animate-spin text-rose-500" /> : <Camera className="w-4 h-4 text-rose-400" />}
+                  <label className="inline-flex items-center gap-2 bg-[#211C28] border border-[#2E2733] hover:border-[#3A323F] text-[#D8CFE0] px-3.5 py-2 rounded-xl text-xs cursor-pointer">
+                    {isUploadingImage ? <Loader2 className="w-4 h-4 animate-spin text-[#C4587A]" /> : <Camera className="w-4 h-4 text-[#E39BB4]" />}
                     <span>{isUploadingImage ? 'Uploading...' : 'Upload Image'}</span>
                     <input type="file" accept="image/*" multiple onChange={handleProductImageUpload} className="hidden" />
                   </label>
 
                   {prodImages.map((url, idx) => (
-                    <div key={idx} className="relative w-12 h-12 rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+                    <div key={idx} className="relative w-12 h-12 rounded-xl overflow-hidden border border-[#2E2733] bg-[#14111A]">
                       <Image src={url} alt={`Preview ${idx}`} fill className="object-cover" />
                       <button
                         type="button"
                         onClick={() => setProdImages((prev) => prev.filter((_, i) => i !== idx))}
-                        className="absolute top-0.5 right-0.5 bg-slate-900/90 text-white rounded-full p-0.5"
+                        className="absolute top-0.5 right-0.5 bg-[#0B0910]/90 text-white rounded-full p-0.5"
                       >
                         <X className="w-2.5 h-2.5" />
                       </button>
@@ -2311,18 +2297,18 @@ function DashboardContent() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#2E2733]">
                 <button
                   type="button"
                   onClick={() => setIsProductModalOpen(false)}
-                  className="px-5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:bg-slate-800 transition-colors"
+                  className="px-5 py-2.5 rounded-xl text-xs font-semibold text-[#9C8FA8] hover:bg-[#211C28] transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saveProductMutation.isPending || isUploadingImage}
-                  className="bg-rose-600 hover:bg-rose-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg shadow-rose-600/30 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-60"
+                  className="bg-[#C4587A] hover:bg-[#B24A6B] text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-lg shadow-[#C4587A]/25 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-60"
                 >
                   {saveProductMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                   <span>{editingProductSlug ? 'Update Product' : 'Save Product to MongoDB'}</span>
@@ -2340,7 +2326,7 @@ export default function AdminDashboardPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-slate-950 text-slate-400 flex items-center justify-center text-sm font-sans">
+        <div className="min-h-screen bg-[#14111A] text-[#9C8FA8] flex items-center justify-center text-sm">
           Loading Dashboard...
         </div>
       }
