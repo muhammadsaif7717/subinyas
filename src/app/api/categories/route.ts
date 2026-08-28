@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
 import { verifyJwtToken } from '@/lib/jwt';
-import { ObjectId } from 'mongodb';
+import { ObjectId, Filter, Document } from 'mongodb';
 
 export interface CategoryItem {
   _id?: string;
-  id: string;
+  id?: string;
   name: string;
-  nameBn: string;
-  slug: string;
   order: number;
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt: string;
 }
 
 export async function GET() {
@@ -47,54 +44,57 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, nameBn, slug, order } = body;
+    const { name } = body;
 
-    if (!name?.trim() || !nameBn?.trim()) {
-      return NextResponse.json({ success: false, message: 'ক্যাটাগরির নাম (English এবং বাংলা) উভয়ই দিন।' }, { status: 400 });
+    if (!name?.trim()) {
+      return NextResponse.json({ success: false, message: 'ক্যাটাগরির নাম দিন।' }, { status: 400 });
     }
 
-    const autoSlug = (slug || name)
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/[\s_-]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-
     const db = await getDb();
-    let calculatedOrder = Number(order);
+    let calculatedOrder = 1;
 
-    if (isNaN(calculatedOrder) || calculatedOrder <= 0) {
-      if (db) {
+    if (db) {
+      const highestCat = await db
+        .collection('categories')
+        .find({})
+        .sort({ order: -1 })
+        .limit(1)
+        .toArray();
+
+      if (highestCat && highestCat.length > 0 && typeof highestCat[0].order === 'number') {
+        calculatedOrder = highestCat[0].order + 1;
+      } else {
         const count = await db.collection('categories').countDocuments();
         calculatedOrder = count + 1;
-      } else {
-        calculatedOrder = 1;
       }
     }
 
-    const newCat: CategoryItem = {
-      id: `cat-${Date.now()}`,
+    // Exact schema fields: _id, name, order, createdAt
+    const newCat = {
       name: name.trim(),
-      nameBn: nameBn.trim(),
-      slug: autoSlug,
       order: calculatedOrder,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     };
 
+    let insertedId = '';
     if (db) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await db.collection('categories').insertOne(newCat as any);
+      const res = await db.collection('categories').insertOne(newCat as any);
+      insertedId = res.insertedId.toString();
     }
 
-    return NextResponse.json({ success: true, message: 'ক্যাটাগরি সফলভাবে সংরক্ষিত হয়েছে', category: newCat });
+    return NextResponse.json({
+      success: true,
+      message: 'ক্যাটাগরি সংরক্ষিত হয়েছে',
+      category: { _id: insertedId, ...newCat },
+    });
   } catch (error) {
     console.error('Error adding category:', error);
     return NextResponse.json({ success: false, message: 'Failed to add category' }, { status: 500 });
   }
 }
 
-// PATCH for reordering or editing
+// PATCH for drag-and-drop reordering
 export async function PATCH(request: NextRequest) {
   try {
     const token = request.cookies.get('subinyas_admin_token')?.value;
@@ -108,7 +108,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { items, id, name, nameBn, order } = body;
+    const { items, id, name, order } = body;
 
     const db = await getDb();
     if (!db) {
@@ -118,26 +118,27 @@ export async function PATCH(request: NextRequest) {
     // Bulk reorder
     if (Array.isArray(items)) {
       for (const item of items) {
-        let filter: Record<string, unknown> = { id: item.id };
-        if (ObjectId.isValid(item.id)) {
-          filter = { $or: [{ _id: new ObjectId(item.id) }, { id: item.id }] };
-        }
+        const targetId = item._id || item.id;
+        if (!targetId) continue;
+        const filter: Filter<Document> = ObjectId.isValid(targetId)
+          ? { _id: new ObjectId(targetId) }
+          : ({ _id: targetId } as unknown as Filter<Document>);
+
         await db.collection('categories').updateOne(filter, {
-          $set: { order: Number(item.order), updatedAt: new Date().toISOString() },
+          $set: { order: Number(item.order) },
         });
       }
-      return NextResponse.json({ success: true, message: 'ক্যাটাগরি ক্রম সফলভাবে আপডেট হয়েছে' });
+      return NextResponse.json({ success: true, message: 'ক্যাটাগরি ক্রম আপডেট হয়েছে' });
     }
 
     // Single category edit
     if (id) {
-      let filter: Record<string, unknown> = { id };
-      if (ObjectId.isValid(id)) {
-        filter = { $or: [{ _id: new ObjectId(id) }, { id }] };
-      }
-      const updateData: Record<string, unknown> = { updatedAt: new Date().toISOString() };
+      const filter: Filter<Document> = ObjectId.isValid(id)
+        ? { _id: new ObjectId(id) }
+        : ({ _id: id } as unknown as Filter<Document>);
+
+      const updateData: Record<string, unknown> = {};
       if (name) updateData.name = name.trim();
-      if (nameBn) updateData.nameBn = nameBn.trim();
       if (order !== undefined) updateData.order = Number(order);
 
       await db.collection('categories').updateOne(filter, { $set: updateData });
@@ -166,24 +167,19 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const catId = searchParams.get('id');
 
+    if (!catId) {
+      return NextResponse.json({ success: false, message: 'Category ID is required' }, { status: 400 });
+    }
+
     const db = await getDb();
     if (!db) {
       return NextResponse.json({ success: false, message: 'Database disconnected' }, { status: 500 });
     }
 
-    if (catId === 'all') {
-      await db.collection('categories').deleteMany({});
-      return NextResponse.json({ success: true, message: 'সকল ক্যাটাগরি মুছে ফেলা হয়েছে' });
-    }
+    const filter: Filter<Document> = ObjectId.isValid(catId)
+      ? { _id: new ObjectId(catId) }
+      : ({ _id: catId } as unknown as Filter<Document>);
 
-    if (!catId) {
-      return NextResponse.json({ success: false, message: 'Category ID is required' }, { status: 400 });
-    }
-
-    let filter: Record<string, unknown> = { id: catId };
-    if (ObjectId.isValid(catId)) {
-      filter = { $or: [{ _id: new ObjectId(catId) }, { id: catId }] };
-    }
     await db.collection('categories').deleteOne(filter);
 
     return NextResponse.json({ success: true, message: 'ক্যাটাগরি মুছে ফেলা হয়েছে' });

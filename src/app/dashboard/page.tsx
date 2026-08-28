@@ -86,7 +86,6 @@ function DashboardContent() {
   // Category Add / Form State (Left Form)
   const [newCatName, setNewCatName] = useState('');
   const [newCatNameBn, setNewCatNameBn] = useState('');
-  const [newCatOrder, setNewCatOrder] = useState<number>(1);
   const [catError, setCatError] = useState('');
   const [catSuccess, setCatSuccess] = useState('');
 
@@ -153,14 +152,6 @@ function DashboardContent() {
   const categories = categoriesData?.categories || [];
 
   // Update default order when categories change
-  useEffect(() => {
-    if (categories.length > 0) {
-      const maxOrder = Math.max(...categories.map((c) => c.order || 0), 0);
-      setNewCatOrder(maxOrder + 1);
-    } else {
-      setNewCatOrder(1);
-    }
-  }, [categories]);
 
   // Fetch reviews for moderation
   const { data: reviewsData, isLoading: isReviewsLoading, refetch: refetchReviews } = useQuery<Review[]>({
@@ -237,15 +228,14 @@ function DashboardContent() {
 
   // Category Add Mutation
   const addCategoryMutation = useMutation({
-    mutationFn: async ({ name, nameBn, order }: { name: string; nameBn: string; order: number }) => {
-      const res = await axios.post('/api/categories', { name, nameBn, order });
+    mutationFn: async ({ name, order }: { name: string; order: number }) => {
+      const res = await axios.post('/api/categories', { name, order });
       return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       setNewCatName('');
-      setNewCatNameBn('');
       setCatSuccess('ক্যাটাগরি সফলভাবে সংরক্ষিত হয়েছে!');
       setTimeout(() => setCatSuccess(''), 3000);
     },
@@ -598,18 +588,20 @@ function DashboardContent() {
     saveProductMutation.mutate(fullProduct);
   };
 
-  // Handle Add Category Form
+  // Handle Add Category Form (Auto-calculated sequence order)
   const handleCreateCategory = (e: React.FormEvent) => {
     e.preventDefault();
     setCatError('');
-    if (!newCatName.trim() || !newCatNameBn.trim()) {
-      setCatError('ইংরেজি এবং বাংলা উভয় নামই আবশ্যক।');
+    if (!newCatName.trim()) {
+      setCatError('ক্যাটাগরির নাম দিন।');
       return;
     }
+    const nextOrder =
+      categories.length > 0 ? Math.max(...categories.map((c) => c.order || 0), 0) + 1 : 1;
+
     addCategoryMutation.mutate({
       name: newCatName.trim(),
-      nameBn: newCatNameBn.trim(),
-      order: Number(newCatOrder) || 1,
+      order: nextOrder,
     });
   };
 
@@ -1239,7 +1231,7 @@ function DashboardContent() {
                   <span>নতুন ক্যাটাগরি তৈরি করুন</span>
                 </h3>
                 <p className="text-xs text-slate-400 mt-1">
-                  ক্যাটাগরির ইংরেজি নাম, বাংলা নাম এবং ডিসপ্লে ক্রম (Order) দিন
+                  ক্যাটাগরির নাম দিন (এটি স্বয়ংক্রিয়ভাবে তালিকার শেষে যুক্ত হবে)
                 </p>
               </div>
 
@@ -1257,44 +1249,15 @@ function DashboardContent() {
 
               <form onSubmit={handleCreateCategory} className="space-y-4 text-xs sm:text-sm">
                 <div>
-                  <label className="text-slate-300 font-medium block mb-1">Category Name (English) *</label>
+                  <label className="text-slate-300 font-medium block mb-1.5">Category Name *</label>
                   <input
                     type="text"
                     required
                     value={newCatName}
                     onChange={(e) => setNewCatName(e.target.value)}
-                    placeholder="যেমন: Leather Bags"
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                    placeholder="যেমন: Travel, Organizers, Jewelry Box..."
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-amber-500 text-sm"
                   />
-                </div>
-
-                <div>
-                  <label className="text-slate-300 font-medium block mb-1">Category Name (বাংলা) *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newCatNameBn}
-                    onChange={(e) => setNewCatNameBn(e.target.value)}
-                    placeholder="যেমন: লেদার ব্যাগ"
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-slate-300 font-medium block mb-1">
-                    ডিসপ্লে ক্রম / Order (1, 2, 3...) *
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    required
-                    value={newCatOrder}
-                    onChange={(e) => setNewCatOrder(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-amber-500 font-mono font-bold"
-                  />
-                  <span className="text-[11px] text-slate-500 mt-1 block">
-                    কম সংখ্যাগুলো ওয়েবসাইটের ফিল্টারে প্রথমে প্রদর্শিত হবে।
-                  </span>
                 </div>
 
                 <button
@@ -1338,7 +1301,7 @@ function DashboardContent() {
                 <div className="p-4 space-y-2.5 max-h-[600px] overflow-y-auto">
                   {categories.map((cat, idx) => (
                     <div
-                      key={cat.id || cat.slug || idx}
+                      key={cat._id || cat.id || cat.name || idx}
                       draggable
                       onDragStart={() => handleCategoryDragStart(idx)}
                       onDragEnter={() => handleCategoryDragEnter(idx)}
@@ -1352,7 +1315,7 @@ function DashboardContent() {
                           : 'border-slate-800 hover:border-slate-700 hover:bg-slate-900/60'
                       }`}
                     >
-                      {/* Left: Drag Handle, Order Badge & Names */}
+                      {/* Left: Drag Handle, Order Badge & Name */}
                       <div className="flex items-center gap-3">
                         <div
                           className="text-slate-500 hover:text-amber-400 cursor-grab active:cursor-grabbing p-1 rounded transition-colors shrink-0"
@@ -1366,11 +1329,7 @@ function DashboardContent() {
                         </div>
 
                         <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-white text-xs sm:text-sm">{cat.name}</span>
-                            <span className="text-rose-400 text-xs font-semibold">({cat.nameBn})</span>
-                          </div>
-                          <span className="text-[10px] font-mono text-slate-500 block">/category/{cat.slug}</span>
+                          <span className="font-bold text-white text-sm">{cat.name}</span>
                         </div>
                       </div>
 
@@ -1380,7 +1339,7 @@ function DashboardContent() {
                         <button
                           onClick={() => {
                             if (confirm(`"${cat.name}" ক্যাটাগরি মুছে ফেলতে চান?`)) {
-                              deleteCategoryMutation.mutate(cat.id || (cat._id as string) || cat.slug);
+                              deleteCategoryMutation.mutate(cat._id || (cat.id as string) || cat.name);
                             }
                           }}
                           className="p-1.5 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white rounded-lg transition-colors cursor-pointer"
@@ -1699,9 +1658,9 @@ function DashboardContent() {
                     {categories.length === 0 ? (
                       <option value="">কোনো ক্যাটাগরি নেই (প্রথমে ক্যাটাগরি তৈরি করুন)</option>
                     ) : (
-                      categories.map((cat) => (
-                        <option key={cat.id || cat.slug} value={cat.name}>
-                          #{cat.order || 1} {cat.name} ({cat.nameBn})
+                      categories.map((cat, i) => (
+                        <option key={cat._id || cat.id || i} value={cat.name}>
+                          {cat.name}
                         </option>
                       ))
                     )}
