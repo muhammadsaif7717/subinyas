@@ -1,52 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyJwtToken } from '@/lib/jwt';
 import { getDb } from '@/lib/mongodb';
-import { Review } from '@/lib/types';
+import { Review, Product } from '@/lib/types';
 import { ObjectId } from 'mongodb';
-
-const INITIAL_REVIEWS: Record<string, Review[]> = {
-  'jewelry-box': [
-    {
-      id: 'rev-1',
-      productSlug: 'jewelry-box',
-      userId: 'user-1',
-      userName: 'সুমাইয়া রহমান',
-      rating: 5,
-      comment:
-        'Hello Kitty Pink বক্সটি সত্যি অনেক সুন্দর এবং এলিগ্যান্ট। মেটেরিয়াল কোয়ালিটি বেশ ভালো এবং ভেতরের ভেলভেট খুব সফট। ভ্রমণের সময় প্রিয় জুয়েলারিগুলো একদম সুরক্ষিত থাকে।',
-      mediaUrls: ['/images/products/hello-kitty-open.png'],
-      isVerifiedPurchase: true,
-      status: 'Approved',
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
-    },
-    {
-      id: 'rev-2',
-      productSlug: 'jewelry-box',
-      userId: 'user-2',
-      userName: 'আফরোজা খান',
-      rating: 5,
-      comment:
-        'বেস্টি কম্বো (Bestie Combo) অফারে ২টা নিয়েছিলাম। ১টা নিজের জন্য আর ১টা বান্ধবীর জন্মদিনে গিফট দিয়েছি। ও দেখে অনেক খুশি হয়েছে! প্যাকেজিং দারুণ ছিল।',
-      mediaUrls: ['/images/products/hello-kitty-pair.png'],
-      isVerifiedPurchase: true,
-      status: 'Approved',
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString(),
-    },
-    {
-      id: 'rev-3',
-      productSlug: 'jewelry-box',
-      userId: 'user-3',
-      userName: 'নুসরাত জাহান',
-      rating: 5,
-      comment:
-        'ক্যাশ অন ডেলিভারিতে মাত্র ২ দিনে পেয়েছি। চেন বা দুল প্যাঁচ খাওয়ার কোনো ঝামেলা নেই। সাইজটা একদম পারফেক্ট ব্যাগে নেওয়ার মতো।',
-      mediaUrls: ['/images/products/mandala-boxes.png'],
-      isVerifiedPurchase: true,
-      status: 'Approved',
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9).toISOString(),
-    },
-  ],
-};
 
 export async function GET(request: NextRequest) {
   try {
@@ -56,45 +12,35 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
 
     const db = await getDb();
-    if (db) {
-      const query: Record<string, unknown> = {};
-
-      if (productSlug) {
-        query.productSlug = productSlug;
-      }
-
-      if (isAdminView) {
-        if (status && status !== 'All') {
-          query.status = status;
-        }
-      } else {
-        // Public store view: ONLY Approved reviews are shown
-        query.status = 'Approved';
-      }
-
-      const dbReviews = await db
-        .collection('reviews')
-        .find(query)
-        .sort({ createdAt: -1 })
-        .toArray();
-
-      if (dbReviews && dbReviews.length > 0) {
-        return NextResponse.json({ success: true, reviews: dbReviews });
-      }
+    if (!db) {
+      return NextResponse.json({ success: true, reviews: [] });
     }
 
-    if (!isAdminView) {
-      const key = productSlug || 'jewelry-box';
-      const fallback = INITIAL_REVIEWS[key] || INITIAL_REVIEWS['jewelry-box'] || [];
-      return NextResponse.json({ success: true, reviews: fallback });
+    const query: Record<string, unknown> = {};
+
+    if (productSlug) {
+      query.productSlug = productSlug;
     }
 
-    // Default fallback for admin view
-    const allFallback = Object.values(INITIAL_REVIEWS).flat();
-    return NextResponse.json({ success: true, reviews: allFallback });
+    if (isAdminView) {
+      if (status && status !== 'All') {
+        query.status = status;
+      }
+    } else {
+      // Public store view: ONLY Approved reviews are shown
+      query.status = 'Approved';
+    }
+
+    const dbReviews = await db
+      .collection('reviews')
+      .find(query)
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    return NextResponse.json({ success: true, reviews: dbReviews || [] });
   } catch (error) {
     console.error('Error fetching reviews:', error);
-    return NextResponse.json({ success: false, message: 'Failed to fetch reviews' }, { status: 500 });
+    return NextResponse.json({ success: false, message: 'Failed to fetch reviews', reviews: [] }, { status: 500 });
   }
 }
 
@@ -126,9 +72,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const db = await getDb();
+    let productId = '';
+
+    if (db) {
+      const product = (await db.collection('products').findOne({ slug: productSlug })) as unknown as Product | null;
+      if (product) {
+        productId = product._id?.toString() || product.id || '';
+      }
+    }
+
     // New reviews start in 'Pending' status awaiting Admin Approval
     const newReview: Review = {
       id: `rev-${Date.now()}`,
+      productId,
       productSlug,
       userId: payload.userId,
       userName: payload.name || 'Customer',
@@ -141,7 +98,6 @@ export async function POST(request: NextRequest) {
       createdAt: new Date().toISOString(),
     };
 
-    const db = await getDb();
     if (db) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await db.collection('reviews').insertOne(newReview as any);
@@ -197,21 +153,22 @@ export async function PATCH(request: NextRequest) {
           .find({ productSlug: review.productSlug, status: 'Approved' })
           .toArray();
 
-        if (approvedReviews.length > 0) {
-          const avgRating =
-            approvedReviews.reduce((sum, r) => sum + (r.rating || 5), 0) / approvedReviews.length;
+        const count = approvedReviews.length;
+        const avgRating =
+          count > 0
+            ? Number((approvedReviews.reduce((sum, r) => sum + (r.rating || 5), 0) / count).toFixed(1))
+            : 5.0;
 
-          await db.collection('products').updateOne(
-            { slug: review.productSlug },
-            {
-              $set: {
-                rating: Number(avgRating.toFixed(1)),
-                reviewCount: approvedReviews.length,
-                updatedAt: new Date().toISOString(),
-              },
-            }
-          );
-        }
+        await db.collection('products').updateOne(
+          { slug: review.productSlug },
+          {
+            $set: {
+              rating: avgRating,
+              reviewCount: count,
+              updatedAt: new Date().toISOString(),
+            },
+          }
+        );
       }
     }
 
@@ -248,7 +205,34 @@ export async function DELETE(request: NextRequest) {
       if (ObjectId.isValid(reviewId)) {
         filter = { $or: [{ _id: new ObjectId(reviewId) }, { id: reviewId }] };
       }
+
+      const review = await db.collection('reviews').findOne(filter);
       await db.collection('reviews').deleteOne(filter);
+
+      // Recalculate rating
+      if (review?.productSlug) {
+        const approvedReviews = await db
+          .collection('reviews')
+          .find({ productSlug: review.productSlug, status: 'Approved' })
+          .toArray();
+
+        const count = approvedReviews.length;
+        const avgRating =
+          count > 0
+            ? Number((approvedReviews.reduce((sum, r) => sum + (r.rating || 5), 0) / count).toFixed(1))
+            : 5.0;
+
+        await db.collection('products').updateOne(
+          { slug: review.productSlug },
+          {
+            $set: {
+              rating: avgRating,
+              reviewCount: count,
+              updatedAt: new Date().toISOString(),
+            },
+          }
+        );
+      }
     }
 
     return NextResponse.json({ success: true, message: 'Review deleted' });

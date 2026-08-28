@@ -60,6 +60,7 @@ export interface Product {
 export interface Review {
   _id?: string;
   id: string;
+  productId?: string;
   productSlug: string;
   userId: string;
   userName: string;
