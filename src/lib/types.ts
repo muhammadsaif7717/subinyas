@@ -53,6 +53,7 @@ export interface Product {
   }[];
   isFeatured?: boolean;
   isHeroSlider?: boolean;
+  heroBannerImage?: string;
   heroOrder?: number;
   isActive: boolean;
   createdAt?: string;

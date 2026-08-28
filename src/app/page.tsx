@@ -163,7 +163,7 @@ export default function HomePage() {
                 <div className="relative aspect-square rounded-3xl overflow-hidden bg-slate-50 border border-slate-200 shadow-sm">
                   <Image
                     key={activeProduct.slug}
-                    src={activeProduct.images[0] || '/images/products/hello-kitty-pair.png'}
+                    src={activeProduct.heroBannerImage || activeProduct.images[0] || '/images/products/hello-kitty-pair.png'}
                     alt={activeProduct.name}
                     fill
                     priority

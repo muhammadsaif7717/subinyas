@@ -677,6 +677,35 @@ function DashboardContent() {
     }
   };
 
+  // Handle 16:9 Dedicated Hero Banner Upload
+  const [uploadingBannerSlug, setUploadingBannerSlug] = useState<string | null>(null);
+
+  const handleHeroBannerUpload = async (prod: Product, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingBannerSlug(prod.slug);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await axios.post('/api/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      if (res.data?.success && res.data?.url) {
+        const bannerUrl = res.data.url;
+        saveProductMutation.mutate({
+          ...prod,
+          heroBannerImage: bannerUrl,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+    } catch {
+      alert('Failed to upload 16:9 banner image.');
+    } finally {
+      setUploadingBannerSlug(null);
+    }
+  };
+
   // Handle Save (Create or Update)
   const handleSaveProductForm = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1355,272 +1384,397 @@ function DashboardContent() {
             )}
 
             {/* TAB: MANAGE BANNERS / HERO SLIDER */}
-            {activeTab === 'banners' && (
-              <div className="space-y-6">
-                {/* Header with Stats & Actions */}
-                <div className={`${cardCls} p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4`}>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-[#D3A45E]/15 border border-[#D3A45E]/30 flex items-center justify-center text-[#D3A45E]">
-                        <Sparkles className="w-5 h-5" />
+            {activeTab === 'banners' && (() => {
+              const heroEnabledProducts = products.filter((p) => p.isHeroSlider === true);
+              const activeHeroSlides = [...heroEnabledProducts].sort((a, b) => (a.heroOrder || 1) - (b.heroOrder || 1));
+
+              return (
+                <div className="space-y-7">
+                  {/* Header with Info & Live Link */}
+                  <div className={`${cardCls} p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4`}>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-[#D3A45E]/15 border border-[#D3A45E]/30 flex items-center justify-center text-[#D3A45E]">
+                          <Sparkles className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h2 className="text-base font-bold text-white">Homepage Hero Slider & Banner Manager</h2>
+                          <p className="text-xs text-[#9C8FA8]">
+                            Select up to 4 products from the pool below, upload dedicated 16:9 banner visuals, and preview live
+                          </p>
+                        </div>
                       </div>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 shrink-0">
+                      <Link
+                        href="/"
+                        target="_blank"
+                        className="px-4 py-2.5 rounded-xl bg-[#211C28] hover:bg-[#2E2733] text-[#D8CFE0] hover:text-white text-xs font-semibold border border-[#2E2733] transition-colors flex items-center gap-2"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 text-[#E39BB4]" />
+                        <span>Live Homepage</span>
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Top Section: Hero-Enabled Products Selection Pool (Grid) */}
+                  <div className={`${cardCls} p-5 sm:p-6 space-y-4`}>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#2E2733] pb-4">
                       <div>
-                        <h2 className="text-base font-bold text-white">Homepage Hero Slider & Banners</h2>
-                        <p className="text-xs text-[#9C8FA8]">
-                          Products with <span className="text-[#E4BC79] font-semibold">Hero Slider: Enabled</span> automatically appear on the homepage auto-carousel
+                        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                          <span>Hero Products Pool</span>
+                          <span className="text-[11px] font-mono font-bold bg-[#D3A45E]/15 text-[#E4BC79] px-2 py-0.5 rounded-md border border-[#D3A45E]/25">
+                            {heroEnabledProducts.length} in Pool • {activeHeroSlides.length} Active Slides
+                          </span>
+                        </h3>
+                        <p className="text-xs text-[#8A7D97] mt-0.5">
+                          Click any card to toggle its presence on the homepage slider (Max 4 active slides)
                         </p>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-2.5 shrink-0">
-                    <Link
-                      href="/"
-                      target="_blank"
-                      className="px-4 py-2.5 rounded-xl bg-[#211C28] hover:bg-[#2E2733] text-[#D8CFE0] hover:text-white text-xs font-semibold border border-[#2E2733] transition-colors flex items-center gap-2"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5 text-[#E39BB4]" />
-                      <span>Live Homepage</span>
-                    </Link>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        handleOpenAddProduct();
-                        setProdIsHeroSlider(true);
-                      }}
-                      className="bg-[#C4587A] hover:bg-[#B24A6B] text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-[#C4587A]/25 transition-all cursor-pointer"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Create New Banner Product</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Section 1: Active Hero Slider Banners (Sorted by sequence) */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between px-1">
-                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                      <span>Active Hero Slider Slides</span>
-                      <span className="text-[11px] font-mono font-bold bg-[#D3A45E]/15 text-[#E4BC79] px-2 py-0.5 rounded-md border border-[#D3A45E]/25">
-                        {products.filter((p) => p.isHeroSlider === true).length} Slides Active
-                      </span>
-                    </h3>
-                  </div>
-
-                  {products.filter((p) => p.isHeroSlider === true).length === 0 ? (
-                    <div className={`${cardCls} p-12 text-center space-y-3`}>
-                      <div className="w-14 h-14 rounded-2xl bg-[#211C28] border border-[#2E2733] flex items-center justify-center mx-auto text-[#8A7D97]">
-                        <ImageIcon className="w-7 h-7" />
+                    {heroEnabledProducts.length === 0 ? (
+                      <div className="py-10 text-center space-y-3">
+                        <div className="w-12 h-12 rounded-2xl bg-[#211C28] border border-[#2E2733] flex items-center justify-center mx-auto text-[#8A7D97]">
+                          <ImageIcon className="w-6 h-6" />
+                        </div>
+                        <h4 className="text-sm font-bold text-white">No Products Marked for Hero Slider</h4>
+                        <p className="text-xs text-[#8A7D97] max-w-sm mx-auto">
+                          Go to the Products tab and turn on &quot;Hero Slider: Enable&quot; or choose from available products below.
+                        </p>
                       </div>
-                      <h4 className="text-sm font-bold text-white">No Products Marked for Hero Slider</h4>
-                      <p className="text-xs text-[#8A7D97] max-w-md mx-auto">
-                        Choose products from the available catalog below and click &quot;+ Add to Slider&quot; to showcase them on the homepage.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-3.5">
-                      {products
-                        .filter((p) => p.isHeroSlider === true)
-                        .sort((a, b) => (a.heroOrder || 1) - (b.heroOrder || 1))
-                        .map((prod, idx, arr) => (
-                          <div
-                            key={prod.slug || idx}
-                            className={`${cardCls} p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-[#3D3344] transition-all`}
-                          >
-                            {/* Left: Slide Position Badge & Image & Info */}
-                            <div className="flex items-center gap-4 flex-1 min-w-0">
-                              <div className="w-9 h-9 rounded-xl bg-[#211C28] border border-[#332B3D] flex items-center justify-center text-xs font-mono font-bold text-[#E4BC79] shrink-0">
-                                #{idx + 1}
-                              </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+                        {heroEnabledProducts.map((prod) => {
+                          const slideIndex = activeHeroSlides.findIndex((s) => s.slug === prod.slug);
+                          const isSelected = slideIndex !== -1;
 
-                              <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-[#14111A] border border-[#2E2733] shrink-0">
-                                <Image
-                                  src={prod.images?.[0] || '/images/products/hello-kitty-pair.png'}
-                                  alt={prod.name}
-                                  fill
-                                  className="object-cover"
-                                />
-                              </div>
-
-                              <div className="min-w-0 flex-1 space-y-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="text-[10px] font-bold text-[#E39BB4] bg-[#C4587A]/12 px-2 py-0.5 rounded border border-[#C4587A]/25 uppercase tracking-wider">
-                                    {prod.category || 'Product'}
-                                  </span>
-                                  {prod.isActive !== false ? (
-                                    <span className="text-[10px] text-[#8FC7A9] font-medium flex items-center gap-1">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-[#6FAE8C] inline-block" />
-                                      Live on Store
-                                    </span>
-                                  ) : (
-                                    <span className="text-[10px] text-[#DD8A94] font-medium">Draft / Inactive</span>
-                                  )}
-                                </div>
-
-                                <h4 className="text-sm font-bold text-white truncate">{prod.name || prod.nameBn}</h4>
-
-                                {prod.taglineBn && (
-                                  <p className="text-xs text-[#8A7D97] truncate">{prod.taglineBn}</p>
-                                )}
-
-                                <div className="flex items-baseline gap-2 pt-0.5">
-                                  <span className="text-xs font-bold text-white font-mono">৳{prod.basePrice}</span>
-                                  {prod.originalPrice > prod.basePrice && (
-                                    <span className="text-[10px] line-through text-[#6E6278] font-mono">
-                                      ৳{prod.originalPrice}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Right: Re-Order Buttons & Actions */}
-                            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                              {/* Move Up / Down Buttons */}
-                              <div className="flex items-center bg-[#14111A] border border-[#2E2733] rounded-xl overflow-hidden">
-                                <button
-                                  type="button"
-                                  disabled={idx === 0}
-                                  onClick={() => {
-                                    if (idx > 0) {
-                                      const prevProd = arr[idx - 1];
-                                      const currOrder = prod.heroOrder || idx + 1;
-                                      const prevOrder = prevProd.heroOrder || idx;
-                                      saveProductMutation.mutate({ ...prod, heroOrder: prevOrder });
-                                      saveProductMutation.mutate({ ...prevProd, heroOrder: currOrder });
-                                    }
-                                  }}
-                                  className="p-2 text-[#9C8FA8] hover:text-white hover:bg-[#211C28] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                  title="Move Slide Up"
-                                >
-                                  <ChevronUp className="w-4 h-4" />
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={idx === arr.length - 1}
-                                  onClick={() => {
-                                    if (idx < arr.length - 1) {
-                                      const nextProd = arr[idx + 1];
-                                      const currOrder = prod.heroOrder || idx + 1;
-                                      const nextOrder = nextProd.heroOrder || idx + 2;
-                                      saveProductMutation.mutate({ ...prod, heroOrder: nextOrder });
-                                      saveProductMutation.mutate({ ...nextProd, heroOrder: currOrder });
-                                    }
-                                  }}
-                                  className="p-2 text-[#9C8FA8] hover:text-white hover:bg-[#211C28] disabled:opacity-30 disabled:cursor-not-allowed transition-colors border-l border-[#2E2733]"
-                                  title="Move Slide Down"
-                                >
-                                  <ChevronDown className="w-4 h-4" />
-                                </button>
-                              </div>
-
-                              {/* Edit Product */}
-                              <button
-                                type="button"
-                                onClick={() => handleOpenEditProduct(prod)}
-                                className="px-3 py-2 bg-[#211C28] hover:bg-[#2A2430] text-[#D8CFE0] hover:text-white text-xs font-semibold rounded-xl border border-[#2E2733] flex items-center gap-1.5 transition-colors cursor-pointer"
-                                title="Edit Product Details"
-                              >
-                                <Edit className="w-3.5 h-3.5 text-[#D3A45E]" />
-                                <span>Edit</span>
-                              </button>
-
-                              {/* View on Store */}
-                              <Link
-                                href={`/products/${prod.slug}`}
-                                target="_blank"
-                                className="p-2 bg-[#211C28] hover:bg-[#2A2430] text-[#9C8FA8] hover:text-white rounded-xl border border-[#2E2733] transition-colors"
-                                title="View Product Page"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </Link>
-
-                              {/* Remove from Slider (1-click) */}
-                              <button
-                                type="button"
-                                onClick={() => {
+                          return (
+                            <div
+                              key={prod.slug}
+                              onClick={() => {
+                                if (isSelected) {
+                                  // Deselect from slider
                                   saveProductMutation.mutate({
                                     ...prod,
                                     isHeroSlider: false,
                                     updatedAt: new Date().toISOString(),
                                   });
-                                }}
-                                className="px-3 py-2 bg-[#C1495A]/12 hover:bg-[#C1495A] text-[#DD8A94] hover:text-white text-xs font-semibold rounded-xl border border-[#C1495A]/25 flex items-center gap-1.5 transition-colors cursor-pointer"
-                                title="Remove from Homepage Slider"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                                <span>Remove</span>
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  )}
-                </div>
+                                } else {
+                                  // Select for slider (max 4)
+                                  if (activeHeroSlides.length >= 4) {
+                                    alert('You can select up to 4 active hero slides at a time.');
+                                    return;
+                                  }
+                                  saveProductMutation.mutate({
+                                    ...prod,
+                                    isHeroSlider: true,
+                                    heroOrder: activeHeroSlides.length + 1,
+                                    updatedAt: new Date().toISOString(),
+                                  });
+                                }
+                              }}
+                              className={`p-3.5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden group ${
+                                isSelected
+                                  ? 'bg-[#C4587A]/12 border-[#C4587A] shadow-md shadow-[#C4587A]/20'
+                                  : 'bg-[#14111A] border-[#2E2733] hover:border-[#42374A]'
+                              }`}
+                            >
+                              {/* Selected Ribbon / Badge */}
+                              <div className="flex items-center justify-between mb-2.5">
+                                <span
+                                  className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                    isSelected
+                                      ? 'bg-[#C4587A] text-white'
+                                      : 'bg-[#211C28] text-[#8A7D97] border border-[#2E2733]'
+                                  }`}
+                                >
+                                  {isSelected ? `✓ Slide #${slideIndex + 1}` : '+ Select'}
+                                </span>
+                                <span className="text-[10px] text-[#8A7D97] font-mono">৳{prod.basePrice}</span>
+                              </div>
 
-                {/* Section 2: Available Products (Add to Hero Slider with 1-click) */}
-                <div className={`${cardCls} p-5 sm:p-6 space-y-4`}>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#2E2733] pb-4">
-                    <div>
-                      <h3 className="text-sm font-bold text-white">Add Other Products to Hero Slider</h3>
-                      <p className="text-xs text-[#8A7D97]">
-                        Click &quot;+ Add to Slider&quot; on any product below to display it on the homepage carousel
-                      </p>
-                    </div>
+                              <div className="flex items-center gap-3">
+                                <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-[#1C1821] border border-[#2E2733] shrink-0">
+                                  <Image
+                                    src={prod.images?.[0] || '/images/products/hello-kitty-pair.png'}
+                                    alt={prod.name}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <h5 className="text-xs font-bold text-white truncate">{prod.name || prod.nameBn}</h5>
+                                  <p className="text-[10px] text-[#8A7D97] truncate">{prod.category}</p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Catalog products not yet in hero pool */}
+                    {products.filter((p) => p.isHeroSlider !== true).length > 0 && (
+                      <div className="pt-4 border-t border-[#2E2733]">
+                        <h4 className="text-xs font-bold text-[#D8CFE0] mb-2">Add Other Store Products to Hero Pool:</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {products
+                            .filter((p) => p.isHeroSlider !== true)
+                            .map((prod) => (
+                              <button
+                                key={prod.slug}
+                                type="button"
+                                onClick={() => {
+                                  saveProductMutation.mutate({
+                                    ...prod,
+                                    isHeroSlider: true,
+                                    heroOrder: activeHeroSlides.length + 1,
+                                    updatedAt: new Date().toISOString(),
+                                  });
+                                }}
+                                className="px-2.5 py-1.5 bg-[#211C28] hover:bg-[#2E2733] text-[#D8CFE0] hover:text-white rounded-xl text-xs font-medium border border-[#2E2733] flex items-center gap-1.5 transition-colors cursor-pointer"
+                              >
+                                <Plus className="w-3 h-3 text-[#D3A45E]" />
+                                <span>{prod.name || prod.nameBn}</span>
+                              </button>
+                            ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {products.filter((p) => p.isHeroSlider !== true).length === 0 ? (
-                    <p className="text-xs text-[#8A7D97] py-4 text-center">
-                      All active catalog products are currently included in the Hero Slider.
-                    </p>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                      {products
-                        .filter((p) => p.isHeroSlider !== true)
-                        .map((prod) => (
+                  {/* Bottom Section: Dedicated 16:9 Banner Slide Customizers */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between px-1">
+                      <div>
+                        <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                          <span>Active Banner Slides Customizer (16:9 Format)</span>
+                          <span className="text-[11px] font-mono font-bold bg-[#6FAE8C]/15 text-[#8FC7A9] px-2 py-0.5 rounded-md border border-[#6FAE8C]/25">
+                            {activeHeroSlides.length} Live on Homepage
+                          </span>
+                        </h3>
+                        <p className="text-xs text-[#8A7D97] mt-0.5">
+                          Upload 16:9 banner visuals and preview dynamic &quot;Order Now&quot; actions for each slide
+                        </p>
+                      </div>
+                    </div>
+
+                    {activeHeroSlides.length === 0 ? (
+                      <div className={`${cardCls} p-12 text-center space-y-2`}>
+                        <p className="text-xs text-[#8A7D97]">
+                          Please select at least 1 product from the Hero Products Pool above to configure its 16:9 banner image and settings.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-5">
+                        {activeHeroSlides.map((prod, idx, arr) => (
                           <div
-                            key={prod.slug}
-                            className="p-3.5 rounded-2xl bg-[#14111A] border border-[#2E2733] flex items-center justify-between gap-3 hover:border-[#3A323F] transition-all"
+                            key={prod.slug || idx}
+                            className={`${cardCls} p-5 sm:p-6 border border-[#2E2733] space-y-5`}
                           >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-[#1C1821] border border-[#2E2733] shrink-0">
-                                <Image
-                                  src={prod.images?.[0] || '/images/products/hello-kitty-pair.png'}
-                                  alt={prod.name}
-                                  fill
-                                  className="object-cover"
-                                />
+                            {/* Slide Header */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#2E2733] pb-4">
+                              <div className="flex items-center gap-3">
+                                <span className="w-8 h-8 rounded-xl bg-[#C4587A] text-white flex items-center justify-center font-mono font-bold text-xs">
+                                  #{idx + 1}
+                                </span>
+                                <div>
+                                  <h4 className="text-sm font-bold text-white">{prod.name || prod.nameBn}</h4>
+                                  <p className="text-[11px] text-[#8A7D97]">
+                                    Category: <span className="text-[#D8CFE0]">{prod.category}</span> • Linked to{' '}
+                                    <span className="font-mono text-[#E39BB4]">/products/{prod.slug}</span>
+                                  </p>
+                                </div>
                               </div>
-                              <div className="min-w-0">
-                                <h5 className="text-xs font-bold text-white truncate">{prod.name || prod.nameBn}</h5>
-                                <p className="text-[11px] text-[#8A7D97] font-mono">৳{prod.basePrice}</p>
+
+                              <div className="flex items-center gap-2 self-end sm:self-center">
+                                {/* Move Up / Down Buttons */}
+                                <div className="flex items-center bg-[#14111A] border border-[#2E2733] rounded-xl overflow-hidden">
+                                  <button
+                                    type="button"
+                                    disabled={idx === 0}
+                                    onClick={() => {
+                                      if (idx > 0) {
+                                        const prevProd = arr[idx - 1];
+                                        const currOrder = prod.heroOrder || idx + 1;
+                                        const prevOrder = prevProd.heroOrder || idx;
+                                        saveProductMutation.mutate({ ...prod, heroOrder: prevOrder });
+                                        saveProductMutation.mutate({ ...prevProd, heroOrder: currOrder });
+                                      }
+                                    }}
+                                    className="p-2 text-[#9C8FA8] hover:text-white hover:bg-[#211C28] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                    title="Move Slide Up"
+                                  >
+                                    <ChevronUp className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={idx === arr.length - 1}
+                                    onClick={() => {
+                                      if (idx < arr.length - 1) {
+                                        const nextProd = arr[idx + 1];
+                                        const currOrder = prod.heroOrder || idx + 1;
+                                        const nextOrder = nextProd.heroOrder || idx + 2;
+                                        saveProductMutation.mutate({ ...prod, heroOrder: nextOrder });
+                                        saveProductMutation.mutate({ ...nextProd, heroOrder: currOrder });
+                                      }
+                                    }}
+                                    className="p-2 text-[#9C8FA8] hover:text-white hover:bg-[#211C28] disabled:opacity-30 disabled:cursor-not-allowed transition-colors border-l border-[#2E2733]"
+                                    title="Move Slide Down"
+                                  >
+                                    <ChevronDown className="w-4 h-4" />
+                                  </button>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    saveProductMutation.mutate({
+                                      ...prod,
+                                      isHeroSlider: false,
+                                      updatedAt: new Date().toISOString(),
+                                    });
+                                  }}
+                                  className="px-3 py-2 bg-[#C1495A]/12 hover:bg-[#C1495A] text-[#DD8A94] hover:text-white text-xs font-semibold rounded-xl border border-[#C1495A]/25 flex items-center gap-1.5 transition-colors cursor-pointer"
+                                  title="Deselect this Slide"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                  <span>Deselect</span>
+                                </button>
                               </div>
                             </div>
 
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const currentHeroCount = products.filter((p) => p.isHeroSlider === true).length;
-                                saveProductMutation.mutate({
-                                  ...prod,
-                                  isHeroSlider: true,
-                                  heroOrder: currentHeroCount + 1,
-                                  updatedAt: new Date().toISOString(),
-                                });
-                              }}
-                              className="px-3 py-1.5 bg-[#C4587A]/12 hover:bg-[#C4587A] text-[#E39BB4] hover:text-white text-xs font-bold rounded-xl border border-[#C4587A]/25 transition-all flex items-center gap-1 shrink-0 cursor-pointer"
-                            >
-                              <Plus className="w-3.5 h-3.5" />
-                              <span>Add to Slider</span>
-                            </button>
+                            {/* 16:9 Banner Image Uploader & Live Preview Frame */}
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                              {/* 16:9 Visual Container */}
+                              <div className="lg:col-span-7">
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                                      <ImageIcon className="w-3.5 h-3.5 text-[#D3A45E]" />
+                                      <span>16:9 Hero Banner Visual</span>
+                                    </label>
+                                    <span className="text-[10px] text-[#8A7D97] font-mono">16:9 Aspect Ratio</span>
+                                  </div>
+
+                                  <div className="relative aspect-[16/9] w-full rounded-2xl overflow-hidden bg-[#14111A] border-2 border-dashed border-[#332B3D] group">
+                                    <Image
+                                      src={
+                                        prod.heroBannerImage ||
+                                        prod.images?.[0] ||
+                                        '/images/products/hello-kitty-pair.png'
+                                      }
+                                      alt={prod.name}
+                                      fill
+                                      className="object-cover"
+                                    />
+
+                                    {/* Overlay Uploader Action */}
+                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-4 text-center">
+                                      <label className="cursor-pointer bg-[#C4587A] hover:bg-[#B24A6B] text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-2 shadow-lg transition-all">
+                                        {uploadingBannerSlug === prod.slug ? (
+                                          <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                          <Camera className="w-4 h-4" />
+                                        )}
+                                        <span>Upload 16:9 Banner Image</span>
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          className="hidden"
+                                          disabled={uploadingBannerSlug === prod.slug}
+                                          onChange={(e) => handleHeroBannerUpload(prod, e)}
+                                        />
+                                      </label>
+
+                                      {prod.heroBannerImage && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            saveProductMutation.mutate({
+                                              ...prod,
+                                              heroBannerImage: '',
+                                              updatedAt: new Date().toISOString(),
+                                            });
+                                          }}
+                                          className="text-[11px] text-[#DD8A94] hover:underline cursor-pointer"
+                                        >
+                                          Reset to Product Photo
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center justify-between text-[11px] text-[#8A7D97]">
+                                    <span>
+                                      {prod.heroBannerImage ? (
+                                        <span className="text-[#8FC7A9] font-medium">✓ Custom 16:9 Banner Active</span>
+                                      ) : (
+                                        <span className="text-[#E4BC79]">Using default product photo (Click to upload 16:9 banner)</span>
+                                      )}
+                                    </span>
+
+                                    <label className="cursor-pointer text-[#E39BB4] hover:underline flex items-center gap-1 font-semibold">
+                                      <Plus className="w-3 h-3" />
+                                      <span>Upload Custom Image</span>
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        disabled={uploadingBannerSlug === prod.slug}
+                                        onChange={(e) => handleHeroBannerUpload(prod, e)}
+                                      />
+                                    </label>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Dynamic Homepage Action Preview */}
+                              <div className="lg:col-span-5 bg-[#14111A] p-5 rounded-2xl border border-[#2E2733] space-y-3.5">
+                                <div className="space-y-1">
+                                  <span className="text-[10px] uppercase font-bold text-[#E39BB4] tracking-wider">
+                                    Homepage Live Action Preview
+                                  </span>
+                                  <h5 className="text-sm font-bold text-white truncate">{prod.name || prod.nameBn}</h5>
+                                  <p className="text-xs text-[#8A7D97] line-clamp-2">
+                                    {prod.taglineBn || prod.descriptionBn}
+                                  </p>
+                                </div>
+
+                                <div className="flex items-baseline gap-2 pt-1 border-t border-[#2E2733]">
+                                  <span className="text-base font-extrabold text-white font-mono">৳{prod.basePrice}</span>
+                                  {prod.originalPrice > prod.basePrice && (
+                                    <span className="text-xs line-through text-[#6E6278] font-mono">
+                                      ৳{prod.originalPrice}
+                                    </span>
+                                  )}
+                                  <span className="text-[10px] font-bold text-[#8FC7A9] bg-[#6FAE8C]/12 px-2 py-0.5 rounded">
+                                    Save ৳{Math.max(0, prod.originalPrice - prod.basePrice)}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-2 pt-1">
+                                  <Link
+                                    href={`/products/${prod.slug}`}
+                                    target="_blank"
+                                    className="flex-1 py-2 bg-[#C4587A] hover:bg-[#B24A6B] text-white text-xs font-bold rounded-xl text-center flex items-center justify-center gap-1.5 shadow-md shadow-[#C4587A]/20 transition-all"
+                                  >
+                                    <span>Order Now Button</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </Link>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         ))}
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* TAB 3: CATEGORY SETTINGS */}
             {activeTab === 'categories' && (
