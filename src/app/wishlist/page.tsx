@@ -64,7 +64,7 @@ export default function WishlistPage() {
                       image: item.image,
                       comboId: 'combo-single',
                       comboTitleBn: '১টি বক্স (সিঙ্গেল প্যাক)',
-                      selectedVariants: [product.variants[0].nameBn],
+                      selectedVariants: [product.variants[0]?.nameBn || product.variants[0]?.name || 'Standard'],
                       price: item.price,
                       quantity: 1,
                     });

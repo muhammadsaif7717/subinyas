@@ -289,7 +289,7 @@ export default function ProductDetailPage() {
       image: selectedImage || product.images[0],
       comboId: selectedCombo?.id || 'standard',
       comboTitleBn: selectedCombo?.titleBn || 'Single Pack',
-      selectedVariants: selectedVariant ? [selectedVariant.name || selectedVariant.nameBn] : ['Standard'],
+      selectedVariants: selectedVariant ? [selectedVariant.name || selectedVariant.nameBn || 'Standard'] : ['Standard'],
       price: currentPrice,
       quantity,
     });
@@ -309,7 +309,7 @@ export default function ProductDetailPage() {
       image: selectedImage || product.images[0],
       comboId: selectedCombo?.id || 'standard',
       comboTitleBn: selectedCombo?.titleBn || 'Single Pack',
-      selectedVariants: selectedVariant ? [selectedVariant.name || selectedVariant.nameBn] : ['Standard'],
+      selectedVariants: selectedVariant ? [selectedVariant.name || selectedVariant.nameBn || 'Standard'] : ['Standard'],
       price: currentPrice,
       quantity,
     });
