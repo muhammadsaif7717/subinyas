@@ -28,6 +28,10 @@ export const metadata: Metadata = {
   },
 };
 
+import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
+import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -35,8 +39,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="bn" className={`${hindSiliguri.variable} scroll-smooth`}>
-      <body className="antialiased font-sans bg-slate-50 text-slate-900 selection:bg-rose-500 selection:text-white">
-        <Providers>{children}</Providers>
+      <body className="antialiased font-sans bg-white text-slate-900 selection:bg-rose-500 selection:text-white flex flex-col min-h-screen justify-between">
+        <Providers>
+          <Navbar />
+          <main className="flex-1">{children}</main>
+          <Footer />
+          <FloatingWhatsApp />
+        </Providers>
       </body>
     </html>
   );

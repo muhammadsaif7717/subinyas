@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { signJwtToken } from '@/lib/jwt';
+import { getDb } from '@/lib/mongodb';
 import { OAuth2Client } from 'google-auth-library';
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
@@ -8,12 +9,12 @@ const client = googleClientId ? new OAuth2Client(googleClientId) : null;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { credential, email, name } = body;
+    const { credential, email, name, avatar } = body;
 
     let userEmail = email;
     let userName = name || 'Google User';
+    let userAvatar = avatar;
 
-    // Verify token if Google Client ID is configured
     if (client && credential) {
       const ticket = await client.verifyIdToken({
         idToken: credential,
@@ -23,6 +24,7 @@ export async function POST(request: NextRequest) {
       if (payload?.email) {
         userEmail = payload.email;
         userName = payload.name || userName;
+        userAvatar = payload.picture || userAvatar;
       }
     }
 
@@ -30,10 +32,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Google authentication failed' }, { status: 400 });
     }
 
+    const cleanEmail = userEmail.trim().toLowerCase();
+    const db = await getDb();
+    let userId = `google-${Buffer.from(cleanEmail).toString('hex').slice(0, 8)}`;
+
+    if (db) {
+      const existing = await db.collection('users').findOne({ email: cleanEmail });
+      if (!existing) {
+        const insertRes = await db.collection('users').insertOne({
+          email: cleanEmail,
+          name: userName,
+          avatar: userAvatar,
+          role: cleanEmail === (process.env.ADMIN_EMAIL || 'admin@subinyas.shop').toLowerCase() ? 'admin' : 'customer',
+          createdAt: new Date().toISOString(),
+        });
+        userId = insertRes.insertedId.toString();
+      } else {
+        userId = existing._id.toString();
+      }
+    }
+
     const token = signJwtToken({
-      userId: `google-${Buffer.from(userEmail).toString('hex').slice(0, 8)}`,
-      email: userEmail,
-      role: 'admin',
+      userId,
+      email: cleanEmail,
+      role: cleanEmail === (process.env.ADMIN_EMAIL || 'admin@subinyas.shop').toLowerCase() ? 'admin' : 'customer',
       name: userName,
     });
 
@@ -41,9 +63,11 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Google login successful',
       user: {
-        email: userEmail,
+        id: userId,
+        email: cleanEmail,
         name: userName,
-        role: 'admin',
+        avatar: userAvatar,
+        role: cleanEmail === (process.env.ADMIN_EMAIL || 'admin@subinyas.shop').toLowerCase() ? 'admin' : 'customer',
       },
     });
 
@@ -58,6 +82,6 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('Google login error:', error);
-    return NextResponse.json({ success: false, message: 'Google লগইনে ত্রুটি হয়েছে' }, { status: 500 });
+    return NextResponse.json({ success: false, message: 'Google login failed.' }, { status: 500 });
   }
 }

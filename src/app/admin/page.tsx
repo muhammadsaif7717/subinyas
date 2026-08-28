@@ -184,7 +184,7 @@ export default function AdminDashboardPage() {
               <RefreshCw className="w-4 h-4" />
             </button>
             <Link
-              href="/admin/login"
+              href="/login"
               className="text-xs font-semibold text-rose-400 hover:text-rose-300 flex items-center gap-1 bg-rose-500/10 px-3 py-1.5 rounded-lg border border-rose-500/20"
             >
               <LogOut className="w-3.5 h-3.5" />

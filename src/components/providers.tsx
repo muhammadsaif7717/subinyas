@@ -4,6 +4,9 @@ import React, { useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import axios from 'axios';
 import { trackPageView } from '@/lib/pixel';
+import { AuthProvider } from '@/lib/auth-context';
+import { CartProvider } from '@/lib/cart-context';
+import { CartDrawer } from './CartDrawer';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -27,7 +30,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
         const pixelId = settings?.metaPixelId;
 
         if (pixelId && settings.isPixelActive && typeof window !== 'undefined') {
-          // Initialize Meta Pixel
           /* eslint-disable */
           (function (f: any, b: any, e: any, v: any, n?: any, t?: any, s?: any) {
             if (f.fbq) return;
@@ -60,5 +62,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
     initMetaPixel();
   }, []);
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <CartProvider>
+          {children}
+          <CartDrawer />
+        </CartProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
 }

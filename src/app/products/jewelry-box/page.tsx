@@ -12,14 +12,18 @@ import {
   Gift,
   Loader2,
   CheckCircle2,
+  ShoppingBag,
+  Heart,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { useCart } from '@/lib/cart-context';
 import { OrderReceiptModal } from '@/components/OrderReceiptModal';
 import { INITIAL_JEWELRY_BOX_PRODUCT } from '@/lib/constants';
 import { Order, DeliveryArea, Product } from '@/lib/types';
 import { trackViewContent, trackInitiateCheckout, trackPurchase } from '@/lib/pixel';
 
 export default function JewelryBoxLandingPage() {
+  const { addToCart, addToWishlist, removeFromWishlist, isInWishlist } = useCart();
   const { data: dynamicProduct } = useQuery<Product>({
     queryKey: ['product', 'jewelry-box'],
     queryFn: async () => {
@@ -288,6 +292,57 @@ export default function JewelryBoxLandingPage() {
                     </select>
                   </div>
                 ))}
+              </div>
+
+              {/* Quick Cart / Wishlist Action Row */}
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    addToCart({
+                      productSlug: product.slug,
+                      productName: product.name,
+                      productNameBn: product.nameBn,
+                      image: selectedImage,
+                      comboId: selectedCombo.id,
+                      comboTitleBn: selectedCombo.titleBn,
+                      selectedVariants,
+                      price: selectedCombo.price,
+                      quantity: 1,
+                    });
+                  }}
+                  className="flex-1 bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-semibold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  <span>Add to Cart</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isInWishlist(product.slug)) {
+                      removeFromWishlist(product.slug);
+                    } else {
+                      addToWishlist({
+                        id: product.id,
+                        productSlug: product.slug,
+                        productName: product.name,
+                        productNameBn: product.nameBn,
+                        image: product.images[0],
+                        price: product.basePrice,
+                        rating: product.rating,
+                      });
+                    }
+                  }}
+                  className={`p-2.5 rounded-xl border transition-colors cursor-pointer ${
+                    isInWishlist(product.slug)
+                      ? 'bg-rose-50 border-rose-200 text-rose-600'
+                      : 'bg-white border-slate-300 text-slate-600 hover:text-rose-600'
+                  }`}
+                  title="Wishlist"
+                >
+                  <Heart className={`w-4 h-4 ${isInWishlist(product.slug) ? 'fill-rose-500 text-rose-500' : ''}`} />
+                </button>
               </div>
             </div>
 

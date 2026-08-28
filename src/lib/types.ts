@@ -59,6 +59,8 @@ export interface Product {
 export interface Order {
   _id?: string;
   orderId: string;
+  userId?: string;
+  userEmail?: string;
   customerName: string;
   phone: string;
   address: string;
@@ -80,6 +82,29 @@ export interface Order {
   updatedAt: string;
 }
 
+export interface CartItem {
+  id: string;
+  productSlug: string;
+  productName: string;
+  productNameBn: string;
+  image: string;
+  comboId: string;
+  comboTitleBn: string;
+  selectedVariants: string[];
+  price: number;
+  quantity: number;
+}
+
+export interface WishlistItem {
+  id: string;
+  productSlug: string;
+  productName: string;
+  productNameBn: string;
+  image: string;
+  price: number;
+  rating: number;
+}
+
 export interface StoreSettings {
   _id?: string;
   storeName: string;
@@ -94,11 +119,15 @@ export interface StoreSettings {
   updatedAt?: string;
 }
 
-export interface AdminUser {
+export interface User {
   _id?: string;
+  id: string;
   email: string;
   name: string;
-  role: 'admin' | 'manager';
-  passwordHash?: string;
+  phone?: string;
+  role: 'admin' | 'customer';
+  avatar?: string;
+  cart?: CartItem[];
+  wishlist?: WishlistItem[];
   createdAt?: string;
 }
