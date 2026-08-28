@@ -1233,6 +1233,278 @@ export default function AdminDashboardPage() {
                 />
               </div>
 
+              {/* Color Variants Builder */}
+              <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-white text-xs">কালার ভ্যারিয়েন্ট ও স্টক সংখ্যা (Color Variants)</h3>
+                    <p className="text-[11px] text-slate-400">প্রতিটি কালারের নাম, রঙ এবং লাইভ স্টক সংখ্যা দিন</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newId = `var-${Date.now()}`;
+                      setProdVariants((prev) => [
+                        ...prev,
+                        {
+                          id: newId,
+                          name: 'New Color',
+                          nameBn: 'নতুন কালার',
+                          color: 'Custom',
+                          colorHex: '#3B82F6',
+                          image: prodImages[0] || '/images/products/hello-kitty-pair.png',
+                          inStock: true,
+                          stockCount: 20,
+                        },
+                      ]);
+                    }}
+                    className="bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>➕ Add Color</span>
+                  </button>
+                </div>
+
+                <div className="space-y-2.5">
+                  {prodVariants.map((v, idx) => (
+                    <div
+                      key={v.id || idx}
+                      className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 p-3 rounded-xl bg-slate-900 border border-slate-800 items-center"
+                    >
+                      {/* Name */}
+                      <div className="sm:col-span-5">
+                        <label className="text-[10px] text-slate-400 block mb-0.5">কালারের নাম (বাংলা/ইংলিশ)</label>
+                        <input
+                          type="text"
+                          required
+                          value={v.nameBn}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const detectedHex = (name: string) => {
+                              const lower = name.toLowerCase();
+                              if (lower.includes('কালো') || lower.includes('black')) return '#1E293B';
+                              if (lower.includes('সাদা') || lower.includes('white')) return '#F8FAFC';
+                              if (lower.includes('পিঙ্ক') || lower.includes('pink') || lower.includes('গোলাপি')) return '#F472B6';
+                              if (lower.includes('লাল') || lower.includes('red')) return '#EF4444';
+                              if (lower.includes('নীল') || lower.includes('blue')) return '#3B82F6';
+                              if (lower.includes('সবুজ') || lower.includes('green')) return '#10B981';
+                              if (lower.includes('হলুদ') || lower.includes('yellow')) return '#EAB308';
+                              if (lower.includes('বেগুনি') || lower.includes('purple')) return '#8B5CF6';
+                              if (lower.includes('গোল্ড') || lower.includes('gold')) return '#D97706';
+                              if (lower.includes('রোজ গোল্ড') || lower.includes('rose gold')) return '#B76E79';
+                              if (lower.includes('বাদামি') || lower.includes('brown')) return '#78350F';
+                              if (lower.includes('ধূসর') || lower.includes('gray') || lower.includes('grey')) return '#64748B';
+                              return v.colorHex;
+                            };
+                            setProdVariants((prev) =>
+                              prev.map((item, i) =>
+                                i === idx ? { ...item, nameBn: val, name: val, colorHex: detectedHex(val) } : item
+                              )
+                            );
+                          }}
+                          placeholder="যেমন: কালো (Black), সাদা (White)"
+                          className="w-full px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
+                        />
+                      </div>
+
+                      {/* Color Picker Swatch */}
+                      <div className="sm:col-span-3">
+                        <label className="text-[10px] text-slate-400 block mb-0.5">রঙের কোড (Color)</label>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="color"
+                            value={v.colorHex || '#F472B6'}
+                            onChange={(e) => {
+                              const hex = e.target.value;
+                              setProdVariants((prev) =>
+                                prev.map((item, i) => (i === idx ? { ...item, colorHex: hex } : item))
+                              );
+                            }}
+                            className="w-8 h-8 rounded-lg border border-slate-700 bg-transparent cursor-pointer p-0.5 shrink-0"
+                            title="কালার পিক করুন"
+                          />
+                          <input
+                            type="text"
+                            value={v.colorHex}
+                            onChange={(e) => {
+                              const hex = e.target.value;
+                              setProdVariants((prev) =>
+                                prev.map((item, i) => (i === idx ? { ...item, colorHex: hex } : item))
+                              );
+                            }}
+                            className="w-full px-2 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-white text-[11px] font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Stock count */}
+                      <div className="sm:col-span-2">
+                        <label className="text-[10px] text-slate-400 block mb-0.5">স্টক সংখ্যা</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={v.stockCount}
+                          onChange={(e) => {
+                            const cnt = Number(e.target.value);
+                            setProdVariants((prev) =>
+                              prev.map((item, i) =>
+                                i === idx ? { ...item, stockCount: cnt, inStock: cnt > 0 } : item
+                              )
+                            );
+                          }}
+                          className="w-full px-2 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
+                        />
+                      </div>
+
+                      {/* In Stock toggle & delete */}
+                      <div className="sm:col-span-2 flex items-center justify-between gap-2 pt-3 sm:pt-0">
+                        <label className="flex items-center gap-1 text-[11px] cursor-pointer text-slate-300">
+                          <input
+                            type="checkbox"
+                            checked={v.inStock}
+                            onChange={(e) => {
+                              const chk = e.target.checked;
+                              setProdVariants((prev) =>
+                                prev.map((item, i) => (i === idx ? { ...item, inStock: chk } : item))
+                              );
+                            }}
+                            className="accent-rose-500 rounded"
+                          />
+                          <span>{v.inStock ? 'In Stock' : 'Out'}</span>
+                        </label>
+
+                        {prodVariants.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setProdVariants((prev) => prev.filter((_, i) => i !== idx))}
+                            className="p-1.5 text-slate-500 hover:text-rose-400 transition-colors"
+                            title="মুছে ফেলুন"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Combo Deals Builder */}
+              <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-white text-xs">কম্বো ও অফার প্যাকেজ (Combo Deals)</h3>
+                    <p className="text-[11px] text-slate-400">১টি বা ২টি প্যাকের স্পেশাল ডিসকাউন্ট মূল্য সেট করুন</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const count = prodCombos.length + 1;
+                      setProdCombos((prev) => [
+                        ...prev,
+                        {
+                          id: `combo-${count}`,
+                          title: `${count} Pieces Combo`,
+                          titleBn: `${count}টি বক্স স্পেশাল প্যাক`,
+                          subtitleBn: `${count}টি বক্স • মেগা সেভার অফার`,
+                          quantity: count,
+                          price: prodBasePrice * count - 100,
+                          originalPrice: prodOriginalPrice * count,
+                          savingsBn: `Save ৳${prodOriginalPrice * count - (prodBasePrice * count - 100)}`,
+                          badge: 'Special Offer',
+                        },
+                      ]);
+                    }}
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>➕ Add Combo Deal</span>
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {prodCombos.map((c, idx) => (
+                    <div
+                      key={c.id || idx}
+                      className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800 items-center text-xs"
+                    >
+                      <div className="sm:col-span-4">
+                        <label className="text-[10px] text-slate-400 block">কম্বো টাইটেল (বাংলা)</label>
+                        <input
+                          type="text"
+                          value={c.titleBn}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setProdCombos((prev) =>
+                              prev.map((item, i) => (i === idx ? { ...item, titleBn: val } : item))
+                            );
+                          }}
+                          className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label className="text-[10px] text-slate-400 block">পরিমাণ (Qty)</label>
+                        <input
+                          type="number"
+                          value={c.quantity}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setProdCombos((prev) =>
+                              prev.map((item, i) => (i === idx ? { ...item, quantity: val } : item))
+                            );
+                          }}
+                          className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-3">
+                        <label className="text-[10px] text-slate-400 block">অফার প্রাইস (৳)</label>
+                        <input
+                          type="number"
+                          value={c.price}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setProdCombos((prev) =>
+                              prev.map((item, i) => (i === idx ? { ...item, price: val } : item))
+                            );
+                          }}
+                          className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-3 flex items-center justify-between gap-1">
+                        <div>
+                          <label className="text-[10px] text-slate-400 block">ব্যাজ (ঐচ্ছিক)</label>
+                          <input
+                            type="text"
+                            value={c.badge || ''}
+                            placeholder="Best Deal"
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setProdCombos((prev) =>
+                                prev.map((item, i) => (i === idx ? { ...item, badge: val } : item))
+                              );
+                            }}
+                            className="w-full px-2 py-1 bg-slate-950 border border-slate-700 rounded-lg text-white text-xs"
+                          />
+                        </div>
+
+                        {prodCombos.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setProdCombos((prev) => prev.filter((_, i) => i !== idx))}
+                            className="p-1 text-slate-500 hover:text-rose-400 mt-3"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Image Upload */}
               <div>
                 <label className="block text-slate-300 font-medium mb-1.5">Product Images (Upload via Cloudinary)</label>
