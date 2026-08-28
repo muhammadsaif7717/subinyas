@@ -140,17 +140,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        {/* Right Side: Live Store Shortcut & Right Menu Drawer Button */}
+        {/* Right Side: Right Menu Drawer Button */}
         <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            target="_blank"
-            className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-[#D8CFE0] bg-[#191520] hover:bg-[#2A2332] hover:text-white border border-[#2E2733] transition-all"
-          >
-            <ExternalLink className="w-3.5 h-3.5 text-[#C4587A]" />
-            <span>Live Store</span>
-          </Link>
-
           {/* Right Corner Menu Toggle Button */}
           <button
             type="button"
