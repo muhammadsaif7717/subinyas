@@ -9,40 +9,28 @@ export interface CategoryItem {
   name: string;
   nameBn: string;
   slug: string;
-  icon?: string;
+  order: number;
   createdAt?: string;
   updatedAt?: string;
 }
 
-const DEFAULT_CATEGORIES: CategoryItem[] = [
-  { id: 'cat-1', name: 'Organizers', nameBn: 'অর্গানাইজার', slug: 'organizers' },
-  { id: 'cat-2', name: 'Jewelry Box', nameBn: 'জুয়েলারি বক্স', slug: 'jewelry-box' },
-  { id: 'cat-3', name: 'Pouches', nameBn: 'ভেলভেট পাউচ', slug: 'pouches' },
-  { id: 'cat-4', name: 'Travel', nameBn: 'ট্রাভেল এক্সেসরিজ', slug: 'travel' },
-  { id: 'cat-5', name: 'Accessories', nameBn: 'ফ্যাশন এক্সেসরিজ', slug: 'accessories' },
-  { id: 'cat-6', name: 'Bags', nameBn: 'মেকআপ ব্যাগ', slug: 'bags' },
-  { id: 'cat-7', name: 'Gifts', nameBn: 'গিফট আইটেম', slug: 'gifts' },
-];
-
 export async function GET() {
   try {
     const db = await getDb();
-    if (db) {
-      const categories = await db.collection('categories').find({}).sort({ createdAt: 1 }).toArray();
-      if (categories && categories.length > 0) {
-        return NextResponse.json({ success: true, categories });
-      }
-
-      // Seed default categories into MongoDB if collection is empty
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await db.collection('categories').insertMany(DEFAULT_CATEGORIES.map(c => ({ ...c, createdAt: new Date().toISOString() })) as any);
-      return NextResponse.json({ success: true, categories: DEFAULT_CATEGORIES });
+    if (!db) {
+      return NextResponse.json({ success: true, categories: [] });
     }
 
-    return NextResponse.json({ success: true, categories: DEFAULT_CATEGORIES });
+    const categories = await db
+      .collection('categories')
+      .find({})
+      .sort({ order: 1, createdAt: 1 })
+      .toArray();
+
+    return NextResponse.json({ success: true, categories: categories || [] });
   } catch (error) {
     console.error('Error fetching categories:', error);
-    return NextResponse.json({ success: false, message: 'Failed to load categories' }, { status: 500 });
+    return NextResponse.json({ success: false, message: 'Failed to load categories', categories: [] }, { status: 500 });
   }
 }
 
@@ -59,10 +47,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, nameBn, slug } = body;
+    const { name, nameBn, slug, order } = body;
 
-    if (!name?.trim()) {
-      return NextResponse.json({ success: false, message: 'ক্যাটাগরির নাম দিন।' }, { status: 400 });
+    if (!name?.trim() || !nameBn?.trim()) {
+      return NextResponse.json({ success: false, message: 'ক্যাটাগরির নাম (English এবং বাংলা) উভয়ই দিন।' }, { status: 400 });
     }
 
     const autoSlug = (slug || name)
@@ -72,25 +60,94 @@ export async function POST(request: NextRequest) {
       .replace(/[\s_-]+/g, '-')
       .replace(/^-+|-+$/g, '');
 
+    const db = await getDb();
+    let calculatedOrder = Number(order);
+
+    if (isNaN(calculatedOrder) || calculatedOrder <= 0) {
+      if (db) {
+        const count = await db.collection('categories').countDocuments();
+        calculatedOrder = count + 1;
+      } else {
+        calculatedOrder = 1;
+      }
+    }
+
     const newCat: CategoryItem = {
       id: `cat-${Date.now()}`,
       name: name.trim(),
-      nameBn: (nameBn || name).trim(),
+      nameBn: nameBn.trim(),
       slug: autoSlug,
+      order: calculatedOrder,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
-    const db = await getDb();
     if (db) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await db.collection('categories').insertOne(newCat as any);
     }
 
-    return NextResponse.json({ success: true, message: 'ক্যাটাগরি সফলভাবে যুক্ত হয়েছে', category: newCat });
+    return NextResponse.json({ success: true, message: 'ক্যাটাগরি সফলভাবে সংরক্ষিত হয়েছে', category: newCat });
   } catch (error) {
     console.error('Error adding category:', error);
     return NextResponse.json({ success: false, message: 'Failed to add category' }, { status: 500 });
+  }
+}
+
+// PATCH for reordering or editing
+export async function PATCH(request: NextRequest) {
+  try {
+    const token = request.cookies.get('subinyas_admin_token')?.value;
+    if (!token) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const payload = verifyJwtToken(token);
+    if (payload?.role !== 'admin') {
+      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { items, id, name, nameBn, order } = body;
+
+    const db = await getDb();
+    if (!db) {
+      return NextResponse.json({ success: false, message: 'Database disconnected' }, { status: 500 });
+    }
+
+    // Bulk reorder
+    if (Array.isArray(items)) {
+      for (const item of items) {
+        let filter: Record<string, unknown> = { id: item.id };
+        if (ObjectId.isValid(item.id)) {
+          filter = { $or: [{ _id: new ObjectId(item.id) }, { id: item.id }] };
+        }
+        await db.collection('categories').updateOne(filter, {
+          $set: { order: Number(item.order), updatedAt: new Date().toISOString() },
+        });
+      }
+      return NextResponse.json({ success: true, message: 'ক্যাটাগরি ক্রম সফলভাবে আপডেট হয়েছে' });
+    }
+
+    // Single category edit
+    if (id) {
+      let filter: Record<string, unknown> = { id };
+      if (ObjectId.isValid(id)) {
+        filter = { $or: [{ _id: new ObjectId(id) }, { id }] };
+      }
+      const updateData: Record<string, unknown> = { updatedAt: new Date().toISOString() };
+      if (name) updateData.name = name.trim();
+      if (nameBn) updateData.nameBn = nameBn.trim();
+      if (order !== undefined) updateData.order = Number(order);
+
+      await db.collection('categories').updateOne(filter, { $set: updateData });
+      return NextResponse.json({ success: true, message: 'ক্যাটাগরি আপডেট হয়েছে' });
+    }
+
+    return NextResponse.json({ success: false, message: 'Invalid payload' }, { status: 400 });
+  } catch (error) {
+    console.error('Error updating category:', error);
+    return NextResponse.json({ success: false, message: 'Failed to update category' }, { status: 500 });
   }
 }
 
@@ -109,18 +166,25 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const catId = searchParams.get('id');
 
+    const db = await getDb();
+    if (!db) {
+      return NextResponse.json({ success: false, message: 'Database disconnected' }, { status: 500 });
+    }
+
+    if (catId === 'all') {
+      await db.collection('categories').deleteMany({});
+      return NextResponse.json({ success: true, message: 'সকল ক্যাটাগরি মুছে ফেলা হয়েছে' });
+    }
+
     if (!catId) {
       return NextResponse.json({ success: false, message: 'Category ID is required' }, { status: 400 });
     }
 
-    const db = await getDb();
-    if (db) {
-      let filter: Record<string, unknown> = { id: catId };
-      if (ObjectId.isValid(catId)) {
-        filter = { $or: [{ _id: new ObjectId(catId) }, { id: catId }] };
-      }
-      await db.collection('categories').deleteOne(filter);
+    let filter: Record<string, unknown> = { id: catId };
+    if (ObjectId.isValid(catId)) {
+      filter = { $or: [{ _id: new ObjectId(catId) }, { id: catId }] };
     }
+    await db.collection('categories').deleteOne(filter);
 
     return NextResponse.json({ success: true, message: 'ক্যাটাগরি মুছে ফেলা হয়েছে' });
   } catch (error) {

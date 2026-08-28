@@ -10,7 +10,6 @@ import {
   Package,
   TrendingUp,
   Clock,
-  CheckCircle2,
   Phone,
   MessageCircle,
   Download,
@@ -35,8 +34,8 @@ import {
   FolderPlus,
   Folder,
   ChevronDown,
-  LayoutDashboard,
-  Shield,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import { Order, OrderStatus, StoreSettings, Product, Review, ProductVariant, ComboOption } from '@/lib/types';
 import { CategoryItem } from '@/app/api/categories/route';
@@ -85,9 +84,10 @@ function DashboardContent() {
   const [reviewStatusFilter, setReviewStatusFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Category Add / Form State
+  // Category Add / Form State (Left Form)
   const [newCatName, setNewCatName] = useState('');
   const [newCatNameBn, setNewCatNameBn] = useState('');
+  const [newCatOrder, setNewCatOrder] = useState<number>(1);
   const [catError, setCatError] = useState('');
   const [catSuccess, setCatSuccess] = useState('');
 
@@ -102,7 +102,7 @@ function DashboardContent() {
   const [prodName, setProdName] = useState('');
   const [prodNameBn, setProdNameBn] = useState('');
   const [prodSlug, setProdSlug] = useState('');
-  const [prodCategory, setProdCategory] = useState('Organizers');
+  const [prodCategory, setProdCategory] = useState('');
   const [prodTaglineBn, setProdTaglineBn] = useState('');
   const [prodDescriptionBn, setProdDescriptionBn] = useState('');
   const [prodBasePrice, setProdBasePrice] = useState<number>(499);
@@ -139,7 +139,7 @@ function DashboardContent() {
     },
   });
 
-  // Fetch categories from MongoDB
+  // Fetch categories from MongoDB (sorted by order)
   const { data: categoriesData, isLoading: isCategoriesLoading, refetch: refetchCategories } = useQuery<{
     success: boolean;
     categories: CategoryItem[];
@@ -152,6 +152,16 @@ function DashboardContent() {
   });
 
   const categories = categoriesData?.categories || [];
+
+  // Update default order when categories change
+  useEffect(() => {
+    if (categories.length > 0) {
+      const maxOrder = Math.max(...categories.map((c) => c.order || 0), 0);
+      setNewCatOrder(maxOrder + 1);
+    } else {
+      setNewCatOrder(1);
+    }
+  }, [categories]);
 
   // Fetch reviews for moderation
   const { data: reviewsData, isLoading: isReviewsLoading, refetch: refetchReviews } = useQuery<Review[]>({
@@ -181,7 +191,7 @@ function DashboardContent() {
   const [settingsSuccess, setSettingsSuccess] = useState('');
 
   // Sync settings when loaded
-  React.useEffect(() => {
+  useEffect(() => {
     if (settingsData) {
       setMetaPixelId(settingsData.metaPixelId || '');
       setWhatsappNumber(settingsData.whatsappNumber || '');
@@ -228,15 +238,16 @@ function DashboardContent() {
 
   // Category Add Mutation
   const addCategoryMutation = useMutation({
-    mutationFn: async ({ name, nameBn }: { name: string; nameBn: string }) => {
-      const res = await axios.post('/api/categories', { name, nameBn });
+    mutationFn: async ({ name, nameBn, order }: { name: string; nameBn: string; order: number }) => {
+      const res = await axios.post('/api/categories', { name, nameBn, order });
       return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
       setNewCatName('');
       setNewCatNameBn('');
-      setCatSuccess('ক্যাটাগরি সফলভাবে যুক্ত হয়েছে!');
+      setCatSuccess('ক্যাটাগরি সফলভাবে সংরক্ষিত হয়েছে!');
       setTimeout(() => setCatSuccess(''), 3000);
     },
     onError: (err: unknown) => {
@@ -248,6 +259,18 @@ function DashboardContent() {
     },
   });
 
+  // Category Reorder Mutation
+  const reorderCategoriesMutation = useMutation({
+    mutationFn: async (items: { id: string; order: number }[]) => {
+      const res = await axios.patch('/api/categories', { items });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+    },
+  });
+
   // Category Delete Mutation
   const deleteCategoryMutation = useMutation({
     mutationFn: async (catId: string) => {
@@ -256,8 +279,41 @@ function DashboardContent() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
     },
   });
+
+  // Handle Category Move Up
+  const handleMoveUp = (index: number) => {
+    if (index === 0) return;
+    const currentList = [...categories];
+    const prevCat = currentList[index - 1];
+    const currCat = currentList[index];
+
+    const prevOrder = prevCat.order || index;
+    const currOrder = currCat.order || index + 1;
+
+    reorderCategoriesMutation.mutate([
+      { id: currCat.id || (currCat._id as string), order: prevOrder },
+      { id: prevCat.id || (prevCat._id as string), order: currOrder },
+    ]);
+  };
+
+  // Handle Category Move Down
+  const handleMoveDown = (index: number) => {
+    if (index === categories.length - 1) return;
+    const currentList = [...categories];
+    const currCat = currentList[index];
+    const nextCat = currentList[index + 1];
+
+    const currOrder = currCat.order || index + 1;
+    const nextOrder = nextCat.order || index + 2;
+
+    reorderCategoriesMutation.mutate([
+      { id: currCat.id || (currCat._id as string), order: nextOrder },
+      { id: nextCat.id || (nextCat._id as string), order: currOrder },
+    ]);
+  };
 
   // Stock toggle update mutation
   const updateStockMutation = useMutation({
@@ -414,7 +470,7 @@ function DashboardContent() {
     setProdName(prod.name || '');
     setProdNameBn(prod.nameBn || '');
     setProdSlug(prod.slug || '');
-    setProdCategory(prod.category || 'Organizers');
+    setProdCategory(prod.category || (categories[0]?.name ?? ''));
     setProdTaglineBn(prod.taglineBn || '');
     setProdDescriptionBn(prod.descriptionBn || '');
     setProdBasePrice(prod.basePrice || 499);
@@ -538,15 +594,19 @@ function DashboardContent() {
     saveProductMutation.mutate(fullProduct);
   };
 
-  // Handle Add Category
+  // Handle Add Category Form
   const handleCreateCategory = (e: React.FormEvent) => {
     e.preventDefault();
     setCatError('');
-    if (!newCatName.trim()) {
-      setCatError('ইংরেজি ক্যাটাগরির নাম দিন।');
+    if (!newCatName.trim() || !newCatNameBn.trim()) {
+      setCatError('ইংরেজি এবং বাংলা উভয় নামই আবশ্যক।');
       return;
     }
-    addCategoryMutation.mutate({ name: newCatName.trim(), nameBn: newCatNameBn.trim() || newCatName.trim() });
+    addCategoryMutation.mutate({
+      name: newCatName.trim(),
+      nameBn: newCatNameBn.trim(),
+      order: Number(newCatOrder) || 1,
+    });
   };
 
   const orders = ordersData || [];
@@ -576,7 +636,7 @@ function DashboardContent() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 font-sans">
-      {/* Sleek Admin Navbar with Profile Dropdown & Quick Route Controls */}
+      {/* Sleek Admin Navbar with Profile Dropdown */}
       <header className="bg-slate-950/90 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -592,15 +652,7 @@ function DashboardContent() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              target="_blank"
-              className="text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 transition-colors hidden sm:inline-flex items-center gap-1"
-            >
-              <span>ওয়েবসাইট দেখুন</span>
-              <ExternalLink className="w-3 h-3" />
-            </Link>
-
+            {/* Refresh Button */}
             <button
               onClick={() => {
                 refetchOrders();
@@ -608,8 +660,8 @@ function DashboardContent() {
                 refetchProducts();
                 refetchCategories();
               }}
-              className="p-2 text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 rounded-lg border border-slate-700 cursor-pointer"
-              title="রিফ্রেশ করুন"
+              className="p-2 text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-800 rounded-lg border border-slate-700 cursor-pointer transition-colors"
+              title="তথ্য রিফ্রেশ করুন"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
@@ -725,13 +777,18 @@ function DashboardContent() {
                       <span>স্টোর ও মেটা পিক্সেল কনফিগ</span>
                     </button>
 
+                    {/* Website view inside dropdown */}
                     <Link
                       href="/"
                       target="_blank"
-                      className="flex items-center gap-2.5 px-4 py-2.5 hover:bg-slate-900 text-slate-300 transition-colors"
+                      onClick={() => setIsProfileDropdownOpen(false)}
+                      className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-900 text-emerald-400 font-medium transition-colors border-t border-slate-800/80"
                     >
-                      <ExternalLink className="w-4 h-4 text-emerald-400" />
-                      <span>স্টোর ভিজিট করুন ↗</span>
+                      <div className="flex items-center gap-2">
+                        <ExternalLink className="w-4 h-4" />
+                        <span>ওয়েবসাইট দেখুন</span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 font-mono">↗</span>
                     </Link>
 
                     <button
@@ -1167,111 +1224,183 @@ function DashboardContent() {
           </div>
         )}
 
-        {/* TAB 3: CATEGORY SETTINGS */}
+        {/* TAB 3: CATEGORY SETTINGS (LEFT FORM, RIGHT LIST WITH RE-ORDER) */}
         {activeTab === 'categories' && (
-          <div className="space-y-6">
-            <div className="bg-slate-800/40 p-5 rounded-2xl border border-slate-700 space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* LEFT SIDE: Add Category Form (5 cols) */}
+            <div className="lg:col-span-5 bg-slate-800/60 p-6 rounded-2xl border border-slate-700 space-y-5 shadow-lg">
               <div>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Folder className="w-5 h-5 text-amber-400" />
-                  <span>ক্যাটাগরি ম্যানেজমেন্ট (MongoDB Categories)</span>
+                  <FolderPlus className="w-5 h-5 text-amber-400" />
+                  <span>নতুন ক্যাটাগরি তৈরি করুন</span>
                 </h3>
-                <p className="text-xs text-slate-400">নতুন ক্যাটাগরি যুক্ত, আপডেট অথবা ডিলিট করুন</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  ক্যাটাগরির ইংরেজি নাম, বাংলা নাম এবং ডিসপ্লে ক্রম (Order) দিন
+                </p>
               </div>
 
               {catError && (
-                <div className="bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs p-3.5 rounded-xl">
+                <div className="bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs p-3.5 rounded-xl font-medium">
                   ⚠️ {catError}
                 </div>
               )}
 
               {catSuccess && (
-                <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs p-3.5 rounded-xl">
+                <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs p-3.5 rounded-xl font-medium">
                   ✅ {catSuccess}
                 </div>
               )}
 
-              {/* Add Category Inline Form */}
-              <form onSubmit={handleCreateCategory} className="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-3">
-                <h4 className="text-xs font-bold text-white">নতুন ক্যাটাগরি তৈরি করুন</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[10px] text-slate-400 block mb-0.5">Category Name (English) *</label>
-                    <input
-                      type="text"
-                      required
-                      value={newCatName}
-                      onChange={(e) => setNewCatName(e.target.value)}
-                      placeholder="e.g. Leather Wallets"
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-slate-400 block mb-0.5">Category Name (বাংলা) *</label>
-                    <input
-                      type="text"
-                      required
-                      value={newCatNameBn}
-                      onChange={(e) => setNewCatNameBn(e.target.value)}
-                      placeholder="যেমন: লেদার ওয়ালেট"
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs"
-                    />
-                  </div>
+              <form onSubmit={handleCreateCategory} className="space-y-4 text-xs sm:text-sm">
+                <div>
+                  <label className="text-slate-300 font-medium block mb-1">Category Name (English) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newCatName}
+                    onChange={(e) => setNewCatName(e.target.value)}
+                    placeholder="যেমন: Leather Bags"
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                  />
                 </div>
+
+                <div>
+                  <label className="text-slate-300 font-medium block mb-1">Category Name (বাংলা) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newCatNameBn}
+                    onChange={(e) => setNewCatNameBn(e.target.value)}
+                    placeholder="যেমন: লেদার ব্যাগ"
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-slate-300 font-medium block mb-1">
+                    ডিসপ্লে ক্রম / Order (1, 2, 3...) *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={newCatOrder}
+                    onChange={(e) => setNewCatOrder(Number(e.target.value))}
+                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-amber-500 font-mono font-bold"
+                  />
+                  <span className="text-[11px] text-slate-500 mt-1 block">
+                    কম সংখ্যাগুলো ওয়েবসাইটের ফিল্টারে প্রথমে প্রদর্শিত হবে।
+                  </span>
+                </div>
+
                 <button
                   type="submit"
                   disabled={addCategoryMutation.isPending}
-                  className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl shadow-lg transition-colors cursor-pointer flex items-center justify-center gap-2"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>{addCategoryMutation.isPending ? 'যোগ হচ্ছে...' : 'ক্যাটাগরি সংরক্ষণ করুন'}</span>
+                  {addCategoryMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Plus className="w-4 h-4" />
+                  )}
+                  <span>ক্যাটাগরি ডাটাবেসে সেভ করুন</span>
                 </button>
               </form>
             </div>
 
-            {/* Existing Categories Table */}
-            <div className="bg-slate-800/60 rounded-2xl border border-slate-700 overflow-hidden shadow-lg">
-              <div className="p-4 border-b border-slate-700 flex items-center justify-between">
-                <h4 className="text-xs font-bold text-slate-300">সকল ক্যাটাগরি তালিকা ({categories.length})</h4>
+            {/* RIGHT SIDE: Categories List & Reordering Controls (7 cols) */}
+            <div className="lg:col-span-7 bg-slate-800/60 rounded-2xl border border-slate-700 overflow-hidden shadow-lg space-y-4">
+              <div className="p-5 border-b border-slate-700 flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Folder className="w-4 h-4 text-amber-400" />
+                    <span>সকল ক্যাটাগরি তালিকা ({categories.length} টি)</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    তীর চিহ্নে (🔼 🔽) ক্লিক করে ক্যাটাগরির ক্রম পরিবর্তন করতে পারবেন
+                  </p>
+                </div>
+
+                {categories.length > 0 && (
+                  <button
+                    onClick={() => {
+                      if (confirm('আপনি কি নিশ্চিত যে সকল ক্যাটাগরি ডিলিট করতে চান?')) {
+                        deleteCategoryMutation.mutate('all');
+                      }
+                    }}
+                    className="text-[10px] font-bold text-rose-400 hover:text-rose-300 bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/20 cursor-pointer"
+                  >
+                    Clear All
+                  </button>
+                )}
               </div>
+
               {isCategoriesLoading ? (
-                <div className="p-12 text-center text-slate-400 text-sm">ক্যাটাগরি লোড হচ্ছে...</div>
+                <div className="p-12 text-center text-slate-400 text-xs">ক্যাটাগরি লোড হচ্ছে...</div>
               ) : categories.length === 0 ? (
-                <div className="p-12 text-center text-slate-400 text-sm">কোনো ক্যাটাগরি পাওয়া যায়নি।</div>
+                <div className="p-12 text-center text-slate-400 text-xs space-y-2">
+                  <Folder className="w-10 h-10 mx-auto text-slate-600 stroke-1" />
+                  <p>ডাটাবেসে কোনো ক্যাটাগরি নেই।</p>
+                  <p className="text-[11px] text-slate-500">বামপাশের ফর্মটি ব্যবহার করে প্রথম ক্যাটাগরি যুক্ত করুন।</p>
+                </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs text-slate-300">
-                    <thead className="bg-slate-950/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-700">
-                      <tr>
-                        <th className="py-3 px-4">ক্যাটাগরি নাম (English)</th>
-                        <th className="py-3 px-4">ক্যাটাগরি নাম (বাংলা)</th>
-                        <th className="py-3 px-4">স্লাগ (Slug)</th>
-                        <th className="py-3 px-4 text-right">অ্যাকশন</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-700/60">
-                      {categories.map((cat) => (
-                        <tr key={cat.id || cat.slug} className="hover:bg-slate-800/40 transition-colors">
-                          <td className="py-4 px-4 font-bold text-white text-sm">{cat.name}</td>
-                          <td className="py-4 px-4 font-medium text-rose-300">{cat.nameBn}</td>
-                          <td className="py-4 px-4 font-mono text-[11px] text-slate-400">/category/{cat.slug}</td>
-                          <td className="py-4 px-4 text-right">
-                            <button
-                              onClick={() => {
-                                if (confirm(`Are you sure you want to delete category "${cat.name}"?`)) {
-                                  deleteCategoryMutation.mutate(cat.id || cat._id || cat.slug);
-                                }
-                              }}
-                              className="p-1.5 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white rounded-lg transition-colors cursor-pointer"
-                              title="Delete Category"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="p-4 space-y-2.5 max-h-[600px] overflow-y-auto">
+                  {categories.map((cat, idx) => (
+                    <div
+                      key={cat.id || cat.slug || idx}
+                      className="p-3.5 bg-slate-950/60 rounded-xl border border-slate-800 flex items-center justify-between gap-3 hover:border-slate-700 transition-colors"
+                    >
+                      {/* Left: Order Badge & Names */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center justify-center font-mono font-bold text-xs shrink-0">
+                          #{cat.order || idx + 1}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-white text-xs sm:text-sm">{cat.name}</span>
+                            <span className="text-rose-400 text-xs font-semibold">({cat.nameBn})</span>
+                          </div>
+                          <span className="text-[10px] font-mono text-slate-500 block">/category/{cat.slug}</span>
+                        </div>
+                      </div>
+
+                      {/* Right: Reorder Up/Down buttons + Delete */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {/* Move Up */}
+                        <button
+                          onClick={() => handleMoveUp(idx)}
+                          disabled={idx === 0 || reorderCategoriesMutation.isPending}
+                          className="p-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-slate-300 hover:text-white rounded-lg border border-slate-700 cursor-pointer transition-colors"
+                          title="উপরে নিন (Move Up)"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Move Down */}
+                        <button
+                          onClick={() => handleMoveDown(idx)}
+                          disabled={idx === categories.length - 1 || reorderCategoriesMutation.isPending}
+                          className="p-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-30 text-slate-300 hover:text-white rounded-lg border border-slate-700 cursor-pointer transition-colors"
+                          title="নিচে নামান (Move Down)"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Delete */}
+                        <button
+                          onClick={() => {
+                            if (confirm(`"${cat.name}" ক্যাটাগরি মুছে ফেলতে চান?`)) {
+                              deleteCategoryMutation.mutate(cat.id || (cat._id as string) || cat.slug);
+                            }
+                          }}
+                          className="p-1.5 bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white rounded-lg transition-colors cursor-pointer ml-1"
+                          title="ক্যাটাগরি মুছুন"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -1563,7 +1692,10 @@ function DashboardContent() {
                     <label className="text-slate-300 font-medium">Category *</label>
                     <button
                       type="button"
-                      onClick={() => switchTab('categories')}
+                      onClick={() => {
+                        setIsProductModalOpen(false);
+                        switchTab('categories');
+                      }}
                       className="text-[10px] text-amber-400 hover:underline cursor-pointer"
                     >
                       + Manage
@@ -1574,11 +1706,15 @@ function DashboardContent() {
                     onChange={(e) => setProdCategory(e.target.value)}
                     className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500 cursor-pointer"
                   >
-                    {categories.map((cat) => (
-                      <option key={cat.id || cat.slug} value={cat.name}>
-                        {cat.name} ({cat.nameBn})
-                      </option>
-                    ))}
+                    {categories.length === 0 ? (
+                      <option value="">কোনো ক্যাটাগরি নেই (প্রথমে ক্যাটাগরি তৈরি করুন)</option>
+                    ) : (
+                      categories.map((cat) => (
+                        <option key={cat.id || cat.slug} value={cat.name}>
+                          #{cat.order || 1} {cat.name} ({cat.nameBn})
+                        </option>
+                      ))
+                    )}
                   </select>
                 </div>
 
