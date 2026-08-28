@@ -29,7 +29,7 @@ export function FloatingWhatsApp({ productName = 'জুয়েলারি ব�
       href={whatsappUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-6 right-6 z-50 w-13 h-13 bg-[#25D366] hover:bg-[#20ba59] active:scale-95 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:shadow-xl cursor-pointer"
+      className="fixed bottom-6 right-6 z-30 w-13 h-13 bg-[#25D366] hover:bg-[#20ba59] active:scale-95 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:shadow-xl cursor-pointer"
       aria-label="Chat on WhatsApp"
       title="WhatsApp Support"
     >

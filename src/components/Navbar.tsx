@@ -179,14 +179,14 @@ export function Navbar() {
       {/* Slide-over Backdrop Overlay */}
       {isDrawerOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 animate-in fade-in duration-200"
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-[60] animate-in fade-in duration-200"
           onClick={() => setIsDrawerOpen(false)}
         />
       )}
 
       {/* Right-Side Slide-Over Menu Drawer */}
       <aside
-        className={`fixed top-0 bottom-0 right-0 w-80 sm:w-90 bg-white border-l border-slate-100 z-50 flex flex-col shadow-2xl transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 bottom-0 right-0 w-80 sm:w-90 bg-white border-l border-slate-100 z-[70] flex flex-col shadow-2xl transition-transform duration-300 ease-in-out ${
           isDrawerOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -417,29 +417,9 @@ export function Navbar() {
           )}
         </nav>
 
-        {/* Drawer Bottom: Contact Support & Logout */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50/80 space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <a
-              href="https://wa.me/8801700000000"
-              target="_blank"
-              rel="noreferrer"
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold border border-emerald-200/60 transition-all"
-            >
-              <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-              <span>WhatsApp</span>
-            </a>
-
-            <a
-              href="tel:01700000000"
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-200 transition-all"
-            >
-              <Phone className="w-3.5 h-3.5 text-slate-500" />
-              <span>Hotline</span>
-            </a>
-          </div>
-
-          {user && (
+        {/* Drawer Bottom: Logout (if user logged in) */}
+        {user && (
+          <div className="p-4 border-t border-slate-100 bg-slate-50/80">
             <button
               type="button"
               onClick={() => {
@@ -451,8 +431,8 @@ export function Navbar() {
               <LogOut className="w-3.5 h-3.5" />
               <span>Log Out</span>
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </aside>
     </>
   );

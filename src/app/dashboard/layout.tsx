@@ -168,14 +168,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Slide-over Backdrop Overlay */}
       {isDrawerOpen && (
         <div
-          className="fixed inset-0 bg-black/75 backdrop-blur-xs z-40 animate-in fade-in duration-200"
+          className="fixed inset-0 bg-black/75 backdrop-blur-xs z-[60] animate-in fade-in duration-200"
           onClick={() => setIsDrawerOpen(false)}
         />
       )}
 
       {/* Right-Side Slide-Over Navigation Drawer */}
       <aside
-        className={`fixed top-0 bottom-0 right-0 w-80 sm:w-88 bg-[#211C28] border-l border-[#2E2733] z-50 flex flex-col shadow-2xl transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 bottom-0 right-0 w-80 sm:w-88 bg-[#211C28] border-l border-[#2E2733] z-[70] flex flex-col shadow-2xl transition-transform duration-300 ease-in-out ${
           isDrawerOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
