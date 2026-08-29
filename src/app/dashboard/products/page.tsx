@@ -803,7 +803,8 @@ export default function ProductsPage() {
     const processedPackages: ComboOption[] = prodPackages.map((pkg, idx) => {
       const qty = Number(pkg.quantity) || (idx === 0 ? 3 : idx === 1 ? 2 : 1);
       const dealPrice = Number(pkg.price) > 0 ? Number(pkg.price) : parsedBasePrice * qty;
-      const origPrice = Number(pkg.originalPrice) > 0 ? Number(pkg.originalPrice) : parsedOrigPrice * qty;
+      const origPrice = parsedOrigPrice * qty;
+      const percentOff = origPrice > dealPrice ? Math.round(((origPrice - dealPrice) / origPrice) * 100) : 0;
       return {
         id: pkg.id || `pkg-${qty}-${idx}`,
         title: pkg.title?.trim() || `${qty} Piece${qty > 1 ? 's' : ''}`,
@@ -813,7 +814,7 @@ export default function ProductsPage() {
         originalPrice: origPrice,
         badge: pkg.badge || '',
         isPopular: pkg.isPopular !== undefined ? pkg.isPopular : !!pkg.badge,
-        savings: origPrice > dealPrice ? `Save ৳${origPrice - dealPrice}` : '',
+        savings: origPrice > dealPrice ? `Save ৳${origPrice - dealPrice} - ${percentOff}% OFF` : '',
       };
     });
 
@@ -1753,7 +1754,7 @@ export default function ProductsPage() {
                           key={c.id || idx}
                           className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-[#1C1821] border border-[#2E2733] items-center text-xs"
                         >
-                          <div className="sm:col-span-3">
+                          <div className="sm:col-span-4">
                             <label className="text-[10px] text-[#8A7D97] block">
                               Package Title <span className="text-[#C4587A]">*</span>
                             </label>
@@ -1790,24 +1791,7 @@ export default function ProductsPage() {
                             />
                           </div>
 
-                          <div className="sm:col-span-2">
-                            <label className="text-[10px] text-[#8A7D97] block">Original (৳)</label>
-                            <input
-                              type="number"
-                              min="0"
-                              value={c.originalPrice || ''}
-                              placeholder="e.g. 2500"
-                              onChange={(e) => {
-                                const val = Number(e.target.value);
-                                setProdPackages((prev) =>
-                                  prev.map((item, i) => (i === idx ? { ...item, originalPrice: val } : item))
-                                );
-                              }}
-                              className="w-full px-2 py-1 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs font-mono"
-                            />
-                          </div>
-
-                          <div className="sm:col-span-2">
+                          <div className="sm:col-span-3">
                             <label className="text-[10px] text-[#8A7D97] block">
                               Deal Price (৳) <span className="text-[#C4587A]">*</span>
                             </label>
