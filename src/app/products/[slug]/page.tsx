@@ -503,87 +503,87 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Thumbnail / Variant Strip Under Main Image */}
-            {((galleryImages && galleryImages.length > 1) || (product.variants && product.variants.length > 0)) && (
-              <div className="flex items-center gap-3 overflow-x-auto pb-2 pt-1">
-                {/* Variant-specific thumbnails if variants exist */}
-                {product.variants && product.variants.length > 0 ? (
-                  product.variants.map((v, idx) => {
-                    const isSelected = selectedVariant?.id === v.id;
-                    const variantImg = v.image || product.images?.[0] || '/images/products/hello-kitty-pair.png';
-                    const isOutOfStock =
-                      v.inStock === false || (v.stockCount !== undefined && Number(v.stockCount) <= 0);
+            <div className="flex items-center gap-2.5 sm:gap-3 overflow-x-auto pb-2 pt-1">
+              {/* 1. Main / Primary Product Image (Always First) */}
+              {product.images && product.images.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedImage(product.images[0])}
+                  className={`relative w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-slate-50 border-2 transition-all shrink-0 cursor-pointer group flex flex-col ${
+                    selectedImage === product.images[0] && !selectedVariant
+                      ? 'border-orange-500 ring-2 ring-orange-500/25 shadow-md scale-102'
+                      : selectedImage === product.images[0]
+                      ? 'border-orange-500 ring-1 ring-orange-500/20 opacity-100'
+                      : 'border-slate-200 hover:border-slate-400 opacity-75 hover:opacity-100'
+                  }`}
+                  title="Main Product Photo"
+                >
+                  <Image src={product.images[0]} alt={product.name} fill className="object-cover" />
+                  <div className="absolute bottom-0 inset-x-0 bg-slate-950/75 backdrop-blur-2xs text-white text-[9px] font-bold text-center py-0.5 truncate px-1">
+                    Main
+                  </div>
+                </button>
+              )}
 
-                    return (
-                      <button
-                        key={v.id || idx}
-                        type="button"
-                        onClick={() => {
-                          handleVariantSelect(v);
-                        }}
-                        className={`relative w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-slate-50 border-2 transition-all shrink-0 cursor-pointer group flex flex-col ${
-                          isSelected
-                            ? 'border-orange-500 ring-2 ring-orange-500/25 shadow-md scale-102'
-                            : 'border-slate-200 hover:border-slate-400 opacity-75 hover:opacity-100'
-                        } ${isOutOfStock ? 'opacity-40 grayscale' : ''}`}
-                      >
-                        <Image src={variantImg} alt={v.name} fill className="object-cover" />
-                        <div className="absolute bottom-0 inset-x-0 bg-slate-950/75 backdrop-blur-2xs text-white text-[9px] font-bold text-center py-0.5 truncate px-1 flex items-center justify-center gap-1">
-                          <span
-                            className="w-1.5 h-1.5 rounded-full shrink-0"
-                            style={{ backgroundColor: v.colorHex || '#fff' }}
-                          />
-                          <span className="truncate">{v.name}</span>
-                        </div>
-                      </button>
-                    );
-                  })
-                ) : (
-                  galleryImages.map((img, idx) => {
-                    const isSelected = selectedImage === img;
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => handleThumbnailClick(img)}
-                        className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-slate-50 border-2 transition-all shrink-0 cursor-pointer ${
-                          isSelected
-                            ? 'border-orange-500 ring-2 ring-orange-500/25 shadow-sm scale-102'
-                            : 'border-slate-200 hover:border-slate-400 opacity-75 hover:opacity-100'
-                        }`}
-                      >
-                        <Image src={img} alt={`Photo ${idx + 1}`} fill className="object-cover" />
-                      </button>
-                    );
-                  })
-                )}
+              {/* 2. Color Variant Specific Photos */}
+              {product.variants &&
+                product.variants.map((v, idx) => {
+                  const isSelected = selectedVariant?.id === v.id;
+                  const variantImg = v.image || product.images?.[0] || '/images/products/hello-kitty-pair.png';
+                  const isOutOfStock =
+                    v.inStock === false || (v.stockCount !== undefined && Number(v.stockCount) <= 0);
 
-                {/* Additional gallery photos that are not tied to variants */}
-                {product.images && product.images.length > 1 && (
-                  product.images.map((img, idx) => {
-                    const isAlreadyInVariants = product.variants?.some((v) => v.image === img);
-                    if (isAlreadyInVariants && product.variants.length > 0) return null;
-                    const isSelected = selectedImage === img;
-                    return (
-                      <button
-                        key={`gal-${idx}`}
-                        type="button"
-                        onClick={() => setSelectedImage(img)}
-                        className={`relative w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-slate-50 border-2 transition-all shrink-0 cursor-pointer ${
-                          isSelected
-                            ? 'border-orange-500 ring-2 ring-orange-500/25 shadow-sm scale-102'
-                            : 'border-slate-200 hover:border-slate-400 opacity-75 hover:opacity-100'
-                        }`}
-                      >
-                        <Image src={img} alt={`Gallery ${idx + 1}`} fill className="object-cover" />
-                        <div className="absolute bottom-0 inset-x-0 bg-slate-950/60 text-white text-[8px] font-semibold text-center py-0.5">
-                          Gallery
-                        </div>
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-            )}
+                  return (
+                    <button
+                      key={v.id || idx}
+                      type="button"
+                      onClick={() => handleVariantSelect(v)}
+                      className={`relative w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-slate-50 border-2 transition-all shrink-0 cursor-pointer group flex flex-col ${
+                        isSelected
+                          ? 'border-orange-500 ring-2 ring-orange-500/25 shadow-md scale-102'
+                          : 'border-slate-200 hover:border-slate-400 opacity-75 hover:opacity-100'
+                      } ${isOutOfStock ? 'opacity-40 grayscale' : ''}`}
+                      title={v.name}
+                    >
+                      <Image src={variantImg} alt={v.name} fill className="object-cover" />
+                      <div className="absolute bottom-0 inset-x-0 bg-slate-950/75 backdrop-blur-2xs text-white text-[9px] font-bold text-center py-0.5 truncate px-1 flex items-center justify-center gap-1">
+                        <span
+                          className="w-1.5 h-1.5 rounded-full shrink-0"
+                          style={{ backgroundColor: v.colorHex || '#fff' }}
+                        />
+                        <span className="truncate">{v.name}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+
+              {/* 3. Additional Gallery Photos (Index 1+) */}
+              {product.images &&
+                product.images.length > 1 &&
+                product.images.slice(1).map((img, idx) => {
+                  const isAlreadyInVariants = product.variants?.some((v) => v.image === img);
+                  if (isAlreadyInVariants && product.variants && product.variants.length > 0) return null;
+                  const isSelected = selectedImage === img;
+                  return (
+                    <button
+                      key={`gal-${idx}`}
+                      type="button"
+                      onClick={() => setSelectedImage(img)}
+                      className={`relative w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-slate-50 border-2 transition-all shrink-0 cursor-pointer ${
+                        isSelected
+                          ? 'border-orange-500 ring-2 ring-orange-500/25 shadow-sm scale-102'
+                          : 'border-slate-200 hover:border-slate-400 opacity-75 hover:opacity-100'
+                      }`}
+                      title={`Gallery Photo ${idx + 2}`}
+                    >
+                      <Image src={img} alt={`Gallery ${idx + 2}`} fill className="object-cover" />
+                      <div className="absolute bottom-0 inset-x-0 bg-slate-950/60 text-white text-[8px] font-semibold text-center py-0.5">
+                        Gallery {idx + 2}
+                      </div>
+                    </button>
+                  );
+                })}
+            </div>
           </div>
 
           {/* Right Column: Details, Variants & Direct Actions */}
