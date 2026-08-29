@@ -379,7 +379,7 @@ export default function ProductsPage() {
   // Save Mutation
   const saveProductMutation = useMutation({
     mutationFn: async (payload: Partial<Product>) => {
-      const res = await axios.post('/api/products', payload);
+      const res = await axios.post('/api/products', { product: payload });
       return res.data;
     },
     onSuccess: () => {

@@ -63,12 +63,12 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Check if it's a full product save request
-    if (body.product) {
-      const productData = body.product as Product;
+    // Check if it's a full product save request (wrapped in { product } or direct object)
+    const productData = (body.product || (body.name && (body.slug || body.basePrice) ? body : null)) as Product | null;
+    if (productData) {
       if (!productData.name || !productData.slug || !productData.basePrice) {
         return NextResponse.json(
-          { success: false, message: 'Product name, slug, and price are required.' },
+          { success: false, message: 'Product name, slug, and base price are required.' },
           { status: 400 }
         );
       }
