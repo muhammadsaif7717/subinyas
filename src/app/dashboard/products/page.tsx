@@ -45,10 +45,20 @@ export default function ProductsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('general');
+  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set(['general']));
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadingVariantIdx, setUploadingVariantIdx] = useState<number | null>(null);
+
+  const switchTab = (tab: TabType) => {
+    setActiveTab(tab);
+    setVisitedTabs((prev) => {
+      const next = new Set(prev);
+      next.add(tab);
+      return next;
+    });
+  };
 
   // Form Fields Matching Clean Standardized Interface
   const [prodName, setProdName] = useState('');
@@ -137,20 +147,21 @@ export default function ProductsPage() {
   const openNewProductModal = () => {
     setEditingSlug(null);
     setActiveTab('general');
+    setVisitedTabs(new Set(['general']));
     setFormError('');
     setFormSuccess('');
     setProdName('');
     setProdSlug('');
     setProdCategory(categories[0]?.name || 'Organizers');
-    setProdSubtitle('Keep your jewelry and cosmetics organized — the ultimate travel companion!');
-    setProdDescription('High quality waterproof PU leather exterior with soft velvet interior lining to protect your valuables from scratches.');
+    setProdSubtitle('');
+    setProdDescription('');
     setProdBasePrice(499);
     setProdOriginalPrice(800);
     setProdIsFeatured(true);
     setProdIsHeroSlider(false);
     setProdHeroOrder(1);
     setProdIsActive(true);
-    setProdImages(['/images/products/hello-kitty-pair.png', '/images/products/hello-kitty-open.png']);
+    setProdImages(['/images/products/hello-kitty-pair.png']);
     setProdVariants([
       {
         id: 'var-black',
@@ -178,7 +189,7 @@ export default function ProductsPage() {
     setProdPackages([
       {
         id: 'pkg-2',
-        title: '2 Pieces (Best Deal)',
+        title: '2 Pieces',
         subtitle: '1 for you + 1 for your best friend',
         quantity: 2,
         price: 899,
@@ -189,7 +200,7 @@ export default function ProductsPage() {
       },
       {
         id: 'pkg-1',
-        title: '1 Piece (Single Pack)',
+        title: '1 Piece',
         subtitle: 'Standard single pack',
         quantity: 1,
         price: 499,
@@ -200,10 +211,7 @@ export default function ProductsPage() {
       },
     ]);
     setProdFeatures([
-      { icon: 'Sparkles', title: 'Compact & Portable', description: 'Palm-sized dimensions, easily fits into your bag.' },
-      { icon: 'ShieldCheck', title: 'Scratch-Proof Soft Velvet', description: 'Ultra-soft interior velvet protects your jewelry from scratches.' },
-      { icon: 'Layers', title: 'Multi-Compartment Organizer', description: 'Dedicated ring slots, necklace hooks, and removable dividers.' },
-      { icon: 'Gift', title: 'Luxury Gift Packaging', description: 'Premium aesthetic finish making it an ideal gift for any occasion.' },
+      { icon: 'Sparkles', title: 'Premium Quality', description: 'Built with long lasting materials.' },
     ]);
     setProdSpecifications([
       { key: 'Material', value: 'Waterproof PU Leather + Soft Velvet' },
@@ -218,6 +226,7 @@ export default function ProductsPage() {
   const openEditModal = (p: Product) => {
     setEditingSlug(p.slug);
     setActiveTab('general');
+    setVisitedTabs(new Set(['general', 'media', 'variants', 'combos', 'features']));
     setFormError('');
     setFormSuccess('');
     setProdName(p.name || '');
@@ -252,7 +261,7 @@ export default function ProductsPage() {
       existingPkgs || [
         {
           id: 'pkg-2',
-          title: '2 Pieces (Best Deal)',
+          title: '2 Pieces',
           subtitle: 'Best deal combo',
           quantity: 2,
           price: (p.basePrice || 499) * 2 - 100,
@@ -263,7 +272,7 @@ export default function ProductsPage() {
         },
         {
           id: 'pkg-1',
-          title: '1 Piece (Single Pack)',
+          title: '1 Piece',
           subtitle: 'Standard single pack',
           quantity: 1,
           price: p.basePrice || 499,
@@ -280,7 +289,12 @@ export default function ProductsPage() {
     );
     const existingSpecs = (p.specifications && p.specifications.length > 0) ? p.specifications : null;
     setProdSpecifications(
-      existingSpecs || [{ key: 'Material', value: 'Premium PU Leather' }]
+      existingSpecs || [
+        { key: 'Material', value: 'Waterproof PU Leather + Soft Velvet' },
+        { key: 'Size', value: '10 cm x 10 cm x 5 cm' },
+        { key: 'Weight', value: '150 grams (Ultra Lightweight)' },
+        { key: 'Lock System', value: 'Smooth Metal Zipper' },
+      ]
     );
     setIsModalOpen(true);
   };
@@ -340,12 +354,32 @@ export default function ProductsPage() {
     prodPackages.length > 0 &&
     prodPackages.every((c) => c.title.trim().length > 0 && Number(c.price) > 0);
 
-  const isFormValid = isGeneralValid && isMediaValid && isVariantsValid && isCombosValid;
+  const isFeaturesValid =
+    prodFeatures.length > 0 &&
+    prodFeatures.every((f) => f.title.trim().length > 0) &&
+    prodSpecifications.length > 0 &&
+    prodSpecifications.every((s) => s.key.trim().length > 0 && s.value.trim().length > 0);
+
+  const isFormValid = isGeneralValid && isMediaValid && isVariantsValid && isCombosValid && isFeaturesValid;
+
+  const allTabsVisited =
+    visitedTabs.has('general') &&
+    visitedTabs.has('media') &&
+    visitedTabs.has('variants') &&
+    visitedTabs.has('combos') &&
+    visitedTabs.has('features');
+
+  const isSaveEnabled = isFormValid && allTabsVisited;
 
   // Handle Form Submit
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
+
+    if (!allTabsVisited) {
+      setFormError('Please open and review all 5 tabs before saving the product.');
+      return;
+    }
 
     if (!isFormValid) {
       setFormError('Please fill out all required fields across the tabs before saving.');
@@ -662,11 +696,11 @@ export default function ProductsPage() {
               </button>
             </div>
 
-            {/* Modal Navigation Tabs with Validation Badges */}
+            {/* Modal Navigation Tabs */}
             <div className="flex items-center gap-1.5 border-b border-[#2E2733] pb-2 shrink-0 overflow-x-auto text-xs">
               <button
                 type="button"
-                onClick={() => setActiveTab('general')}
+                onClick={() => switchTab('general')}
                 className={`px-3.5 py-2 rounded-xl font-semibold transition-all cursor-pointer flex items-center gap-2 ${
                   activeTab === 'general'
                     ? 'bg-[#C4587A] text-white shadow-md'
@@ -674,18 +708,12 @@ export default function ProductsPage() {
                 }`}
               >
                 <Info className="w-3.5 h-3.5" />
-                <span>1. General & Pricing</span>
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    isGeneralValid ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'
-                  }`}
-                  title={isGeneralValid ? 'Completed' : 'Required fields incomplete'}
-                />
+                <span>General & Pricing</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => setActiveTab('media')}
+                onClick={() => switchTab('media')}
                 className={`px-3.5 py-2 rounded-xl font-semibold transition-all cursor-pointer flex items-center gap-2 ${
                   activeTab === 'media'
                     ? 'bg-[#C4587A] text-white shadow-md'
@@ -693,18 +721,12 @@ export default function ProductsPage() {
                 }`}
               >
                 <Camera className="w-3.5 h-3.5" />
-                <span>2. Gallery Photos ({prodImages.length})</span>
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    isMediaValid ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'
-                  }`}
-                  title={isMediaValid ? 'Completed' : 'At least 1 image required'}
-                />
+                <span>Gallery Photos</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => setActiveTab('variants')}
+                onClick={() => switchTab('variants')}
                 className={`px-3.5 py-2 rounded-xl font-semibold transition-all cursor-pointer flex items-center gap-2 ${
                   activeTab === 'variants'
                     ? 'bg-[#C4587A] text-white shadow-md'
@@ -712,18 +734,12 @@ export default function ProductsPage() {
                 }`}
               >
                 <Palette className="w-3.5 h-3.5" />
-                <span>3. Variants & Stock ({prodVariants.length})</span>
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    isVariantsValid ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'
-                  }`}
-                  title={isVariantsValid ? 'Completed' : 'At least 1 valid variant required'}
-                />
+                <span>Variants & Stock</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => setActiveTab('combos')}
+                onClick={() => switchTab('combos')}
                 className={`px-3.5 py-2 rounded-xl font-semibold transition-all cursor-pointer flex items-center gap-2 ${
                   activeTab === 'combos'
                     ? 'bg-[#C4587A] text-white shadow-md'
@@ -731,18 +747,12 @@ export default function ProductsPage() {
                 }`}
               >
                 <Percent className="w-3.5 h-3.5" />
-                <span>4. Packages ({prodPackages.length})</span>
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    isCombosValid ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'
-                  }`}
-                  title={isCombosValid ? 'Completed' : 'At least 1 valid package required'}
-                />
+                <span>Packages</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => setActiveTab('features')}
+                onClick={() => switchTab('features')}
                 className={`px-3.5 py-2 rounded-xl font-semibold transition-all cursor-pointer flex items-center gap-2 ${
                   activeTab === 'features'
                     ? 'bg-[#C4587A] text-white shadow-md'
@@ -750,8 +760,7 @@ export default function ProductsPage() {
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>5. Features & Specs</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                <span>Features & Specs</span>
               </button>
             </div>
 
@@ -1499,7 +1508,7 @@ export default function ProductsPage() {
                       type="button"
                       onClick={() => {
                         const idx = TABS.indexOf(activeTab);
-                        if (idx > 0) setActiveTab(TABS[idx - 1]);
+                        if (idx > 0) switchTab(TABS[idx - 1]);
                       }}
                       className="px-3.5 py-2 rounded-xl bg-[#191520] hover:bg-[#2A2332] text-[#8A7D97] hover:text-white text-xs font-semibold border border-[#2E2733] cursor-pointer"
                     >
@@ -1511,7 +1520,7 @@ export default function ProductsPage() {
                       type="button"
                       onClick={() => {
                         const idx = TABS.indexOf(activeTab);
-                        if (idx < TABS.length - 1) setActiveTab(TABS[idx + 1]);
+                        if (idx < TABS.length - 1) switchTab(TABS[idx + 1]);
                       }}
                       className="px-3.5 py-2 rounded-xl bg-[#2E2733] hover:bg-[#3E3447] text-white text-xs font-semibold cursor-pointer"
                     >
@@ -1521,10 +1530,14 @@ export default function ProductsPage() {
                 </div>
 
                 <div className="flex items-center justify-end gap-3">
-                  {!isFormValid && (
+                  {!isSaveEnabled && (
                     <div className="flex items-center gap-1.5 text-[11px] text-amber-400/90 font-medium">
                       <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                      <span>Fill all required fields (*)</span>
+                      <span>
+                        {!allTabsVisited
+                          ? 'Open & review all 5 tabs to enable save'
+                          : 'Fill all required fields (*)'}
+                      </span>
                     </div>
                   )}
 
@@ -1538,14 +1551,16 @@ export default function ProductsPage() {
 
                   <button
                     type="submit"
-                    disabled={!isFormValid || saveProductMutation.isPending}
+                    disabled={!isSaveEnabled || saveProductMutation.isPending}
                     className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-                      isFormValid && !saveProductMutation.isPending
+                      isSaveEnabled && !saveProductMutation.isPending
                         ? 'bg-[#C4587A] hover:bg-[#B24A6B] text-white shadow-lg shadow-[#C4587A]/25 cursor-pointer active:scale-98'
                         : 'bg-[#2E2733] text-[#6E6278] border border-[#3E3447] cursor-not-allowed opacity-60'
                     }`}
                     title={
-                      !isFormValid
+                      !allTabsVisited
+                        ? 'Please open and review all 5 tabs to enable saving'
+                        : !isFormValid
                         ? 'Fill in all required fields across the tabs to enable saving'
                         : 'Save and publish product'
                     }
