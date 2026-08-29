@@ -31,6 +31,7 @@ import {
   Maximize2,
   RotateCcw,
   X,
+  Palette,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useCart } from '@/lib/cart-context';
@@ -74,6 +75,7 @@ export default function ProductDetailPage() {
   const [selectedImage, setSelectedImage] = useState<string>('');
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [selectedCombo, setSelectedCombo] = useState<ComboOption | null>(null);
+  const [pieceVariants, setPieceVariants] = useState<string[]>([]);
 
   // Interactive In-Place Zoom & Drag Panning State
   const [zoomLevel, setZoomLevel] = useState<number>(1);
@@ -172,9 +174,8 @@ export default function ProductDetailPage() {
 
   const handleLightboxMouseMove = (e: React.MouseEvent) => {
     if (!isLightboxDragging || lightboxZoom <= 1) return;
-    const maxPan = (lightboxZoom - 1) * 260;
-    const newX = Math.max(-maxPan, Math.min(maxPan, e.clientX - lightboxDragStart.x));
-    const newY = Math.max(-maxPan, Math.min(maxPan, e.clientY - lightboxDragStart.y));
+    const newX = e.clientX - lightboxDragStart.x;
+    const newY = e.clientY - lightboxDragStart.y;
     setLightboxPan({ x: newX, y: newY });
   };
 
@@ -191,7 +192,11 @@ export default function ProductDetailPage() {
 
       const pkgs = product.packages || product.combos;
       if (pkgs && pkgs.length > 0) {
-        setSelectedCombo(pkgs[0]);
+        const defaultPkg = pkgs[0];
+        setSelectedCombo(defaultPkg);
+
+        const defaultColor = product.variants?.[0]?.name || 'Standard';
+        setPieceVariants(Array(defaultPkg.quantity || 1).fill(defaultColor));
       }
       trackViewContent(product.name, product.category, product.basePrice);
     }
@@ -271,6 +276,25 @@ export default function ProductDetailPage() {
     setSelectedVariant(variant);
     const targetImage = variant.image || product?.images?.[0] || '/images/products/hello-kitty-pair.png';
     setSelectedImage(targetImage);
+
+    // If single item, update pieceVariants
+    if (!selectedCombo || selectedCombo.quantity <= 1) {
+      setPieceVariants([variant.name]);
+    }
+  };
+
+  const handleComboSelect = (combo: ComboOption) => {
+    setSelectedCombo(combo);
+    const targetCount = combo.quantity || 1;
+    const defaultColor = selectedVariant?.name || product?.variants?.[0]?.name || 'Standard';
+
+    setPieceVariants((prev) => {
+      const next = [...prev];
+      while (next.length < targetCount) {
+        next.push(defaultColor);
+      }
+      return next.slice(0, targetCount);
+    });
   };
 
   const handleThumbnailClick = (img: string) => {
@@ -285,13 +309,19 @@ export default function ProductDetailPage() {
     if (isVariantOutOfStock) return;
 
     const pkgs = product.packages || product.combos;
+    const targetCount = selectedCombo?.quantity || 1;
+    const finalVariants =
+      targetCount > 1 && pieceVariants.length >= targetCount
+        ? pieceVariants.slice(0, targetCount)
+        : [selectedVariant?.name || product.variants?.[0]?.name || 'Standard'];
+
     const added = addToCart({
       productSlug: product.slug,
       productName: product.name,
       image: selectedImage || product.images[0],
       comboId: selectedCombo?.id || pkgs?.[0]?.id || 'pkg-1',
       comboTitle: selectedCombo?.title || pkgs?.[0]?.title || 'Single Pack',
-      selectedVariants: selectedVariant ? [selectedVariant.name || 'Standard'] : ['Standard'],
+      selectedVariants: finalVariants,
       price: currentPrice,
       quantity,
     });
@@ -307,13 +337,19 @@ export default function ProductDetailPage() {
     if (isVariantOutOfStock) return;
 
     const pkgs = product.packages || product.combos;
+    const targetCount = selectedCombo?.quantity || 1;
+    const finalVariants =
+      targetCount > 1 && pieceVariants.length >= targetCount
+        ? pieceVariants.slice(0, targetCount)
+        : [selectedVariant?.name || product.variants?.[0]?.name || 'Standard'];
+
     const added = addToCart({
       productSlug: product.slug,
       productName: product.name,
       image: selectedImage || product.images[0],
       comboId: selectedCombo?.id || pkgs?.[0]?.id || 'pkg-1',
       comboTitle: selectedCombo?.title || pkgs?.[0]?.title || 'Single Pack',
-      selectedVariants: selectedVariant ? [selectedVariant.name || 'Standard'] : ['Standard'],
+      selectedVariants: finalVariants,
       price: currentPrice,
       quantity,
     });
@@ -623,90 +659,21 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Variant Selection */}
-            {product.variants && product.variants.length > 0 && (
-              <div className="space-y-3">
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  Select Variant
-                </label>
-
-                <div className="flex flex-wrap gap-2.5">
-                  {sortedVariants.map((v) => {
-                    const isOutOfStock =
-                      v.inStock === false || (v.stockCount !== undefined && Number(v.stockCount) <= 0);
-                    const isSelected = selectedVariant?.id === v.id;
-
-                    return (
-                      <button
-                        key={v.id}
-                        type="button"
-                        disabled={isOutOfStock}
-                        onClick={() => {
-                          if (!isOutOfStock) {
-                            handleVariantSelect(v);
-                          }
-                        }}
-                        className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium border transition-all ${
-                          isOutOfStock
-                            ? 'border-slate-200 bg-slate-50 text-slate-400 opacity-50 cursor-not-allowed'
-                            : isSelected
-                            ? 'border-orange-500 bg-orange-50/70 text-slate-900 font-semibold ring-1.5 ring-orange-500 shadow-xs cursor-pointer'
-                            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:text-slate-900 cursor-pointer'
-                        }`}
-                      >
-                        {v.image ? (
-                          <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
-                            <Image src={v.image} alt={v.name} fill className="object-cover" />
-                          </div>
-                        ) : (
-                          <span
-                            className="w-4 h-4 rounded-full border border-slate-300 shadow-2xs shrink-0"
-                            style={{ backgroundColor: v.colorHex || '#ddd' }}
-                          />
-                        )}
-
-                        <div className="flex flex-col items-start text-left">
-                          <div className="flex items-center gap-1.5">
-                            {v.image && (
-                              <span
-                                className="w-2.5 h-2.5 rounded-full border border-slate-300 shadow-2xs shrink-0"
-                                style={{ backgroundColor: v.colorHex || '#ddd' }}
-                              />
-                            )}
-                            <span className="font-semibold">{v.name}</span>
-                          </div>
-                          {v.stockCount !== undefined && Number(v.stockCount) > 0 && Number(v.stockCount) <= 15 && (
-                            <span className="text-[10px] text-amber-600 font-medium">{v.stockCount} in stock</span>
-                          )}
-                        </div>
-
-                        {isOutOfStock && (
-                          <span className="text-[10px] text-slate-400 font-normal">
-                            (Sold out)
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
             {/* Combo / Package Deals */}
             {((product.packages && product.packages.length > 1) || (product.combos && product.combos.length > 1)) && (
               <div className="space-y-2.5">
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
                   Select Package Deal:
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   {(product.packages || product.combos || []).map((combo) => (
                     <button
                       key={combo.id}
                       type="button"
-                      onClick={() => setSelectedCombo(combo)}
-                      className={`p-3 rounded-2xl text-left border transition-all cursor-pointer ${
+                      onClick={() => handleComboSelect(combo)}
+                      className={`p-3 rounded-2xl text-left border transition-all cursor-pointer relative ${
                         selectedCombo?.id === combo.id
-                          ? 'border-orange-500 bg-orange-50/50 ring-1 ring-orange-500'
+                          ? 'border-orange-500 bg-orange-50/60 ring-2 ring-orange-500/20 shadow-xs'
                           : 'border-slate-200 bg-white hover:border-slate-300'
                       }`}
                     >
@@ -730,6 +697,168 @@ export default function ProductDetailPage() {
                   ))}
                 </div>
               </div>
+            )}
+
+            {/* COLOR VARIANT SELECTION */}
+            {product.variants && product.variants.length > 0 && (
+              <>
+                {/* CASE A: Multi-Piece Package Deal (e.g. 2 Pieces or 3 Pieces) */}
+                {selectedCombo && selectedCombo.quantity > 1 ? (
+                  <div className="space-y-3 p-4 rounded-2xl bg-slate-50 border border-slate-200/80 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <Palette className="w-3.5 h-3.5 text-orange-500" />
+                        <span>Choose Colors for your {selectedCombo.quantity} Pieces</span>
+                      </label>
+                      <span className="text-[10px] font-bold text-orange-600 bg-orange-100/70 px-2 py-0.5 rounded-md">
+                        Mix & Match
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {Array.from({ length: selectedCombo.quantity }).map((_, pieceIdx) => (
+                        <div
+                          key={pieceIdx}
+                          className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-white border border-slate-200/70 shadow-2xs"
+                        >
+                          <span className="text-xs font-bold text-slate-700 shrink-0 flex items-center gap-1.5">
+                            <span className="w-5 h-5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-extrabold flex items-center justify-center">
+                              {pieceIdx + 1}
+                            </span>
+                            <span>Piece #{pieceIdx + 1}:</span>
+                          </span>
+
+                          <div className="flex flex-wrap gap-1.5">
+                            {sortedVariants.map((v) => {
+                              const isPieceSelected = pieceVariants[pieceIdx] === v.name;
+                              const isOutOfStock =
+                                v.inStock === false ||
+                                (v.stockCount !== undefined && Number(v.stockCount) <= 0);
+
+                              return (
+                                <button
+                                  key={v.id}
+                                  type="button"
+                                  disabled={isOutOfStock}
+                                  onClick={() => {
+                                    const updated = [...pieceVariants];
+                                    updated[pieceIdx] = v.name;
+                                    setPieceVariants(updated);
+                                    handleVariantSelect(v);
+                                  }}
+                                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
+                                    isOutOfStock
+                                      ? 'border-slate-200 bg-slate-50 text-slate-400 opacity-40 cursor-not-allowed'
+                                      : isPieceSelected
+                                      ? 'border-orange-500 bg-orange-50 text-slate-900 font-bold ring-1.5 ring-orange-500 shadow-2xs'
+                                      : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                                  }`}
+                                >
+                                  <span
+                                    className="w-2.5 h-2.5 rounded-full border border-slate-300 shadow-2xs shrink-0"
+                                    style={{ backgroundColor: v.colorHex || '#ddd' }}
+                                  />
+                                  <span>{v.name}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Quick Helper: Same Color for All Pieces */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px] text-slate-500 border-t border-slate-200/50">
+                      <span className="text-slate-400 text-[10px]">Quick set all:</span>
+                      {sortedVariants.map((v) => (
+                        <button
+                          key={`all-${v.id}`}
+                          type="button"
+                          onClick={() => {
+                            setPieceVariants(Array(selectedCombo.quantity).fill(v.name));
+                            handleVariantSelect(v);
+                          }}
+                          className="px-2 py-0.5 rounded-md bg-slate-200/70 hover:bg-slate-300 text-slate-700 text-[10px] font-semibold transition-colors cursor-pointer"
+                        >
+                          All {v.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  /* CASE B: Single Item Variant Selector */
+                  <div className="space-y-3">
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      Select Variant:
+                    </label>
+
+                    <div className="flex flex-wrap gap-2.5">
+                      {sortedVariants.map((v) => {
+                        const isOutOfStock =
+                          v.inStock === false ||
+                          (v.stockCount !== undefined && Number(v.stockCount) <= 0);
+                        const isSelected = selectedVariant?.id === v.id;
+
+                        return (
+                          <button
+                            key={v.id}
+                            type="button"
+                            disabled={isOutOfStock}
+                            onClick={() => {
+                              if (!isOutOfStock) {
+                                handleVariantSelect(v);
+                              }
+                            }}
+                            className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium border transition-all ${
+                              isOutOfStock
+                                ? 'border-slate-200 bg-slate-50 text-slate-400 opacity-50 cursor-not-allowed'
+                                : isSelected
+                                ? 'border-orange-500 bg-orange-50/70 text-slate-900 font-semibold ring-1.5 ring-orange-500 shadow-xs cursor-pointer'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:text-slate-900 cursor-pointer'
+                            }`}
+                          >
+                            {v.image ? (
+                              <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
+                                <Image src={v.image} alt={v.name} fill className="object-cover" />
+                              </div>
+                            ) : (
+                              <span
+                                className="w-4 h-4 rounded-full border border-slate-300 shadow-2xs shrink-0"
+                                style={{ backgroundColor: v.colorHex || '#ddd' }}
+                              />
+                            )}
+
+                            <div className="flex flex-col items-start text-left">
+                              <div className="flex items-center gap-1.5">
+                                {v.image && (
+                                  <span
+                                    className="w-2.5 h-2.5 rounded-full border border-slate-300 shadow-2xs shrink-0"
+                                    style={{ backgroundColor: v.colorHex || '#ddd' }}
+                                  />
+                                )}
+                                <span className="font-semibold">{v.name}</span>
+                              </div>
+                              {v.stockCount !== undefined &&
+                                Number(v.stockCount) > 0 &&
+                                Number(v.stockCount) <= 15 && (
+                                  <span className="text-[10px] text-amber-600 font-medium">
+                                    {v.stockCount} in stock
+                                  </span>
+                                )}
+                            </div>
+
+                            {isOutOfStock && (
+                              <span className="text-[10px] text-slate-400 font-normal">
+                                (Sold out)
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Main Action Buttons (Add to Cart & Buy Now) */}
