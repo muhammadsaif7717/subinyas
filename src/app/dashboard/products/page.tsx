@@ -799,17 +799,22 @@ export default function ProductsPage() {
     const parsedOrigPrice = Number(prodOriginalPrice) || 800;
     const finalName = prodName.trim();
 
-    // Auto-sync base price into single pack if matched
-    const syncedPackages = prodPackages.map((pkg) => {
-      if (pkg.quantity === 1 || pkg.id === 'pkg-1') {
-        return {
-          ...pkg,
-          price: parsedBasePrice,
-          originalPrice: parsedOrigPrice,
-          savings: `Save ৳${Math.max(0, parsedOrigPrice - parsedBasePrice)}`,
-        };
-      }
-      return pkg;
+    // Process packages strictly using admin-defined deal prices and quantities
+    const processedPackages: ComboOption[] = prodPackages.map((pkg, idx) => {
+      const qty = Number(pkg.quantity) || (idx === 0 ? 3 : idx === 1 ? 2 : 1);
+      const dealPrice = Number(pkg.price) > 0 ? Number(pkg.price) : parsedBasePrice * qty;
+      const origPrice = Number(pkg.originalPrice) > 0 ? Number(pkg.originalPrice) : parsedOrigPrice * qty;
+      return {
+        id: pkg.id || `pkg-${qty}-${idx}`,
+        title: pkg.title?.trim() || `${qty} Piece${qty > 1 ? 's' : ''}`,
+        subtitle: pkg.subtitle || '',
+        quantity: qty,
+        price: dealPrice,
+        originalPrice: origPrice,
+        badge: pkg.badge || '',
+        isPopular: pkg.isPopular !== undefined ? pkg.isPopular : !!pkg.badge,
+        savings: origPrice > dealPrice ? `Save ৳${origPrice - dealPrice}` : '',
+      };
     });
 
     const variantImages = prodVariants.map((v) => v.image).filter(Boolean) as string[];
@@ -829,8 +834,8 @@ export default function ProductsPage() {
       isActive: prodIsActive,
       images: combinedImages.length > 0 ? combinedImages : ['/images/products/hello-kitty-pair.png'],
       variants: prodVariants,
-      packages: syncedPackages,
-      combos: syncedPackages,
+      packages: processedPackages,
+      combos: processedPackages,
       features: prodFeatures,
       specifications: prodSpecifications,
       updatedAt: new Date().toISOString(),

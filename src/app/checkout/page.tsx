@@ -388,9 +388,21 @@ export default function CheckoutPage() {
                       <h4 className="text-xs font-bold text-slate-900 truncate">
                         {item.productName}
                       </h4>
-                      <p className="text-[11px] text-slate-500 truncate">
-                        {item.comboTitle || item.selectedVariants?.join(', ')}
-                      </p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[10px] font-bold text-orange-700 bg-orange-100/80 px-2 py-0.5 rounded-md border border-orange-200">
+                          {item.comboTitle || 'Standard Package'}
+                        </span>
+                      </div>
+                      {item.selectedVariants && item.selectedVariants.length > 0 && (
+                        <div className="mt-1 text-[11px] text-slate-600 bg-slate-100/70 p-1.5 rounded-lg border border-slate-200/60">
+                          <span className="font-semibold text-slate-700 block text-[10px] uppercase text-orange-600">Selected Colors:</span>
+                          <span className="text-slate-800 font-medium text-[11px]">
+                            {item.selectedVariants.length > 1
+                              ? item.selectedVariants.map((v, i) => `#${i + 1} ${v}`).join(' • ')
+                              : item.selectedVariants[0]}
+                          </span>
+                        </div>
+                      )}
 
                       {/* Quantity Controller */}
                       <div className="flex items-center gap-2 mt-2">
@@ -403,7 +415,7 @@ export default function CheckoutPage() {
                             <Minus className="w-3 h-3" />
                           </button>
                           <span className="px-2 text-xs font-mono font-bold text-slate-900 min-w-[20px] text-center">
-                            {item.quantity}
+                            {item.quantity} {item.quantity > 1 ? 'Packs' : 'Pack'}
                           </span>
                           <button
                             type="button"

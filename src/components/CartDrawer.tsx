@@ -71,10 +71,18 @@ export function CartDrawer() {
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                      <p className="text-[11px] text-slate-500">{item.comboTitle}</p>
-                      <p className="text-[10px] text-rose-600 font-medium truncate">
-                        {item.selectedVariants?.join(', ')}
-                      </p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[9px] font-bold text-orange-700 bg-orange-100/80 px-1.5 py-0.2 rounded border border-orange-200">
+                          {item.comboTitle || 'Standard Package'}
+                        </span>
+                      </div>
+                      {item.selectedVariants && item.selectedVariants.length > 0 && (
+                        <p className="text-[10px] text-slate-600 font-medium mt-0.5 truncate">
+                          {item.selectedVariants.length > 1
+                            ? item.selectedVariants.map((v, i) => `#${i + 1} ${v}`).join(', ')
+                            : item.selectedVariants[0]}
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between pt-1">
