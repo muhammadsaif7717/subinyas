@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import {
   ShoppingBag,
   Truck,
@@ -27,6 +28,14 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { cart, updateQuantity, removeFromCart, clearCart, cartSubtotal, directCheckoutItem, clearDirectCheckoutItem, addToCart } = useCart();
 
+  const { data: settings } = useQuery({
+    queryKey: ['store-settings'],
+    queryFn: async () => {
+      const res = await axios.get('/api/settings');
+      return res.data?.settings;
+    },
+  });
+
   const checkoutItems = React.useMemo(() => directCheckoutItem ? [directCheckoutItem] : cart, [directCheckoutItem, cart]);
   const currentSubtotal = directCheckoutItem ? (directCheckoutItem.price * directCheckoutItem.quantity) : cartSubtotal;
 
@@ -47,7 +56,9 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
 
-  const deliveryFee = deliveryArea === 'outside_dhaka' ? 130 : 70;
+  const insideFee = settings?.deliveryInsideDhaka ?? 70;
+  const outsideFee = settings?.deliveryOutsideDhaka ?? 130;
+  const deliveryFee = deliveryArea === 'outside_dhaka' ? outsideFee : insideFee;
   const grandTotal = Math.max(0, currentSubtotal - discount) + deliveryFee;
 
   useEffect(() => {
@@ -307,7 +318,7 @@ export default function CheckoutPage() {
                         <p className="text-[10px] text-slate-500">Home Delivery (24-48 hrs)</p>
                       </div>
                     </div>
-                    <span className="text-xs font-extrabold font-mono text-orange-600">৳70</span>
+                    <span className="text-xs font-extrabold font-mono text-orange-600">৳{insideFee}</span>
                   </label>
 
                   <label
@@ -331,7 +342,7 @@ export default function CheckoutPage() {
                         <p className="text-[10px] text-slate-500">All Bangladesh (2-4 days)</p>
                       </div>
                     </div>
-                    <span className="text-xs font-extrabold font-mono text-orange-600">৳130</span>
+                    <span className="text-xs font-extrabold font-mono text-orange-600">৳{outsideFee}</span>
                   </label>
                 </div>
               </div>

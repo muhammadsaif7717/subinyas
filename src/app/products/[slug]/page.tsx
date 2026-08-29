@@ -69,6 +69,15 @@ export default function ProductDetailPage() {
     },
   });
 
+  // Fetch store settings for dynamic delivery charges
+  const { data: settings } = useQuery({
+    queryKey: ['store-settings'],
+    queryFn: async () => {
+      const res = await axios.get('/api/settings');
+      return res.data?.settings;
+    },
+  });
+
   const product = dynamicProduct;
 
   // Selected State
@@ -1043,10 +1052,10 @@ export default function ProductDetailPage() {
                 <h3 className="text-sm font-bold text-slate-900">Shipping & Delivery Policy</h3>
                 <ul className="space-y-2 list-disc list-inside leading-relaxed">
                   <li>
-                    <strong>Inside Dhaka:</strong> Delivery charge ৳70 (Delivery within 24 to 48 hours).
+                    <strong>Inside Dhaka:</strong> Delivery charge ৳{settings?.deliveryInsideDhaka ?? 70} (Delivery within 24 to 48 hours).
                   </li>
                   <li>
-                    <strong>Outside Dhaka:</strong> Delivery charge ৳130 (Delivery within 2 to 4 business days).
+                    <strong>Outside Dhaka:</strong> Delivery charge ৳{settings?.deliveryOutsideDhaka ?? 130} (Delivery within 2 to 4 business days).
                   </li>
                   <li>
                     <strong>Payment Method:</strong> Cash on Delivery available nationwide. Check product on delivery and pay.
