@@ -208,6 +208,7 @@ Output every individual section in its own distinct Markdown Code Block (copy bo
 \`\`\`
 
 ### 8. PACKAGE DEALS (JSON format)
+*(CRITICAL RULE: Must always generate exactly 3 packages with these exact titles: "3 Pieces", "2 Pieces", and "1 Piece")*
 \`\`\`json
 [
   {

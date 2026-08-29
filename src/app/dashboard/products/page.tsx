@@ -143,8 +143,16 @@ export default function ProductsPage() {
           setProdOriginalPrice(Number(parsed.originalPrice) || 800);
         }
 
-        // Color Variants
+        // Gallery Images (Keep current images or fallback default, only overwrite if JSON explicitly has images)
+        if (Array.isArray(parsed.images) && parsed.images.length > 0) {
+          setProdImages(parsed.images);
+        } else {
+          setProdImages((prev) => (prev && prev.length > 0 ? prev : ['/images/products/hello-kitty-pair.png']));
+        }
+
+        // Color Variants (Supports 1 to 8+ variants with automatic default image)
         if (Array.isArray(parsed.variants) && parsed.variants.length > 0) {
+          const fallbackImg = (Array.isArray(parsed.images) && parsed.images[0]) || prodImages[0] || '/images/products/hello-kitty-pair.png';
           const mappedVariants: ProductVariant[] = parsed.variants.map((v: any, idx: number) => {
             const colorName = v.colorName || v.name || v.color || `Color ${idx + 1}`;
             const colorHex = v.colorHex || v.hex || detectColorHex(colorName, '#3B82F6');
@@ -154,7 +162,7 @@ export default function ProductsPage() {
               name: colorName,
               color: colorName,
               colorHex,
-              image: v.image || prodImages[0] || '/images/products/hello-kitty-pair.png',
+              image: v.image || fallbackImg,
               inStock: v.inStock !== false,
               stockCount,
               stock: stockCount,
@@ -164,14 +172,18 @@ export default function ProductsPage() {
           setProdVariants(mappedVariants);
         }
 
-        // Packages
+        // Packages (3 Pieces, 2 Pieces, 1 Piece)
         if (Array.isArray(parsed.packages) && parsed.packages.length > 0) {
           const mappedPackages: ComboOption[] = parsed.packages.map((pkg: any, idx: number) => {
-            const title = pkg.packageTitle || pkg.title || (idx === 0 ? '2 Pieces' : '1 Piece');
-            const qty = Number(pkg.quantity || pkg.qty || (idx === 0 ? 2 : 1));
-            const price = Number(pkg.dealPrice || pkg.price || (parsed.basePrice || 499));
-            const origPrice = Number(pkg.originalPrice || (parsed.originalPrice || 800) * qty);
-            const badge = pkg.badge !== undefined ? pkg.badge : idx === 0 ? 'Popular' : '';
+            const defaultTitle = idx === 0 ? '3 Pieces' : idx === 1 ? '2 Pieces' : '1 Piece';
+            const defaultQty = idx === 0 ? 3 : idx === 1 ? 2 : 1;
+            const defaultBadge = idx === 0 ? 'Best Value' : idx === 1 ? 'Popular' : '';
+
+            const title = pkg.packageTitle || pkg.title || defaultTitle;
+            const qty = Number(pkg.quantity || pkg.qty || defaultQty);
+            const price = Number(pkg.dealPrice || pkg.price || ((parsed.basePrice || 499) * qty - (qty > 1 ? 100 * (qty - 1) : 0)));
+            const origPrice = Number(pkg.originalPrice || ((parsed.originalPrice || 800) * qty));
+            const badge = pkg.badge !== undefined ? pkg.badge : defaultBadge;
             const savings = pkg.savings || (origPrice > price ? `Save ৳${origPrice - price}` : '');
             const isPopular = pkg.isPopular !== undefined ? Boolean(pkg.isPopular) : idx === 0;
 
@@ -222,6 +234,7 @@ export default function ProductsPage() {
 
       // Case 2: Array of Variants
       if (Array.isArray(parsed) && parsed.length > 0 && (parsed[0].colorName || parsed[0].colorHex || parsed[0].name)) {
+        const fallbackImg = prodImages[0] || '/images/products/hello-kitty-pair.png';
         const mappedVariants: ProductVariant[] = parsed.map((v: any, idx: number) => {
           const colorName = v.colorName || v.name || v.color || `Color ${idx + 1}`;
           const colorHex = v.colorHex || v.hex || detectColorHex(colorName, '#3B82F6');
@@ -231,7 +244,7 @@ export default function ProductsPage() {
             name: colorName,
             color: colorName,
             colorHex,
-            image: v.image || prodImages[0] || '/images/products/hello-kitty-pair.png',
+            image: v.image || fallbackImg,
             inStock: v.inStock !== false,
             stockCount,
             stock: stockCount,
@@ -249,17 +262,23 @@ export default function ProductsPage() {
 
       // Case 3: Array of Packages
       if (Array.isArray(parsed) && parsed.length > 0 && (parsed[0].packageTitle || parsed[0].dealPrice || parsed[0].title)) {
-        const mappedPackages: ComboOption[] = parsed.map((pkg: any, idx: number) => ({
-          id: pkg.id || `pkg-${idx + 1}`,
-          title: pkg.packageTitle || pkg.title || (idx === 0 ? '2 Pieces' : '1 Piece'),
-          subtitle: pkg.subtitle || 'Package deal',
-          quantity: Number(pkg.quantity || pkg.qty || (idx === 0 ? 2 : 1)),
-          price: Number(pkg.dealPrice || pkg.price || prodBasePrice),
-          originalPrice: Number(pkg.originalPrice || prodOriginalPrice * (pkg.quantity || 1)),
-          badge: pkg.badge !== undefined ? pkg.badge : idx === 0 ? 'Popular' : '',
-          savings: pkg.savings || '',
-          isPopular: pkg.isPopular !== undefined ? Boolean(pkg.isPopular) : idx === 0,
-        }));
+        const mappedPackages: ComboOption[] = parsed.map((pkg: any, idx: number) => {
+          const defaultTitle = idx === 0 ? '3 Pieces' : idx === 1 ? '2 Pieces' : '1 Piece';
+          const defaultQty = idx === 0 ? 3 : idx === 1 ? 2 : 1;
+          const defaultBadge = idx === 0 ? 'Best Value' : idx === 1 ? 'Popular' : '';
+
+          return {
+            id: pkg.id || `pkg-${idx + 1}`,
+            title: pkg.packageTitle || pkg.title || defaultTitle,
+            subtitle: pkg.subtitle || 'Package deal',
+            quantity: Number(pkg.quantity || pkg.qty || defaultQty),
+            price: Number(pkg.dealPrice || pkg.price || prodBasePrice),
+            originalPrice: Number(pkg.originalPrice || prodOriginalPrice * (pkg.quantity || 1)),
+            badge: pkg.badge !== undefined ? pkg.badge : defaultBadge,
+            savings: pkg.savings || '',
+            isPopular: pkg.isPopular !== undefined ? Boolean(pkg.isPopular) : idx === 0,
+          };
+        });
         setProdPackages(mappedPackages);
         setVisitedTabs((prev) => new Set([...prev, 'combos']));
         setFormSuccess('✨ Auto-filled Package Deals from JSON!');
