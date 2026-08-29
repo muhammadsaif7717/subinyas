@@ -166,32 +166,29 @@ Output every individual section in its own distinct Markdown Code Block (copy bo
 [Enter Catchy, Clear Product Title in English (e.g., Portable Mini Travel Jewelry Box)]
 \`\`\`
 
-### 2. CATEGORY
-\`\`\`text
-[Enter single primary category name (e.g., Travel Organizers, Vanity Accessories, Jewelry Box)]
-\`\`\`
+*(DO NOT include category, isFeatured, isHeroSlider, or isActive fields in the JSON. The admin will set these manually.)*
 
-### 3. SUBTITLE
+### 2. SUBTITLE
 \`\`\`text
 [Enter 1-line captivating marketing hook / subtitle in English]
 \`\`\`
 
-### 4. DESCRIPTION
+### 3. DESCRIPTION
 \`\`\`text
 [Enter multi-line detailed product description in English highlighting materials, craftsmanship, organization compartments, and customer benefits]
 \`\`\`
 
-### 5. BASE PRICE (BDT)
+### 4. BASE PRICE (BDT)
 \`\`\`text
 499
 \`\`\`
 
-### 6. ORIGINAL / REGULAR PRICE (BDT)
+### 5. ORIGINAL / REGULAR PRICE (BDT)
 \`\`\`text
 799
 \`\`\`
 
-### 7. COLOR VARIANTS (JSON format)
+### 6. COLOR VARIANTS (JSON format)
 \`\`\`json
 [
   {
@@ -207,7 +204,7 @@ Output every individual section in its own distinct Markdown Code Block (copy bo
 ]
 \`\`\`
 
-### 8. PACKAGE DEALS (JSON format)
+### 7. PACKAGE DEALS (JSON format)
 *(CRITICAL RULE 1: Must always generate exactly 3 packages with these exact titles: "3 Pieces", "2 Pieces", and "1 Piece")*
 *(CRITICAL RULE 2: The "dealPrice" for 1 Piece MUST be exactly the BASE PRICE. The "dealPrice" for 2 Pieces MUST be less than (2 x BASE PRICE). The "dealPrice" for 3 Pieces MUST be less than (3 x BASE PRICE).)*
 \`\`\`json
@@ -233,7 +230,7 @@ Output every individual section in its own distinct Markdown Code Block (copy bo
 ]
 \`\`\`
 
-### 9. KEY FEATURES (JSON format)
+### 8. KEY FEATURES (JSON format)
 \`\`\`json
 [
   {
@@ -260,7 +257,7 @@ Output every individual section in its own distinct Markdown Code Block (copy bo
 \`\`\`
 *(Supported Lucide icons: Sparkles, ShieldCheck, Layers, Gift, Truck, Award, Zap, Heart, Check, Star)*
 
-### 10. SPECIFICATIONS (JSON format)
+### 9. SPECIFICATIONS (JSON format)
 \`\`\`json
 [
   { "key": "Material", "value": "Waterproof PU Leather + Soft Velvet Lining" },
@@ -275,7 +272,6 @@ Output every individual section in its own distinct Markdown Code Block (copy bo
 \`\`\`json
 {
   "name": "Portable Mini Travel Jewelry Box",
-  "category": "Organizers",
   "subtitle": "Keep your jewelry organized and scratch-free on the go",
   "description": "High quality waterproof PU leather exterior with soft velvet interior lining to protect your valuables from scratches.",
   "basePrice": 499,
