@@ -27,6 +27,10 @@ import {
   Copy,
   ClipboardPaste,
   FileCode2,
+  Link2,
+  UploadCloud,
+  Globe,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { Product, ProductVariant, ComboOption } from '@/lib/types';
 import { CategoryItem } from '@/app/api/categories/route';
@@ -60,6 +64,112 @@ export default function ProductsPage() {
   const [isAiJsonModalOpen, setIsAiJsonModalOpen] = useState(false);
   const [aiJsonInput, setAiJsonInput] = useState('');
   const [aiJsonError, setAiJsonError] = useState('');
+
+  // Unified Multi-Source Image Picker State (Upload / Clipboard Paste / Image URL)
+  const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
+  const [imagePickerTarget, setImagePickerTarget] = useState<'gallery' | number>('gallery');
+  const [imagePickerTab, setImagePickerTab] = useState<'file' | 'paste' | 'url'>('file');
+  const [imageUrlInput, setImageUrlInput] = useState('');
+  const [imagePickerLoading, setImagePickerLoading] = useState(false);
+  const [imagePickerError, setImagePickerError] = useState('');
+
+  const openImagePicker = (target: 'gallery' | number) => {
+    setImagePickerTarget(target);
+    setImagePickerTab('file');
+    setImageUrlInput('');
+    setImagePickerError('');
+    setIsImagePickerOpen(true);
+  };
+
+  const applyUploadedImage = (uploadedUrl: string) => {
+    if (imagePickerTarget === 'gallery') {
+      setProdImages((prev) => [...prev, uploadedUrl]);
+      setFormSuccess('✨ Photo added to gallery!');
+    } else if (typeof imagePickerTarget === 'number') {
+      setProdVariants((prev) =>
+        prev.map((v, i) => (i === imagePickerTarget ? { ...v, image: uploadedUrl } : v))
+      );
+      setFormSuccess('✨ Photo assigned to variant!');
+    }
+    setIsImagePickerOpen(false);
+    setImageUrlInput('');
+    setImagePickerError('');
+  };
+
+  const handleUploadFileDirect = async (file: File) => {
+    setImagePickerLoading(true);
+    setImagePickerError('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await axios.post('/api/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      if (res.data?.success && res.data?.url) {
+        applyUploadedImage(res.data.url);
+      } else {
+        setImagePickerError(res.data?.message || 'Failed to upload image');
+      }
+    } catch (err: any) {
+      setImagePickerError(err?.response?.data?.message || 'Error uploading image file');
+    } finally {
+      setImagePickerLoading(false);
+    }
+  };
+
+  const handleUploadUrlDirect = async (urlToUpload: string) => {
+    const trimmed = urlToUpload.trim();
+    if (!trimmed) {
+      setImagePickerError('Please enter a valid image URL');
+      return;
+    }
+    if (
+      !trimmed.startsWith('http://') &&
+      !trimmed.startsWith('https://') &&
+      !trimmed.startsWith('data:image')
+    ) {
+      setImagePickerError('Image URL must start with http:// or https://');
+      return;
+    }
+    setImagePickerLoading(true);
+    setImagePickerError('');
+    try {
+      const res = await axios.post('/api/upload', { url: trimmed });
+      if (res.data?.success && res.data?.url) {
+        applyUploadedImage(res.data.url);
+      } else {
+        setImagePickerError(res.data?.message || 'Failed to import image from URL');
+      }
+    } catch (err: any) {
+      setImagePickerError(err?.response?.data?.message || 'Error importing image from URL');
+    } finally {
+      setImagePickerLoading(false);
+    }
+  };
+
+  const handleClipboardPasteEvent = async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.indexOf('image') !== -1) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          await handleUploadFileDirect(file);
+          return;
+        }
+      }
+    }
+
+    const pastedText = e.clipboardData?.getData('text');
+    if (pastedText && (pastedText.startsWith('http://') || pastedText.startsWith('https://'))) {
+      e.preventDefault();
+      setImageUrlInput(pastedText);
+      await handleUploadUrlDirect(pastedText);
+    }
+  };
 
   const handleCopyAiPrompt = async () => {
     try {
@@ -1340,22 +1450,28 @@ export default function ProductsPage() {
                         Product Photos Gallery <span className="text-[#C4587A]">*</span>
                       </h4>
                       <p className="text-[11px] text-[#8A7D97]">
-                        Upload at least 1 high-res product photo. The first image is the primary storefront thumbnail.
+                        Upload, paste from clipboard (Ctrl+V), or import from image URL
                       </p>
                     </div>
 
-                    <label className="bg-[#C4587A] hover:bg-[#B24A6B] text-white text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer">
-                      {isUploadingImage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
-                      <span>+ Upload Photo</span>
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e)} />
-                    </label>
+                    <button
+                      type="button"
+                      onClick={() => openImagePicker('gallery')}
+                      className="bg-[#C4587A] hover:bg-[#B24A6B] text-white text-xs font-bold px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-md shadow-[#C4587A]/20 transition-all"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>+ Add / Paste Photo</span>
+                    </button>
                   </div>
 
                   {prodImages.length === 0 ? (
-                    <div className="p-8 border border-dashed border-[#3E3447] rounded-2xl text-center space-y-2">
+                    <div
+                      onClick={() => openImagePicker('gallery')}
+                      className="p-8 border border-dashed border-[#3E3447] hover:border-[#C4587A] rounded-2xl text-center space-y-2 cursor-pointer transition-colors"
+                    >
                       <Camera className="w-8 h-8 text-[#6E6278] mx-auto" />
                       <p className="text-xs text-[#8A7D97]">No gallery photos uploaded yet.</p>
-                      <p className="text-[11px] text-amber-400">At least 1 product photo is required.</p>
+                      <p className="text-[11px] text-amber-400">Click to upload, paste from clipboard, or enter URL</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -1431,14 +1547,17 @@ export default function ProductsPage() {
                           key={v.id || idx}
                           className="grid grid-cols-1 sm:grid-cols-12 gap-3 p-3.5 rounded-xl bg-[#1C1821] border border-[#2E2733] items-center"
                         >
-                          {/* 1. Color Photo Upload */}
+                          {/* 1. Color Photo Upload / Paste Modal Trigger */}
                           <div className="sm:col-span-2">
                             <label className="text-[10px] text-[#8A7D97] block mb-1">Color Photo</label>
                             <div className="flex items-center gap-2">
-                              <label className="relative w-11 h-11 rounded-xl overflow-hidden border border-[#332B3D] bg-[#14111A] hover:border-[#C4587A] flex items-center justify-center cursor-pointer group shrink-0 transition-colors">
-                                {uploadingVariantIdx === idx ? (
-                                  <Loader2 className="w-4 h-4 animate-spin text-[#C4587A]" />
-                                ) : v.image ? (
+                              <button
+                                type="button"
+                                onClick={() => openImagePicker(idx)}
+                                className="relative w-11 h-11 rounded-xl overflow-hidden border border-[#332B3D] bg-[#14111A] hover:border-[#C4587A] flex items-center justify-center cursor-pointer group shrink-0 transition-colors"
+                                title="Click to browse, paste (Ctrl+V), or import image URL"
+                              >
+                                {v.image ? (
                                   <>
                                     <Image src={v.image} alt={v.name} fill className="object-cover" />
                                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
@@ -1451,13 +1570,7 @@ export default function ProductsPage() {
                                     <span>+ Photo</span>
                                   </div>
                                 )}
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={(e) => handleImageUpload(e, idx)}
-                                  className="hidden"
-                                />
-                              </label>
+                              </button>
 
                               {v.image && (
                                 <button
@@ -2022,6 +2135,194 @@ export default function ProductsPage() {
                 <span>Apply & Auto-Fill Form</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MULTI-SOURCE IMAGE PICKER MODAL DIALOG (UPLOAD / CLIPBOARD PASTE / WEB URL) */}
+      {isImagePickerOpen && (
+        <div
+          onPaste={handleClipboardPasteEvent}
+          className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[70] flex items-center justify-center p-3 sm:p-4 animate-in fade-in"
+        >
+          <div className="bg-[#211C28] rounded-2xl border border-[#3E3447] w-full max-w-lg p-5 sm:p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#2E2733] pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#C4587A]/20 text-[#E39BB4] flex items-center justify-center">
+                  <ImageIcon className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-base font-bold text-white">
+                    {imagePickerTarget === 'gallery'
+                      ? 'Add Photo to Gallery'
+                      : `Set Photo for: ${typeof imagePickerTarget === 'number' && prodVariants[imagePickerTarget] ? prodVariants[imagePickerTarget].name : 'Variant'}`}
+                  </h4>
+                  <p className="text-xs text-[#8A7D97]">Upload from PC, paste from clipboard (Ctrl+V), or import from URL</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsImagePickerOpen(false);
+                  setImagePickerError('');
+                  setImageUrlInput('');
+                }}
+                className="p-1.5 text-[#8A7D97] hover:text-white rounded-lg hover:bg-[#2E2733] cursor-pointer"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {imagePickerError && (
+              <div className="p-3 rounded-xl bg-[#C1495A]/15 border border-[#C1495A]/30 text-xs text-[#DD8A94] flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{imagePickerError}</span>
+              </div>
+            )}
+
+            {/* Modal Tabs */}
+            <div className="flex items-center gap-2 border-b border-[#2E2733] pb-2 text-xs">
+              <button
+                type="button"
+                onClick={() => setImagePickerTab('file')}
+                className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  imagePickerTab === 'file'
+                    ? 'bg-[#C4587A] text-white'
+                    : 'bg-[#191520] text-[#8A7D97] hover:text-white'
+                }`}
+              >
+                <UploadCloud className="w-3.5 h-3.5" />
+                <span>Browse File</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setImagePickerTab('paste')}
+                className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  imagePickerTab === 'paste'
+                    ? 'bg-[#C4587A] text-white'
+                    : 'bg-[#191520] text-[#8A7D97] hover:text-white'
+                }`}
+              >
+                <ClipboardPaste className="w-3.5 h-3.5" />
+                <span>Paste (Ctrl+V)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setImagePickerTab('url')}
+                className={`px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                  imagePickerTab === 'url'
+                    ? 'bg-[#C4587A] text-white'
+                    : 'bg-[#191520] text-[#8A7D97] hover:text-white'
+                }`}
+              >
+                <Link2 className="w-3.5 h-3.5" />
+                <span>Image Web URL</span>
+              </button>
+            </div>
+
+            {/* TAB 1: FILE BROWSE / DRAG & DROP */}
+            {imagePickerTab === 'file' && (
+              <div className="space-y-3">
+                <label className="border-2 border-dashed border-[#3E3447] hover:border-[#C4587A] rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-[#191520] group">
+                  {imagePickerLoading ? (
+                    <div className="flex flex-col items-center gap-2 py-4">
+                      <Loader2 className="w-8 h-8 animate-spin text-[#C4587A]" />
+                      <span className="text-xs font-semibold text-[#E39BB4]">Uploading to Cloudinary...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="w-12 h-12 rounded-2xl bg-[#C4587A]/15 text-[#E39BB4] flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                        <UploadCloud className="w-6 h-6" />
+                      </div>
+                      <p className="text-xs font-semibold text-white">Click to browse or drag & drop image</p>
+                      <p className="text-[11px] text-[#8A7D97] mt-1">PNG, JPG, WebP, GIF up to 10MB</p>
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={imagePickerLoading}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleUploadFileDirect(file);
+                    }}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            )}
+
+            {/* TAB 2: CLIPBOARD PASTE (Ctrl+V) */}
+            {imagePickerTab === 'paste' && (
+              <div
+                tabIndex={0}
+                onPaste={handleClipboardPasteEvent}
+                className="border-2 border-dashed border-[#C4587A]/40 bg-[#C4587A]/5 hover:bg-[#C4587A]/10 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-colors outline-none focus:ring-2 focus:ring-[#C4587A]"
+              >
+                {imagePickerLoading ? (
+                  <div className="flex flex-col items-center gap-2 py-4">
+                    <Loader2 className="w-8 h-8 animate-spin text-[#C4587A]" />
+                    <span className="text-xs font-semibold text-[#E39BB4]">Uploading pasted image to Cloudinary...</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="w-12 h-12 rounded-2xl bg-[#C4587A]/20 text-[#E39BB4] flex items-center justify-center mb-3 animate-pulse">
+                      <ClipboardPaste className="w-6 h-6" />
+                    </div>
+                    <p className="text-xs font-bold text-white">Click here and press <kbd className="px-1.5 py-0.5 rounded bg-[#14111A] border border-[#3E3447] text-white font-mono text-[10px]">Ctrl + V</kbd> or <kbd className="px-1.5 py-0.5 rounded bg-[#14111A] border border-[#3E3447] text-white font-mono text-[10px]">Cmd + V</kbd></p>
+                    <p className="text-[11px] text-[#8A7D97] mt-1.5 max-w-xs">
+                      Copy any image from the web, screenshot tool, or browser, then simply paste it here to upload directly to Cloudinary.
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* TAB 3: IMAGE WEB URL */}
+            {imagePickerTab === 'url' && (
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-[#D8CFE0]">Image Web Address (URL):</label>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <Globe className="w-4 h-4 text-[#8A7D97] absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="url"
+                        value={imageUrlInput}
+                        onChange={(e) => setImageUrlInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleUploadUrlDirect(imageUrlInput);
+                          }
+                        }}
+                        placeholder="https://example.com/product-image.jpg"
+                        className="w-full pl-9 pr-3.5 py-2.5 bg-[#191520] border border-[#2E2733] focus:border-[#C4587A] rounded-xl text-white placeholder:text-[#6E6278] outline-none text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    disabled={imagePickerLoading || !imageUrlInput.trim()}
+                    onClick={() => handleUploadUrlDirect(imageUrlInput)}
+                    className="px-5 py-2.5 rounded-xl bg-[#C4587A] hover:bg-[#B24A6B] disabled:opacity-50 text-white text-xs font-bold shadow-lg shadow-[#C4587A]/25 flex items-center gap-2 cursor-pointer active:scale-98 transition-all"
+                  >
+                    {imagePickerLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <UploadCloud className="w-4 h-4" />
+                    )}
+                    <span>Import to Cloudinary</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
