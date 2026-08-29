@@ -290,9 +290,11 @@ export default function ProductDetailPage() {
   }
 
   const currentPrice =
-    selectedCombo && selectedCombo.quantity > 1 ? selectedCombo.price : product.basePrice;
+    selectedCombo && selectedCombo.quantity >= 1 ? selectedCombo.price : product.basePrice;
   const currentOriginalPrice =
-    selectedCombo && selectedCombo.quantity > 1 ? selectedCombo.originalPrice : product.originalPrice;
+    selectedCombo && selectedCombo.quantity >= 1
+      ? (selectedCombo.originalPrice && selectedCombo.originalPrice > selectedCombo.price ? selectedCombo.originalPrice : product.originalPrice * selectedCombo.quantity)
+      : product.originalPrice;
   const savings = Math.max(0, currentOriginalPrice - currentPrice);
   const discountPercent =
     currentOriginalPrice > 0 ? Math.round(((currentOriginalPrice - currentPrice) / currentOriginalPrice) * 100) : 0;
@@ -735,13 +737,19 @@ export default function ProductDetailPage() {
                         <span className="text-sm font-extrabold text-slate-900 font-mono">
                           ৳{combo.price}
                         </span>
-                        {combo.originalPrice > combo.price ? (
-                          <span className="text-[10px] text-emerald-600 font-bold">
-                            Save ৳{combo.originalPrice - combo.price} • {Math.round(((combo.originalPrice - combo.price) / combo.originalPrice) * 100)}% OFF
-                          </span>
-                        ) : combo.savings ? (
-                          <span className="text-[10px] text-emerald-600 font-bold">{combo.savings}</span>
-                        ) : null}
+                        {(() => {
+                          const origPrice = combo.originalPrice && combo.originalPrice > combo.price ? combo.originalPrice : product.originalPrice * (combo.quantity || 1);
+                          if (origPrice > combo.price) {
+                            return (
+                              <span className="text-[10px] text-emerald-600 font-bold">
+                                Save ৳{origPrice - combo.price} • {Math.round(((origPrice - combo.price) / origPrice) * 100)}% OFF
+                              </span>
+                            );
+                          }
+                          return combo.savings ? (
+                            <span className="text-[10px] text-emerald-600 font-bold">{combo.savings}</span>
+                          ) : null;
+                        })()}
                       </div>
                     </button>
                   ))}
