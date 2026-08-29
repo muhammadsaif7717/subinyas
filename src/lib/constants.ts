@@ -208,7 +208,8 @@ Output every individual section in its own distinct Markdown Code Block (copy bo
 \`\`\`
 
 ### 8. PACKAGE DEALS (JSON format)
-*(CRITICAL RULE: Must always generate exactly 3 packages with these exact titles: "3 Pieces", "2 Pieces", and "1 Piece")*
+*(CRITICAL RULE 1: Must always generate exactly 3 packages with these exact titles: "3 Pieces", "2 Pieces", and "1 Piece")*
+*(CRITICAL RULE 2: The "dealPrice" for 1 Piece MUST be exactly the BASE PRICE. The "dealPrice" for 2 Pieces MUST be less than (2 x BASE PRICE). The "dealPrice" for 3 Pieces MUST be less than (3 x BASE PRICE).)*
 \`\`\`json
 [
   {
