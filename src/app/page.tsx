@@ -63,7 +63,7 @@ export default function HomePage() {
     }
 
     // Fallback: featured products sorted by reviews & rating
-    const featured = products.filter((p) => p.isFeatured !== false && p.isActive !== false);
+    const featured = products.filter((p) => p.isFeatured !== false && p.isActive !== false && p.isHeroSlider !== false);
     const sortedFeatured = [...featured].sort(
       (a, b) => (b.reviewCount || 0) - (a.reviewCount || 0) || (b.rating || 5) - (a.rating || 5)
     );
@@ -73,7 +73,7 @@ export default function HomePage() {
     }
 
     // Fallback: all active products
-    const active = products.filter((p) => p.isActive !== false);
+    const active = products.filter((p) => p.isActive !== false && p.isHeroSlider !== false);
     return [...active]
       .sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0) || (b.rating || 5) - (a.rating || 5))
       .slice(0, 4);
