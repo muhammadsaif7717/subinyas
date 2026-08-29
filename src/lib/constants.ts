@@ -43,6 +43,17 @@ export const INITIAL_JEWELRY_BOX_PRODUCT: Product = {
   ],
   packages: [
     {
+      id: 'pkg-3',
+      title: '3 Pieces',
+      subtitle: 'Best value combo for family & gifts',
+      quantity: 3,
+      price: 1299,
+      originalPrice: 2250,
+      badge: 'Best Value',
+      isPopular: true,
+      savings: 'Save ৳951',
+    },
+    {
       id: 'pkg-2',
       title: '2 Pieces',
       subtitle: '1 for you + 1 for your best friend',
@@ -50,7 +61,7 @@ export const INITIAL_JEWELRY_BOX_PRODUCT: Product = {
       price: 899,
       originalPrice: 1500,
       badge: 'Popular',
-      isPopular: true,
+      isPopular: false,
       savings: 'Save ৳601',
     },
     {
@@ -67,6 +78,17 @@ export const INITIAL_JEWELRY_BOX_PRODUCT: Product = {
   ],
   combos: [
     {
+      id: 'pkg-3',
+      title: '3 Pieces',
+      subtitle: 'Best value combo for family & gifts',
+      quantity: 3,
+      price: 1299,
+      originalPrice: 2250,
+      badge: 'Best Value',
+      isPopular: true,
+      savings: 'Save ৳951',
+    },
+    {
       id: 'pkg-2',
       title: '2 Pieces',
       subtitle: '1 for you + 1 for your best friend',
@@ -74,7 +96,7 @@ export const INITIAL_JEWELRY_BOX_PRODUCT: Product = {
       price: 899,
       originalPrice: 1500,
       badge: 'Popular',
-      isPopular: true,
+      isPopular: false,
       savings: 'Save ৳601',
     },
     {
@@ -189,6 +211,12 @@ Output every individual section in its own distinct Markdown Code Block (copy bo
 \`\`\`json
 [
   {
+    "packageTitle": "3 Pieces",
+    "quantity": 3,
+    "dealPrice": 1299,
+    "badge": "Best Value"
+  },
+  {
     "packageTitle": "2 Pieces",
     "quantity": 2,
     "dealPrice": 899,
@@ -263,6 +291,12 @@ Output every individual section in its own distinct Markdown Code Block (copy bo
     }
   ],
   "packages": [
+    {
+      "packageTitle": "3 Pieces",
+      "quantity": 3,
+      "dealPrice": 1299,
+      "badge": "Best Value"
+    },
     {
       "packageTitle": "2 Pieces",
       "quantity": 2,

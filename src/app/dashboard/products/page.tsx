@@ -445,15 +445,26 @@ export default function ProductsPage() {
     ]);
     setProdPackages([
       {
+        id: 'pkg-3',
+        title: '3 Pieces',
+        subtitle: 'Best value combo for family & gifts',
+        quantity: 3,
+        price: 1299,
+        originalPrice: 2250,
+        badge: 'Best Value',
+        savings: 'Save ৳951',
+        isPopular: true,
+      },
+      {
         id: 'pkg-2',
         title: '2 Pieces',
         subtitle: '1 for you + 1 for your best friend',
         quantity: 2,
         price: 899,
-        originalPrice: 1600,
+        originalPrice: 1500,
         badge: 'Popular',
-        savings: 'Save ৳701',
-        isPopular: true,
+        savings: 'Save ৳601',
+        isPopular: false,
       },
       {
         id: 'pkg-1',
@@ -461,9 +472,9 @@ export default function ProductsPage() {
         subtitle: 'Standard single pack',
         quantity: 1,
         price: 499,
-        originalPrice: 800,
+        originalPrice: 750,
         badge: '',
-        savings: 'Save ৳301',
+        savings: 'Save ৳251',
         isPopular: false,
       },
     ]);
@@ -517,15 +528,26 @@ export default function ProductsPage() {
     setProdPackages(
       existingPkgs || [
         {
+          id: 'pkg-3',
+          title: '3 Pieces',
+          subtitle: 'Best value combo for family & gifts',
+          quantity: 3,
+          price: (p.basePrice || 499) * 3 - 200,
+          originalPrice: (p.originalPrice || 800) * 3,
+          badge: 'Best Value',
+          isPopular: true,
+          savings: 'Save ৳951',
+        },
+        {
           id: 'pkg-2',
           title: '2 Pieces',
-          subtitle: 'Best deal combo',
+          subtitle: '1 for you + 1 for your best friend',
           quantity: 2,
           price: (p.basePrice || 499) * 2 - 100,
           originalPrice: (p.originalPrice || 800) * 2,
           badge: 'Popular',
-          isPopular: true,
-          savings: 'Save ৳701',
+          isPopular: false,
+          savings: 'Save ৳601',
         },
         {
           id: 'pkg-1',
@@ -1955,7 +1977,7 @@ export default function ProductsPage() {
                 rows={10}
                 value={aiJsonInput}
                 onChange={(e) => setAiJsonInput(e.target.value)}
-                placeholder={`{\n  "name": "Portable Mini Travel Jewelry Box",\n  "category": "Organizers",\n  "subtitle": "...",\n  "description": "...",\n  "basePrice": 499,\n  "originalPrice": 799,\n  "variants": [\n    { "colorName": "Black", "colorHex": "#1E293B", "stockCount": 50 }\n  ],\n  "packages": [\n    { "packageTitle": "2 Pieces", "quantity": 2, "dealPrice": 899, "badge": "Popular" }\n  ],\n  "features": [\n    { "icon": "Sparkles", "title": "Compact & Portable", "description": "..." }\n  ],\n  "specifications": [\n    { "key": "Material", "value": "Waterproof PU Leather" }\n  ]\n}`}
+                placeholder={`{\n  "name": "Portable Mini Travel Jewelry Box",\n  "category": "Organizers",\n  "subtitle": "...",\n  "description": "...",\n  "basePrice": 499,\n  "originalPrice": 799,\n  "variants": [\n    { "colorName": "Black", "colorHex": "#1E293B", "stockCount": 50 }\n  ],\n  "packages": [\n    { "packageTitle": "3 Pieces", "quantity": 3, "dealPrice": 1299, "badge": "Best Value" },\n    { "packageTitle": "2 Pieces", "quantity": 2, "dealPrice": 899, "badge": "Popular" },\n    { "packageTitle": "1 Piece", "quantity": 1, "dealPrice": 499, "badge": "" }\n  ],\n  "features": [\n    { "icon": "Sparkles", "title": "Compact & Portable", "description": "..." }\n  ],\n  "specifications": [\n    { "key": "Material", "value": "Waterproof PU Leather" }\n  ]\n}`}
                 className="w-full font-mono text-xs p-3.5 bg-[#191520] border border-[#2E2733] focus:border-[#C4587A] rounded-xl text-[#F8FAFC] placeholder:text-[#4E4357] outline-none resize-y"
               />
             </div>
