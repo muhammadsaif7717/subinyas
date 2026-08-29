@@ -184,17 +184,10 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     if (product) {
-      // By default when entering detail page, show the primary Main Product Image
+      // By default when entering detail page, show the primary Main Product Image and activate Main thumbnail
       const mainImg = product.images?.[0] || '/images/products/hello-kitty-pair.png';
       setSelectedImage(mainImg);
-
-      if (product.variants?.length > 0) {
-        const firstInStock = product.variants.find(
-          (v) => v.inStock !== false && (v.stockCount === undefined || Number(v.stockCount) > 0)
-        );
-        const defaultVar = firstInStock || product.variants[0];
-        setSelectedVariant(defaultVar);
-      }
+      setSelectedVariant(null);
 
       const pkgs = product.packages || product.combos;
       if (pkgs && pkgs.length > 0) {
@@ -506,12 +499,13 @@ export default function ProductDetailPage() {
               {product.images && product.images.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => setSelectedImage(product.images[0])}
+                  onClick={() => {
+                    setSelectedImage(product.images[0]);
+                    setSelectedVariant(null);
+                  }}
                   className={`relative w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-slate-50 border-2 transition-all shrink-0 cursor-pointer group flex flex-col ${
-                    selectedImage === product.images[0] && !selectedVariant
-                      ? 'border-orange-500 ring-2 ring-orange-500/25 shadow-md scale-102'
-                      : selectedImage === product.images[0]
-                      ? 'border-orange-500 ring-1 ring-orange-500/20 opacity-100'
+                    !selectedVariant && selectedImage === product.images[0]
+                      ? 'border-orange-500 ring-2 ring-orange-500/25 shadow-md scale-102 opacity-100'
                       : 'border-slate-200 hover:border-slate-400 opacity-75 hover:opacity-100'
                   }`}
                   title="Main Product Photo"
@@ -538,7 +532,7 @@ export default function ProductDetailPage() {
                       onClick={() => handleVariantSelect(v)}
                       className={`relative w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-slate-50 border-2 transition-all shrink-0 cursor-pointer group flex flex-col ${
                         isSelected
-                          ? 'border-orange-500 ring-2 ring-orange-500/25 shadow-md scale-102'
+                          ? 'border-orange-500 ring-2 ring-orange-500/25 shadow-md scale-102 opacity-100'
                           : 'border-slate-200 hover:border-slate-400 opacity-75 hover:opacity-100'
                       } ${isOutOfStock ? 'opacity-40 grayscale' : ''}`}
                       title={v.name}
@@ -561,15 +555,18 @@ export default function ProductDetailPage() {
                 product.images.slice(1).map((img, idx) => {
                   const isAlreadyInVariants = product.variants?.some((v) => v.image === img);
                   if (isAlreadyInVariants && product.variants && product.variants.length > 0) return null;
-                  const isSelected = selectedImage === img;
+                  const isSelected = !selectedVariant && selectedImage === img;
                   return (
                     <button
                       key={`gal-${idx}`}
                       type="button"
-                      onClick={() => setSelectedImage(img)}
+                      onClick={() => {
+                        setSelectedImage(img);
+                        setSelectedVariant(null);
+                      }}
                       className={`relative w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-slate-50 border-2 transition-all shrink-0 cursor-pointer ${
                         isSelected
-                          ? 'border-orange-500 ring-2 ring-orange-500/25 shadow-sm scale-102'
+                          ? 'border-orange-500 ring-2 ring-orange-500/25 shadow-sm scale-102 opacity-100'
                           : 'border-slate-200 hover:border-slate-400 opacity-75 hover:opacity-100'
                       }`}
                       title={`Gallery Photo ${idx + 2}`}
