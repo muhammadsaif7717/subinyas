@@ -182,30 +182,19 @@ Color Hex: #F8FAFC
 Stock Count: 40
 \`\`\`
 
-### 8. PACKAGE DEALS (JSON format)
-\`\`\`json
-[
-  {
-    "title": "2 Pieces",
-    "subtitle": "1 for you + 1 for your best friend",
-    "quantity": 2,
-    "price": 899,
-    "originalPrice": 1500,
-    "badge": "Popular",
-    "isPopular": true,
-    "savings": "Save ৳601"
-  },
-  {
-    "title": "1 Piece",
-    "subtitle": "Standard single pack",
-    "quantity": 1,
-    "price": 499,
-    "originalPrice": 750,
-    "badge": "",
-    "isPopular": false,
-    "savings": "Save ৳251"
-  }
-]
+### 8. PACKAGE DEALS (Plain text line-by-line)
+\`\`\`text
+Package 1:
+Package Title: 2 Pieces
+QTY: 2
+Deal Price: 899
+Badge: Popular
+
+Package 2:
+Package Title: 1 Piece
+QTY: 1
+Deal Price: 499
+Badge: 
 \`\`\`
 
 ### 9. KEY FEATURES (JSON format)
