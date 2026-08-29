@@ -277,6 +277,16 @@ export default function ProductDetailPage() {
     setSelectedVariant(variant);
     if (variant.image) {
       setSelectedImage(variant.image);
+    } else if (product?.images && product.images.length > 0) {
+      setSelectedImage(product.images[0]);
+    }
+  };
+
+  const handleThumbnailClick = (img: string) => {
+    setSelectedImage(img);
+    const matchedVar = product?.variants?.find((v) => v.image === img);
+    if (matchedVar) {
+      setSelectedVariant(matchedVar);
     }
   };
 
@@ -495,20 +505,29 @@ export default function ProductDetailPage() {
             {/* Thumbnail Strip */}
             {galleryImages && galleryImages.length > 1 && (
               <div className="flex items-center gap-3 overflow-x-auto pb-2">
-                {galleryImages.map((img, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setSelectedImage(img)}
-                    className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-slate-50 border-2 transition-all shrink-0 cursor-pointer ${
-                      selectedImage === img
-                        ? 'border-orange-500 ring-2 ring-orange-500/20 shadow-xs'
-                        : 'border-slate-200 hover:border-slate-400 opacity-80 hover:opacity-100'
-                    }`}
-                  >
-                    <Image src={img} alt={`Thumbnail ${idx + 1}`} fill className="object-cover" />
-                  </button>
-                ))}
+                {galleryImages.map((img, idx) => {
+                  const matchedVariant = product?.variants?.find((v) => v.image === img);
+                  const isSelected = selectedImage === img;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleThumbnailClick(img)}
+                      className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-slate-50 border-2 transition-all shrink-0 cursor-pointer group ${
+                        isSelected
+                          ? 'border-orange-500 ring-2 ring-orange-500/25 shadow-sm scale-102'
+                          : 'border-slate-200 hover:border-slate-400 opacity-75 hover:opacity-100'
+                      }`}
+                    >
+                      <Image src={img} alt={matchedVariant?.name || `Thumbnail ${idx + 1}`} fill className="object-cover" />
+                      {matchedVariant && (
+                        <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[9px] font-semibold text-center py-0.5 truncate px-1">
+                          {matchedVariant.name}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
