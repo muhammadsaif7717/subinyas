@@ -1753,7 +1753,7 @@ export default function ProductsPage() {
                           key={c.id || idx}
                           className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-[#1C1821] border border-[#2E2733] items-center text-xs"
                         >
-                          <div className="sm:col-span-4">
+                          <div className="sm:col-span-3">
                             <label className="text-[10px] text-[#8A7D97] block">
                               Package Title <span className="text-[#C4587A]">*</span>
                             </label>
@@ -1790,7 +1790,24 @@ export default function ProductsPage() {
                             />
                           </div>
 
-                          <div className="sm:col-span-3">
+                          <div className="sm:col-span-2">
+                            <label className="text-[10px] text-[#8A7D97] block">Original (৳)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={c.originalPrice || ''}
+                              placeholder="e.g. 2500"
+                              onChange={(e) => {
+                                const val = Number(e.target.value);
+                                setProdPackages((prev) =>
+                                  prev.map((item, i) => (i === idx ? { ...item, originalPrice: val } : item))
+                                );
+                              }}
+                              className="w-full px-2 py-1 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs font-mono"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-2">
                             <label className="text-[10px] text-[#8A7D97] block">
                               Deal Price (৳) <span className="text-[#C4587A]">*</span>
                             </label>

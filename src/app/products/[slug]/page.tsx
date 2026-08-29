@@ -735,9 +735,13 @@ export default function ProductDetailPage() {
                         <span className="text-sm font-extrabold text-slate-900 font-mono">
                           ৳{combo.price}
                         </span>
-                        {combo.savings && (
+                        {combo.originalPrice > combo.price ? (
+                          <span className="text-[10px] text-emerald-600 font-bold">
+                            Save ৳{combo.originalPrice - combo.price} • {Math.round(((combo.originalPrice - combo.price) / combo.originalPrice) * 100)}% OFF
+                          </span>
+                        ) : combo.savings ? (
                           <span className="text-[10px] text-emerald-600 font-bold">{combo.savings}</span>
-                        )}
+                        ) : null}
                       </div>
                     </button>
                   ))}
