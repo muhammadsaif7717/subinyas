@@ -578,7 +578,7 @@ export default function ProductDetailPage() {
                             handleVariantSelect(v);
                           }
                         }}
-                        className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-medium border transition-all ${
+                        className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium border transition-all ${
                           isOutOfStock
                             ? 'border-slate-200 bg-slate-50 text-slate-400 opacity-50 cursor-not-allowed'
                             : isSelected
@@ -586,12 +586,31 @@ export default function ProductDetailPage() {
                             : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:text-slate-900 cursor-pointer'
                         }`}
                       >
-                        <span
-                          className="w-3.5 h-3.5 rounded-full border border-slate-300 shadow-2xs shrink-0"
-                          style={{ backgroundColor: v.colorHex || '#ddd' }}
-                        />
+                        {v.image ? (
+                          <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
+                            <Image src={v.image} alt={v.name} fill className="object-cover" />
+                          </div>
+                        ) : (
+                          <span
+                            className="w-4 h-4 rounded-full border border-slate-300 shadow-2xs shrink-0"
+                            style={{ backgroundColor: v.colorHex || '#ddd' }}
+                          />
+                        )}
 
-                        <span>{v.name}</span>
+                        <div className="flex flex-col items-start text-left">
+                          <div className="flex items-center gap-1.5">
+                            {v.image && (
+                              <span
+                                className="w-2.5 h-2.5 rounded-full border border-slate-300 shadow-2xs shrink-0"
+                                style={{ backgroundColor: v.colorHex || '#ddd' }}
+                              />
+                            )}
+                            <span className="font-semibold">{v.name}</span>
+                          </div>
+                          {v.stockCount !== undefined && Number(v.stockCount) > 0 && Number(v.stockCount) <= 15 && (
+                            <span className="text-[10px] text-amber-600 font-medium">{v.stockCount} in stock</span>
+                          )}
+                        </div>
 
                         {isOutOfStock && (
                           <span className="text-[10px] text-slate-400 font-normal">
