@@ -246,6 +246,29 @@ export default function ProductDetailPage() {
     });
   }, [product?.variants]);
 
+  // Total stock count across all variants
+  const totalStock = useMemo(() => {
+    if (!product) return 0;
+    if (!product.variants || product.variants.length === 0) return 50;
+    return product.variants.reduce((sum, v) => {
+      if (v.inStock === false) return sum;
+      const count =
+        v.stockCount !== undefined
+          ? Number(v.stockCount)
+          : v.stock !== undefined
+          ? Number(v.stock)
+          : 0;
+      return sum + Math.max(0, count);
+    }, 0);
+  }, [product]);
+
+  const isTotalOutOfStock = totalStock <= 0 || product?.isActive === false;
+
+  const currentInStock = selectedVariant
+    ? selectedVariant.inStock !== false &&
+      (selectedVariant.stockCount === undefined || Number(selectedVariant.stockCount) > 0)
+    : !isTotalOutOfStock;
+
   if (isLoading || !product) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center bg-white">
@@ -468,6 +491,21 @@ export default function ProductDetailPage() {
                   }`}
                 />
               </button>
+
+              {/* Bottom-Left Corner Stock Status Badge */}
+              <div className="absolute bottom-3.5 left-3.5 z-10 pointer-events-none">
+                {currentInStock ? (
+                  <div className="flex items-center gap-1.5 bg-slate-950/80 text-emerald-400 backdrop-blur-md px-2.5 py-1 rounded-xl text-[11px] font-bold border border-emerald-500/30 shadow-md">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>In Stock</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 bg-rose-950/90 text-rose-300 backdrop-blur-md px-2.5 py-1 rounded-xl text-[11px] font-bold border border-rose-500/40 shadow-md">
+                    <span className="w-2 h-2 rounded-full bg-rose-500" />
+                    <span>Out of Stock</span>
+                  </div>
+                )}
+              </div>
 
               {/* Floating Bottom-Right Zoom & Pan Controls Pill */}
               <div className="absolute bottom-3.5 right-3.5 z-10 flex items-center gap-1 bg-white/95 backdrop-blur-md px-2 py-1.5 rounded-2xl shadow-lg border border-slate-200/80">
