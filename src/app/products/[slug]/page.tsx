@@ -184,15 +184,16 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     if (product) {
+      // By default when entering detail page, show the primary Main Product Image
+      const mainImg = product.images?.[0] || '/images/products/hello-kitty-pair.png';
+      setSelectedImage(mainImg);
+
       if (product.variants?.length > 0) {
         const firstInStock = product.variants.find(
           (v) => v.inStock !== false && (v.stockCount === undefined || Number(v.stockCount) > 0)
         );
         const defaultVar = firstInStock || product.variants[0];
         setSelectedVariant(defaultVar);
-        setSelectedImage(defaultVar?.image || product.images?.[0] || '/images/products/hello-kitty-pair.png');
-      } else {
-        setSelectedImage(product.images?.[0] || '/images/products/hello-kitty-pair.png');
       }
 
       const pkgs = product.packages || product.combos;
@@ -275,11 +276,8 @@ export default function ProductDetailPage() {
 
   const handleVariantSelect = (variant: ProductVariant) => {
     setSelectedVariant(variant);
-    if (variant.image) {
-      setSelectedImage(variant.image);
-    } else if (product?.images && product.images.length > 0) {
-      setSelectedImage(product.images[0]);
-    }
+    const targetImage = variant.image || product?.images?.[0] || '/images/products/hello-kitty-pair.png';
+    setSelectedImage(targetImage);
   };
 
   const handleThumbnailClick = (img: string) => {
