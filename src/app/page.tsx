@@ -48,35 +48,13 @@ export default function HomePage() {
 
     const activeSelectedSlugs = settingsData?.heroBannerSlugs || [];
     if (activeSelectedSlugs.length > 0) {
-      const matched = activeSelectedSlugs
+      return activeSelectedSlugs
         .map((slug) => products.find((p) => p.slug === slug && p.isActive !== false))
         .filter(Boolean) as Product[];
-      if (matched.length > 0) return matched;
     }
 
-    // Fallback: products with isHeroSlider === true
-    const heroProducts = products.filter(
-      (p) => p.isHeroSlider === true && p.isActive !== false
-    );
-    if (heroProducts.length > 0) {
-      return [...heroProducts].sort((a, b) => (a.heroOrder || 1) - (b.heroOrder || 1));
-    }
-
-    // Fallback: featured products sorted by reviews & rating
-    const featured = products.filter((p) => p.isFeatured !== false && p.isActive !== false && p.isHeroSlider !== false);
-    const sortedFeatured = [...featured].sort(
-      (a, b) => (b.reviewCount || 0) - (a.reviewCount || 0) || (b.rating || 5) - (a.rating || 5)
-    );
-
-    if (sortedFeatured.length > 0) {
-      return sortedFeatured.slice(0, 4);
-    }
-
-    // Fallback: all active products
-    const active = products.filter((p) => p.isActive !== false && p.isHeroSlider !== false);
-    return [...active]
-      .sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0) || (b.rating || 5) - (a.rating || 5))
-      .slice(0, 4);
+    // No fallbacks - if nothing is selected in the banners page, show nothing
+    return [];
   }, [products, settingsData?.heroBannerSlugs]);
 
   // Auto Slider State
