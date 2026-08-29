@@ -25,7 +25,10 @@ import { trackInitiateCheckout, trackPurchase } from '@/lib/pixel';
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, updateQuantity, removeFromCart, clearCart, cartSubtotal } = useCart();
+  const { cart, updateQuantity, removeFromCart, clearCart, cartSubtotal, directCheckoutItem, clearDirectCheckoutItem, addToCart } = useCart();
+
+  const checkoutItems = React.useMemo(() => directCheckoutItem ? [directCheckoutItem] : cart, [directCheckoutItem, cart]);
+  const currentSubtotal = directCheckoutItem ? (directCheckoutItem.price * directCheckoutItem.quantity) : cartSubtotal;
 
   // Form State
   const [customerName, setCustomerName] = useState('');
@@ -45,13 +48,13 @@ export default function CheckoutPage() {
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
 
   const deliveryFee = deliveryArea === 'outside_dhaka' ? 130 : 70;
-  const grandTotal = Math.max(0, cartSubtotal - discount) + deliveryFee;
+  const grandTotal = Math.max(0, currentSubtotal - discount) + deliveryFee;
 
   useEffect(() => {
-    if (cart.length > 0) {
-      trackInitiateCheckout(cart.length, cartSubtotal);
+    if (checkoutItems.length > 0) {
+      trackInitiateCheckout(checkoutItems.length, currentSubtotal);
     }
-  }, [cart, cartSubtotal]);
+  }, [checkoutItems, currentSubtotal]);
 
   const handleApplyCoupon = (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,8 +69,8 @@ export default function CheckoutPage() {
   };
 
   const handlePhoneFocus = () => {
-    if (cart.length > 0) {
-      trackInitiateCheckout(cart.length, cartSubtotal);
+    if (checkoutItems.length > 0) {
+      trackInitiateCheckout(checkoutItems.length, currentSubtotal);
     }
   };
 
@@ -91,7 +94,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (cart.length === 0) {
+    if (checkoutItems.length === 0) {
       setFormError('আপনার কার্ট খালি। অনুগ্রহ করে পণ্য যোগ করুন।');
       return;
     }
@@ -105,8 +108,8 @@ export default function CheckoutPage() {
         address: address.trim(),
         deliveryArea,
         notes: notes.trim(),
-        items: cart,
-        subtotal: cartSubtotal - discount,
+        items: checkoutItems,
+        subtotal: currentSubtotal - discount,
         paymentMethod,
       };
 
@@ -117,10 +120,14 @@ export default function CheckoutPage() {
         setCompletedOrder(orderData);
 
         // Pixel Purchase tracking
-        trackPurchase(orderData.orderId, orderData.totalAmount, cart.length);
+        trackPurchase(orderData.orderId, orderData.totalAmount, checkoutItems.length);
 
-        // Clear cart
-        clearCart();
+        // Clear cart or direct item
+        if (directCheckoutItem) {
+          clearDirectCheckoutItem();
+        } else {
+          clearCart();
+        }
       } else {
         setFormError(res.data?.message || 'অর্ডার সম্পন্ন হতে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।');
       }
@@ -139,20 +146,33 @@ export default function CheckoutPage() {
     <div className="min-h-screen bg-slate-50/70 text-slate-900 py-8 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Top Notice Banner */}
-        {cart.length > 0 && (
+        {checkoutItems.length > 0 && (
           <div className="bg-gradient-to-r from-orange-500 to-amber-600 text-white px-5 py-3.5 rounded-2xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3 text-sm">
             <div className="flex items-center gap-2.5">
               <CheckCircle2 className="w-5 h-5 shrink-0 text-white" />
               <span>
-                <strong>&ldquo;{cart[cart.length - 1]?.productName}&rdquo;</strong> has been added to your cart.
+                <strong>&ldquo;{checkoutItems[checkoutItems.length - 1]?.productName}&rdquo;</strong> has been added to your order.
               </span>
             </div>
-            <Link
-              href="/products"
-              className="bg-white/20 hover:bg-white/30 text-white font-bold text-xs px-4 py-2 rounded-xl backdrop-blur-xs transition-all whitespace-nowrap"
-            >
-              Continue Shopping
-            </Link>
+            {directCheckoutItem ? (
+              <button
+                type="button"
+                onClick={() => {
+                  addToCart(directCheckoutItem, false);
+                  clearDirectCheckoutItem();
+                }}
+                className="bg-white/20 hover:bg-white/30 text-white font-bold text-xs px-4 py-2 rounded-xl backdrop-blur-xs transition-all whitespace-nowrap cursor-pointer"
+              >
+                Save to Cart & Shop
+              </button>
+            ) : (
+              <Link
+                href="/products"
+                className="bg-white/20 hover:bg-white/30 text-white font-bold text-xs px-4 py-2 rounded-xl backdrop-blur-xs transition-all whitespace-nowrap"
+              >
+                Continue Shopping
+              </Link>
+            )}
           </div>
         )}
 
@@ -351,12 +371,12 @@ export default function CheckoutPage() {
                 Your Order
               </h2>
               <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
-                {cart.length} {cart.length === 1 ? 'item' : 'items'}
+                {checkoutItems.length} {checkoutItems.length === 1 ? 'item' : 'items'}
               </span>
             </div>
 
             {/* Cart Items List */}
-            {cart.length === 0 ? (
+            {checkoutItems.length === 0 ? (
               <div className="py-12 text-center space-y-3">
                 <ShoppingBag className="w-12 h-12 mx-auto text-slate-300 stroke-1" />
                 <p className="text-sm font-semibold text-slate-500">Your cart is currently empty</p>
@@ -370,7 +390,7 @@ export default function CheckoutPage() {
               </div>
             ) : (
               <div className="space-y-4 max-h-[380px] overflow-y-auto pr-1">
-                {cart.map((item) => (
+                {checkoutItems.map((item) => (
                   <div
                     key={item.id}
                     className="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100"
@@ -406,50 +426,58 @@ export default function CheckoutPage() {
 
                       {/* Quantity Controller */}
                       <div className="flex items-center gap-2 mt-2">
-                        <div className="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden shadow-2xs">
-                          <button
-                            type="button"
-                            onClick={() => updateQuantity(item.id, -1)}
-                            className="p-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="px-2 text-xs font-mono font-bold text-slate-900 min-w-[20px] text-center">
-                            {item.quantity} {item.quantity > 1 ? 'Packs' : 'Pack'}
+                        {directCheckoutItem ? (
+                          <span className="text-xs font-bold text-slate-600 bg-slate-200 px-2 py-1 rounded-md">
+                            Qty: {item.quantity}
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => updateQuantity(item.id, 1)}
-                            className="p-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
-                        </div>
+                        ) : (
+                          <div className="flex items-center border border-slate-200 rounded-lg bg-white overflow-hidden shadow-2xs">
+                            <button
+                              type="button"
+                              onClick={() => updateQuantity(item.id, -1)}
+                              className="p-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="px-2 text-xs font-mono font-bold text-slate-900 min-w-[20px] text-center">
+                              {item.quantity} {item.quantity > 1 ? 'Packs' : 'Pack'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => updateQuantity(item.id, 1)}
+                              className="p-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
                         <span className="text-xs font-extrabold text-slate-900 font-mono">
                           ৳{item.price * item.quantity}
                         </span>
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => removeFromCart(item.id)}
-                      className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                      title="Remove Item"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {!directCheckoutItem && (
+                      <button
+                        type="button"
+                        onClick={() => removeFromCart(item.id)}
+                        className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                        title="Remove Item"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
             )}
 
             {/* Calculations Summary */}
-            {cart.length > 0 && (
+            {checkoutItems.length > 0 && (
               <div className="space-y-3 pt-4 border-t border-slate-100 text-xs text-slate-600">
                 <div className="flex justify-between items-center">
                   <span>Subtotal</span>
-                  <span className="font-bold text-slate-900 font-mono text-sm">৳{cartSubtotal}</span>
+                  <span className="font-bold text-slate-900 font-mono text-sm">৳{currentSubtotal}</span>
                 </div>
 
                 {discount > 0 && (
@@ -492,7 +520,7 @@ export default function CheckoutPage() {
                 {/* Submit Order Button */}
                 <button
                   type="submit"
-                  disabled={isSubmitting || cart.length === 0}
+                  disabled={isSubmitting || checkoutItems.length === 0}
                   className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-extrabold text-sm sm:text-base transition-all shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-[0.99]"
                 >
                   {isSubmitting ? (

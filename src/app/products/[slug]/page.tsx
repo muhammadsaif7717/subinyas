@@ -44,7 +44,7 @@ export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const slug = (params?.slug as string) || 'jewelry-box';
-  const { addToCart, addToWishlist, removeFromWishlist, isInWishlist, setIsCartOpen } = useCart();
+  const { addToCart, addToWishlist, removeFromWishlist, isInWishlist, setIsCartOpen, setDirectCheckoutItem } = useCart();
 
   // Active Tab for details
   const [activeTab, setActiveTab] = useState<'description' | 'features' | 'specifications' | 'reviews' | 'shipping'>('description');
@@ -366,7 +366,8 @@ export default function ProductDetailPage() {
         ? pieceVariants.slice(0, targetCount)
         : [selectedVariant?.name || product.variants?.[0]?.name || 'Standard'];
 
-    const added = addToCart({
+    setDirectCheckoutItem({
+      id: `direct-${Date.now()}`,
       productSlug: product.slug,
       productName: product.name,
       image: selectedImage || product.images[0],
@@ -377,10 +378,8 @@ export default function ProductDetailPage() {
       quantity,
     });
 
-    if (added) {
-      trackInitiateCheckout(1, currentPrice * quantity);
-      router.push('/checkout');
-    }
+    trackInitiateCheckout(1, currentPrice * quantity);
+    router.push('/checkout');
   };
 
   return (

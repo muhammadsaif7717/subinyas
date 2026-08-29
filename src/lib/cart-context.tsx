@@ -21,6 +21,9 @@ interface CartContextType {
   removeFromWishlist: (productSlug: string) => void;
   isInWishlist: (productSlug: string) => boolean;
   wishlistCount: number;
+  directCheckoutItem: CartItem | null;
+  setDirectCheckoutItem: (item: CartItem | null) => void;
+  clearDirectCheckoutItem: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -32,6 +35,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [directCheckoutItem, setDirectCheckoutItem] = useState<CartItem | null>(null);
 
   // 1. Initial Load from localStorage
   useEffect(() => {
@@ -237,6 +241,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const cartSubtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const wishlistCount = wishlist.length;
 
+  const clearDirectCheckoutItem = () => {
+    setDirectCheckoutItem(null);
+  };
+
   return (
     <CartContext.Provider
       value={{
@@ -254,6 +262,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         removeFromWishlist,
         isInWishlist,
         wishlistCount,
+        directCheckoutItem,
+        setDirectCheckoutItem,
+        clearDirectCheckoutItem,
       }}
     >
       {children}
