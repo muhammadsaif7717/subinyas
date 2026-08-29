@@ -169,24 +169,17 @@ Output every individual section in its own distinct Markdown Code Block (copy bo
 799
 \`\`\`
 
-### 7. COLOR VARIANTS (JSON format)
-\`\`\`json
-[
-  {
-    "name": "Black",
-    "color": "Black",
-    "colorHex": "#1E293B",
-    "stockCount": 50,
-    "inStock": true
-  },
-  {
-    "name": "White",
-    "color": "White",
-    "colorHex": "#F8FAFC",
-    "stockCount": 40,
-    "inStock": true
-  }
-]
+### 7. COLOR VARIANTS (Plain text line-by-line)
+\`\`\`text
+Variant 1:
+Color Name: Black
+Color Hex: #1E293B
+Stock Count: 50
+
+Variant 2:
+Color Name: White
+Color Hex: #F8FAFC
+Stock Count: 40
 \`\`\`
 
 ### 8. PACKAGE DEALS (JSON format)
