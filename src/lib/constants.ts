@@ -130,3 +130,149 @@ export const INITIAL_SETTINGS: StoreSettings = {
   announcementText: '🚚 Fast Cash on Delivery Available Nationwide!',
   isPixelActive: true,
 };
+
+export const PRODUCT_AI_PROMPT_TEMPLATE = `You are an expert e-commerce copywriter & product specialist for our online store "Subinyas".
+Analyze the product (image, photos, title, or concept) provided and generate complete product details in pure English.
+
+==================================================
+CRITICAL FORMATTING REQUIREMENT:
+Output every individual section in its own distinct Markdown Code Block (copy box) so each field can be easily copied with one click in Gemini / ChatGPT, followed by the complete JSON format.
+==================================================
+
+### 1. PRODUCT NAME (Title)
+\`\`\`text
+[Enter Catchy, Clear Product Title in English (e.g., Portable Mini Travel Jewelry Box)]
+\`\`\`
+
+### 2. URL SLUG
+\`\`\`text
+[Enter clean kebab-case URL slug (e.g., portable-mini-travel-jewelry-box)]
+\`\`\`
+
+### 3. CATEGORY
+\`\`\`text
+[Enter single primary category name (e.g., Travel Organizers, Vanity Accessories, Jewelry Box)]
+\`\`\`
+
+### 4. SUBTITLE
+\`\`\`text
+[Enter 1-line captivating marketing hook / subtitle in English]
+\`\`\`
+
+### 5. DESCRIPTION
+\`\`\`text
+[Enter multi-line detailed product description in English highlighting materials, craftsmanship, organization compartments, and customer benefits]
+\`\`\`
+
+### 6. BASE PRICE (BDT)
+\`\`\`text
+499
+\`\`\`
+
+### 7. ORIGINAL / REGULAR PRICE (BDT)
+\`\`\`text
+799
+\`\`\`
+
+### 8. COLOR VARIANTS (JSON format)
+\`\`\`json
+[
+  {
+    "name": "Black",
+    "color": "Black",
+    "colorHex": "#1E293B",
+    "stockCount": 50,
+    "inStock": true
+  },
+  {
+    "name": "White",
+    "color": "White",
+    "colorHex": "#F8FAFC",
+    "stockCount": 40,
+    "inStock": true
+  }
+]
+\`\`\`
+
+### 9. PACKAGE DEALS (JSON format)
+\`\`\`json
+[
+  {
+    "title": "2 Pieces",
+    "subtitle": "1 for you + 1 for your best friend",
+    "quantity": 2,
+    "price": 899,
+    "originalPrice": 1500,
+    "badge": "Popular",
+    "isPopular": true,
+    "savings": "Save ৳601"
+  },
+  {
+    "title": "1 Piece",
+    "subtitle": "Standard single pack",
+    "quantity": 1,
+    "price": 499,
+    "originalPrice": 750,
+    "badge": "",
+    "isPopular": false,
+    "savings": "Save ৳251"
+  }
+]
+\`\`\`
+
+### 10. KEY FEATURES (JSON format)
+\`\`\`json
+[
+  {
+    "icon": "Sparkles",
+    "title": "Compact & Portable",
+    "description": "Palm-sized dimensions (10 x 10 x 5 cm), easily fits into your bag or luggage."
+  },
+  {
+    "icon": "ShieldCheck",
+    "title": "Scratch-Proof Soft Velvet Lining",
+    "description": "Ultra-soft interior velvet protects your precious gold and diamond jewelry."
+  },
+  {
+    "icon": "Layers",
+    "title": "Multi-Compartment Organizer",
+    "description": "Dedicated ring slots, necklace hooks, and removable dividers for watches."
+  },
+  {
+    "icon": "Gift",
+    "title": "Luxury Gift Packaging",
+    "description": "Premium aesthetic finish making it an ideal gift for birthdays and anniversaries."
+  }
+]
+\`\`\`
+*(Supported Lucide icons: Sparkles, ShieldCheck, Layers, Gift, Truck, Award, Zap, Heart, Check, Star)*
+
+### 11. SPECIFICATIONS (JSON format)
+\`\`\`json
+[
+  { "key": "Material", "value": "Waterproof PU Leather + Soft Velvet Lining" },
+  { "key": "Size", "value": "10 cm x 10 cm x 5 cm" },
+  { "key": "Weight", "value": "150 grams (Ultra Lightweight)" },
+  { "key": "Lock System", "value": "Smooth Metal Zipper" }
+]
+\`\`\`
+
+==================================================
+### FULL COMBINED JSON (For direct database / API use):
+\`\`\`json
+{
+  "name": "...",
+  "slug": "...",
+  "category": "...",
+  "subtitle": "...",
+  "description": "...",
+  "basePrice": 499,
+  "originalPrice": 799,
+  "variants": [ ... ],
+  "packages": [ ... ],
+  "features": [ ... ],
+  "specifications": [ ... ]
+}
+\`\`\`
+`;
+
