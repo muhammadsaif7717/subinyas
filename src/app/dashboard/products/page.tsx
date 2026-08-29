@@ -25,6 +25,8 @@ import {
   CheckSquare,
   AlertCircle,
   Copy,
+  ClipboardPaste,
+  FileCode2,
 } from 'lucide-react';
 import { Product, ProductVariant, ComboOption } from '@/lib/types';
 import { CategoryItem } from '@/app/api/categories/route';
@@ -54,6 +56,11 @@ export default function ProductsPage() {
   const [uploadingVariantIdx, setUploadingVariantIdx] = useState<number | null>(null);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
 
+  // AI JSON Auto-Fill Modal State
+  const [isAiJsonModalOpen, setIsAiJsonModalOpen] = useState(false);
+  const [aiJsonInput, setAiJsonInput] = useState('');
+  const [aiJsonError, setAiJsonError] = useState('');
+
   const handleCopyAiPrompt = async () => {
     try {
       await navigator.clipboard.writeText(PRODUCT_AI_PROMPT_TEMPLATE.trim());
@@ -61,6 +68,243 @@ export default function ProductsPage() {
       setTimeout(() => setCopiedPrompt(false), 3500);
     } catch {
       alert('Failed to copy prompt to clipboard. Please allow clipboard permissions.');
+    }
+  };
+
+  const handleApplyAiJson = () => {
+    setAiJsonError('');
+    if (!aiJsonInput.trim()) {
+      setAiJsonError('Please paste JSON or Markdown data first.');
+      return;
+    }
+
+    try {
+      let rawText = aiJsonInput.trim();
+
+      // If user pasted markdown code block e.g. ```json { ... } ``` or ``` { ... } ```
+      if (rawText.includes('```')) {
+        const jsonMatches = rawText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (jsonMatches && jsonMatches[1]) {
+          rawText = jsonMatches[1].trim();
+        }
+      }
+
+      // Try finding first { or [ and last } or ]
+      const firstCurly = rawText.indexOf('{');
+      const firstSquare = rawText.indexOf('[');
+      let startIndex = 0;
+      if (firstCurly !== -1 && (firstSquare === -1 || firstCurly < firstSquare)) {
+        startIndex = firstCurly;
+      } else if (firstSquare !== -1) {
+        startIndex = firstSquare;
+      }
+
+      const lastCurly = rawText.lastIndexOf('}');
+      const lastSquare = rawText.lastIndexOf(']');
+      const endIndex = Math.max(lastCurly, lastSquare);
+
+      if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+        rawText = rawText.substring(startIndex, endIndex + 1);
+      }
+
+      const parsed = JSON.parse(rawText);
+
+      // Case 1: Full Product Object
+      if (typeof parsed === 'object' && !Array.isArray(parsed)) {
+        if (parsed.name) {
+          const nameStr = String(parsed.name).trim();
+          setProdName(nameStr);
+          if (!editingSlug) {
+            const autoSlug = String(parsed.slug || nameStr)
+              .toLowerCase()
+              .trim()
+              .replace(/[^\w\s-]/g, '')
+              .replace(/[\s_-]+/g, '-')
+              .replace(/^-+|-+$/g, '');
+            setProdSlug(autoSlug);
+          }
+        }
+        if (parsed.slug && !editingSlug) {
+          setProdSlug(String(parsed.slug).trim());
+        }
+        if (parsed.category) {
+          setProdCategory(String(parsed.category).trim());
+        }
+        if (parsed.subtitle !== undefined) {
+          setProdSubtitle(String(parsed.subtitle).trim());
+        }
+        if (parsed.description !== undefined) {
+          setProdDescription(String(parsed.description).trim());
+        }
+        if (parsed.basePrice !== undefined) {
+          setProdBasePrice(Number(parsed.basePrice) || 499);
+        }
+        if (parsed.originalPrice !== undefined) {
+          setProdOriginalPrice(Number(parsed.originalPrice) || 800);
+        }
+
+        // Color Variants
+        if (Array.isArray(parsed.variants) && parsed.variants.length > 0) {
+          const mappedVariants: ProductVariant[] = parsed.variants.map((v: any, idx: number) => {
+            const colorName = v.colorName || v.name || v.color || `Color ${idx + 1}`;
+            const colorHex = v.colorHex || v.hex || detectColorHex(colorName, '#3B82F6');
+            const stockCount = Number(v.stockCount ?? v.stock ?? 50);
+            return {
+              id: v.id || `var-${idx + 1}`,
+              name: colorName,
+              color: colorName,
+              colorHex,
+              image: v.image || prodImages[0] || '/images/products/hello-kitty-pair.png',
+              inStock: v.inStock !== false,
+              stockCount,
+              stock: stockCount,
+              isDefault: idx === 0,
+            };
+          });
+          setProdVariants(mappedVariants);
+        }
+
+        // Packages
+        if (Array.isArray(parsed.packages) && parsed.packages.length > 0) {
+          const mappedPackages: ComboOption[] = parsed.packages.map((pkg: any, idx: number) => {
+            const title = pkg.packageTitle || pkg.title || (idx === 0 ? '2 Pieces' : '1 Piece');
+            const qty = Number(pkg.quantity || pkg.qty || (idx === 0 ? 2 : 1));
+            const price = Number(pkg.dealPrice || pkg.price || (parsed.basePrice || 499));
+            const origPrice = Number(pkg.originalPrice || (parsed.originalPrice || 800) * qty);
+            const badge = pkg.badge !== undefined ? pkg.badge : idx === 0 ? 'Popular' : '';
+            const savings = pkg.savings || (origPrice > price ? `Save ৳${origPrice - price}` : '');
+            const isPopular = pkg.isPopular !== undefined ? Boolean(pkg.isPopular) : idx === 0;
+
+            return {
+              id: pkg.id || `pkg-${idx + 1}`,
+              title,
+              subtitle: pkg.subtitle || (qty > 1 ? `${qty} combo bundle deal` : 'Standard single pack'),
+              quantity: qty,
+              price,
+              originalPrice: origPrice,
+              badge,
+              savings,
+              isPopular,
+            };
+          });
+          setProdPackages(mappedPackages);
+        }
+
+        // Features
+        if (Array.isArray(parsed.features) && parsed.features.length > 0) {
+          setProdFeatures(
+            parsed.features.map((f: any) => ({
+              icon: f.icon || 'Sparkles',
+              title: f.title || '',
+              description: f.description || '',
+            }))
+          );
+        }
+
+        // Specifications
+        if (Array.isArray(parsed.specifications) && parsed.specifications.length > 0) {
+          setProdSpecifications(
+            parsed.specifications.map((s: any) => ({
+              key: s.key || '',
+              value: s.value || '',
+            }))
+          );
+        }
+
+        // Mark all 5 tabs as visited
+        setVisitedTabs(new Set(['general', 'media', 'variants', 'combos', 'features']));
+        setFormSuccess('✨ Successfully auto-filled all product fields from AI JSON!');
+        setIsAiJsonModalOpen(false);
+        setAiJsonInput('');
+        if (!isModalOpen) setIsModalOpen(true);
+        return;
+      }
+
+      // Case 2: Array of Variants
+      if (Array.isArray(parsed) && parsed.length > 0 && (parsed[0].colorName || parsed[0].colorHex || parsed[0].name)) {
+        const mappedVariants: ProductVariant[] = parsed.map((v: any, idx: number) => {
+          const colorName = v.colorName || v.name || v.color || `Color ${idx + 1}`;
+          const colorHex = v.colorHex || v.hex || detectColorHex(colorName, '#3B82F6');
+          const stockCount = Number(v.stockCount ?? v.stock ?? 50);
+          return {
+            id: v.id || `var-${idx + 1}`,
+            name: colorName,
+            color: colorName,
+            colorHex,
+            image: v.image || prodImages[0] || '/images/products/hello-kitty-pair.png',
+            inStock: v.inStock !== false,
+            stockCount,
+            stock: stockCount,
+            isDefault: idx === 0,
+          };
+        });
+        setProdVariants(mappedVariants);
+        setVisitedTabs((prev) => new Set([...prev, 'variants']));
+        setFormSuccess('✨ Auto-filled Color Variants from JSON!');
+        setIsAiJsonModalOpen(false);
+        setAiJsonInput('');
+        if (!isModalOpen) setIsModalOpen(true);
+        return;
+      }
+
+      // Case 3: Array of Packages
+      if (Array.isArray(parsed) && parsed.length > 0 && (parsed[0].packageTitle || parsed[0].dealPrice || parsed[0].title)) {
+        const mappedPackages: ComboOption[] = parsed.map((pkg: any, idx: number) => ({
+          id: pkg.id || `pkg-${idx + 1}`,
+          title: pkg.packageTitle || pkg.title || (idx === 0 ? '2 Pieces' : '1 Piece'),
+          subtitle: pkg.subtitle || 'Package deal',
+          quantity: Number(pkg.quantity || pkg.qty || (idx === 0 ? 2 : 1)),
+          price: Number(pkg.dealPrice || pkg.price || prodBasePrice),
+          originalPrice: Number(pkg.originalPrice || prodOriginalPrice * (pkg.quantity || 1)),
+          badge: pkg.badge !== undefined ? pkg.badge : idx === 0 ? 'Popular' : '',
+          savings: pkg.savings || '',
+          isPopular: pkg.isPopular !== undefined ? Boolean(pkg.isPopular) : idx === 0,
+        }));
+        setProdPackages(mappedPackages);
+        setVisitedTabs((prev) => new Set([...prev, 'combos']));
+        setFormSuccess('✨ Auto-filled Package Deals from JSON!');
+        setIsAiJsonModalOpen(false);
+        setAiJsonInput('');
+        if (!isModalOpen) setIsModalOpen(true);
+        return;
+      }
+
+      // Case 4: Array of Features
+      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].title && (parsed[0].description !== undefined || parsed[0].icon !== undefined)) {
+        setProdFeatures(
+          parsed.map((f: any) => ({
+            icon: f.icon || 'Sparkles',
+            title: f.title || '',
+            description: f.description || '',
+          }))
+        );
+        setVisitedTabs((prev) => new Set([...prev, 'features']));
+        setFormSuccess('✨ Auto-filled Features from JSON!');
+        setIsAiJsonModalOpen(false);
+        setAiJsonInput('');
+        if (!isModalOpen) setIsModalOpen(true);
+        return;
+      }
+
+      // Case 5: Array of Specifications
+      if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].key && parsed[0].value !== undefined) {
+        setProdSpecifications(
+          parsed.map((s: any) => ({
+            key: s.key || '',
+            value: s.value || '',
+          }))
+        );
+        setVisitedTabs((prev) => new Set([...prev, 'features']));
+        setFormSuccess('✨ Auto-filled Specifications from JSON!');
+        setIsAiJsonModalOpen(false);
+        setAiJsonInput('');
+        if (!isModalOpen) setIsModalOpen(true);
+        return;
+      }
+
+      setAiJsonError('JSON format parsed, but did not match expected product or section structure.');
+    } catch (err: any) {
+      setAiJsonError('Invalid JSON format: ' + (err?.message || 'Please check syntax'));
     }
   };
 
@@ -513,6 +757,18 @@ export default function ProductsPage() {
           </button>
           <button
             type="button"
+            onClick={() => {
+              setIsAiJsonModalOpen(true);
+              setAiJsonError('');
+            }}
+            className="bg-[#211C28] hover:bg-[#2A2332] text-[#E39BB4] border border-[#2E2733] text-xs font-semibold px-3.5 py-2.5 rounded-xl flex items-center gap-2 transition-all cursor-pointer"
+            title="Auto-Fill Product Data from AI JSON"
+          >
+            <ClipboardPaste className="w-4 h-4 text-[#E39BB4]" />
+            <span>Auto-Fill AI JSON</span>
+          </button>
+          <button
+            type="button"
             onClick={() => refetch()}
             className="p-2.5 rounded-xl bg-[#211C28] hover:bg-[#2A2332] text-[#8A7D97] hover:text-white border border-[#2E2733] transition-colors"
             title="Refresh Products"
@@ -747,6 +1003,19 @@ export default function ProductsPage() {
                       <span>Copy AI Prompt (Schema)</span>
                     </>
                   )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAiJsonModalOpen(true);
+                    setAiJsonError('');
+                  }}
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#2E2733] hover:bg-[#3E3447] text-[#E39BB4] border border-[#3E3447] flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                  title="Paste AI JSON to Auto-Fill form"
+                >
+                  <ClipboardPaste className="w-3.5 h-3.5" />
+                  <span>Auto-Fill AI JSON</span>
                 </button>
 
                 <button
@@ -1639,6 +1908,79 @@ export default function ProductsPage() {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* AI JSON AUTO-FILL MODAL DIALOG */}
+      {isAiJsonModalOpen && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-[60] flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
+          <div className="bg-[#211C28] rounded-2xl border border-[#3E3447] w-full max-w-2xl p-5 sm:p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#2E2733] pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#C4587A]/20 text-[#E39BB4] flex items-center justify-center">
+                  <FileCode2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-base font-bold text-white">Auto-Fill from AI JSON</h4>
+                  <p className="text-xs text-[#8A7D97]">Paste Gemini / ChatGPT output or raw JSON data</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAiJsonModalOpen(false);
+                  setAiJsonError('');
+                }}
+                className="p-1.5 text-[#8A7D97] hover:text-white rounded-lg hover:bg-[#2E2733] cursor-pointer"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {aiJsonError && (
+              <div className="p-3 rounded-xl bg-[#C1495A]/15 border border-[#C1495A]/30 text-xs text-[#DD8A94] flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{aiJsonError}</span>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-[#D8CFE0] flex items-center justify-between">
+                <span>Paste JSON / Markdown block here:</span>
+                <span className="text-[10px] text-[#8A7D97]">Supports full product JSON or individual arrays</span>
+              </label>
+              <textarea
+                rows={10}
+                value={aiJsonInput}
+                onChange={(e) => setAiJsonInput(e.target.value)}
+                placeholder={`{\n  "name": "Portable Mini Travel Jewelry Box",\n  "category": "Organizers",\n  "subtitle": "...",\n  "description": "...",\n  "basePrice": 499,\n  "originalPrice": 799,\n  "variants": [\n    { "colorName": "Black", "colorHex": "#1E293B", "stockCount": 50 }\n  ],\n  "packages": [\n    { "packageTitle": "2 Pieces", "quantity": 2, "dealPrice": 899, "badge": "Popular" }\n  ],\n  "features": [\n    { "icon": "Sparkles", "title": "Compact & Portable", "description": "..." }\n  ],\n  "specifications": [\n    { "key": "Material", "value": "Waterproof PU Leather" }\n  ]\n}`}
+                className="w-full font-mono text-xs p-3.5 bg-[#191520] border border-[#2E2733] focus:border-[#C4587A] rounded-xl text-[#F8FAFC] placeholder:text-[#4E4357] outline-none resize-y"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAiJsonModalOpen(false);
+                  setAiJsonInput('');
+                  setAiJsonError('');
+                }}
+                className="px-4 py-2.5 rounded-xl bg-[#191520] hover:bg-[#2A2332] text-[#8A7D97] hover:text-white text-xs font-semibold border border-[#2E2733] cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleApplyAiJson}
+                className="px-5 py-2.5 rounded-xl bg-[#C4587A] hover:bg-[#B24A6B] text-white text-xs font-bold shadow-lg shadow-[#C4587A]/25 flex items-center gap-2 cursor-pointer active:scale-98 transition-all"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Apply & Auto-Fill Form</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

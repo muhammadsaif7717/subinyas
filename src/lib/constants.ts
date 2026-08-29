@@ -169,32 +169,38 @@ Output every individual section in its own distinct Markdown Code Block (copy bo
 799
 \`\`\`
 
-### 7. COLOR VARIANTS (Plain text line-by-line)
-\`\`\`text
-Variant 1:
-Color Name: Black
-Color Hex: #1E293B
-Stock Count: 50
-
-Variant 2:
-Color Name: White
-Color Hex: #F8FAFC
-Stock Count: 40
+### 7. COLOR VARIANTS (JSON format)
+\`\`\`json
+[
+  {
+    "colorName": "Black",
+    "colorHex": "#1E293B",
+    "stockCount": 50
+  },
+  {
+    "colorName": "White",
+    "colorHex": "#F8FAFC",
+    "stockCount": 40
+  }
+]
 \`\`\`
 
-### 8. PACKAGE DEALS (Plain text line-by-line)
-\`\`\`text
-Package 1:
-Package Title: 2 Pieces
-QTY: 2
-Deal Price: 899
-Badge: Popular
-
-Package 2:
-Package Title: 1 Piece
-QTY: 1
-Deal Price: 499
-Badge: 
+### 8. PACKAGE DEALS (JSON format)
+\`\`\`json
+[
+  {
+    "packageTitle": "2 Pieces",
+    "quantity": 2,
+    "dealPrice": 899,
+    "badge": "Popular"
+  },
+  {
+    "packageTitle": "1 Piece",
+    "quantity": 1,
+    "dealPrice": 499,
+    "badge": ""
+  }
+]
 \`\`\`
 
 ### 9. KEY FEATURES (JSON format)
@@ -235,19 +241,59 @@ Badge:
 \`\`\`
 
 ==================================================
-### FULL COMBINED JSON (For direct database / API use):
+### FULL COMBINED JSON (For 1-Click Auto-Fill / Database):
 \`\`\`json
 {
-  "name": "...",
-  "category": "...",
-  "subtitle": "...",
-  "description": "...",
+  "name": "Portable Mini Travel Jewelry Box",
+  "category": "Organizers",
+  "subtitle": "Keep your jewelry organized and scratch-free on the go",
+  "description": "High quality waterproof PU leather exterior with soft velvet interior lining to protect your valuables from scratches.",
   "basePrice": 499,
   "originalPrice": 799,
-  "variants": [ ... ],
-  "packages": [ ... ],
-  "features": [ ... ],
-  "specifications": [ ... ]
+  "variants": [
+    {
+      "colorName": "Black",
+      "colorHex": "#1E293B",
+      "stockCount": 50
+    },
+    {
+      "colorName": "White",
+      "colorHex": "#F8FAFC",
+      "stockCount": 40
+    }
+  ],
+  "packages": [
+    {
+      "packageTitle": "2 Pieces",
+      "quantity": 2,
+      "dealPrice": 899,
+      "badge": "Popular"
+    },
+    {
+      "packageTitle": "1 Piece",
+      "quantity": 1,
+      "dealPrice": 499,
+      "badge": ""
+    }
+  ],
+  "features": [
+    {
+      "icon": "Sparkles",
+      "title": "Compact & Portable",
+      "description": "Palm-sized dimensions (10 x 10 x 5 cm), easily fits into your bag or luggage."
+    },
+    {
+      "icon": "ShieldCheck",
+      "title": "Scratch-Proof Soft Velvet Lining",
+      "description": "Ultra-soft interior velvet protects your precious gold and diamond jewelry."
+    }
+  ],
+  "specifications": [
+    { "key": "Material", "value": "Waterproof PU Leather + Soft Velvet Lining" },
+    { "key": "Size", "value": "10 cm x 10 cm x 5 cm" },
+    { "key": "Weight", "value": "150 grams (Ultra Lightweight)" },
+    { "key": "Lock System", "value": "Smooth Metal Zipper" }
+  ]
 }
 \`\`\`
 `;
