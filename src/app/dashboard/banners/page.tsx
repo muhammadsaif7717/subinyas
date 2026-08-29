@@ -303,7 +303,7 @@ export default function BannersPage() {
                       />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h5 className="text-xs font-bold text-white truncate">{prod.name || prod.nameBn}</h5>
+                      <h5 className="text-xs font-bold text-white truncate">{prod.name}</h5>
                       <p className="text-[10px] text-[#8A7D97] truncate">{prod.category}</p>
                     </div>
                   </div>
@@ -334,7 +334,7 @@ export default function BannersPage() {
                     className="px-2.5 py-1.5 bg-[#211C28] hover:bg-[#2E2733] text-[#D8CFE0] hover:text-white rounded-xl text-xs font-medium border border-[#2E2733] flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <Plus className="w-3 h-3 text-[#D3A45E]" />
-                    <span>{prod.name || prod.nameBn}</span>
+                    <span>{prod.name}</span>
                   </button>
                 ))}
             </div>
@@ -378,7 +378,7 @@ export default function BannersPage() {
                       #{idx + 1}
                     </span>
                     <div>
-                      <h4 className="text-sm font-bold text-white">{prod.name || prod.nameBn}</h4>
+                      <h4 className="text-sm font-bold text-white">{prod.name}</h4>
                       <p className="text-[11px] text-[#8A7D97]">
                         Category: <span className="text-[#D8CFE0]">{prod.category}</span> • Linked to{' '}
                         <span className="font-mono text-[#E39BB4]">/products/{prod.slug}</span>
@@ -562,9 +562,9 @@ export default function BannersPage() {
                       <span className="text-[10px] uppercase font-bold text-[#E39BB4] tracking-wider">
                         Homepage Live Action Preview
                       </span>
-                      <h5 className="text-sm font-bold text-white truncate">{prod.name || prod.nameBn}</h5>
+                      <h5 className="text-sm font-bold text-white truncate">{prod.name}</h5>
                       <p className="text-xs text-[#8A7D97] line-clamp-2">
-                        {prod.taglineBn || prod.descriptionBn}
+                        {prod.subtitle || prod.description}
                       </p>
                     </div>
 

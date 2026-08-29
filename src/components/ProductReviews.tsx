@@ -11,11 +11,11 @@ import { Review } from '@/lib/types';
 
 interface ProductReviewsProps {
   productSlug: string;
-  productNameBn?: string;
+  productName?: string;
   productId?: string;
 }
 
-export function ProductReviews({ productSlug, productNameBn }: ProductReviewsProps) {
+export function ProductReviews({ productSlug, productName }: ProductReviewsProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -122,7 +122,7 @@ export function ProductReviews({ productSlug, productNameBn }: ProductReviewsPro
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Real feedback and unboxing photos from verified buyers of {productNameBn}
+            Real feedback and unboxing photos from verified buyers of {productName || 'this product'}
           </p>
         </div>
 

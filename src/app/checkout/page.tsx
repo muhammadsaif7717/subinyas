@@ -144,7 +144,7 @@ export default function CheckoutPage() {
             <div className="flex items-center gap-2.5">
               <CheckCircle2 className="w-5 h-5 shrink-0 text-white" />
               <span>
-                <strong>&ldquo;{cart[cart.length - 1]?.productNameBn || cart[cart.length - 1]?.productName}&rdquo;</strong> has been added to your cart.
+                <strong>&ldquo;{cart[cart.length - 1]?.productName}&rdquo;</strong> has been added to your cart.
               </span>
             </div>
             <Link
@@ -386,10 +386,10 @@ export default function CheckoutPage() {
 
                     <div className="flex-1 min-w-0">
                       <h4 className="text-xs font-bold text-slate-900 truncate">
-                        {item.productNameBn || item.productName}
+                        {item.productName}
                       </h4>
                       <p className="text-[11px] text-slate-500 truncate">
-                        {item.comboTitleBn || item.selectedVariants?.join(', ')}
+                        {item.comboTitle || item.selectedVariants?.join(', ')}
                       </p>
 
                       {/* Quantity Controller */}

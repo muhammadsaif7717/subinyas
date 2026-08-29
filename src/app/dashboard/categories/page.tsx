@@ -22,7 +22,6 @@ export default function CategoriesPage() {
   const cardCls = 'bg-[#211C28] rounded-2xl border border-[#2E2733]';
 
   const [newCatName, setNewCatName] = useState('');
-  const [newCatNameBn, setNewCatNameBn] = useState('');
   const [catError, setCatError] = useState('');
   const [catSuccess, setCatSuccess] = useState('');
 

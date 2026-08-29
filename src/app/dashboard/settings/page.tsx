@@ -1,38 +1,37 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Settings as SettingsIcon,
   Save,
-  Check,
-  RefreshCw,
   Phone,
   MessageCircle,
   Truck,
   Sparkles,
-  Layers,
+  RefreshCw,
+  Check,
   Store,
 } from 'lucide-react';
 import { StoreSettings } from '@/lib/types';
 
-export default function SettingsPage() {
-  const queryClient = useQueryClient();
-  const cardCls = 'bg-[#211C28] rounded-2xl border border-[#2E2733]';
+const cardCls = 'bg-[#1C1724] border border-[#2E2733] rounded-3xl shadow-xl';
 
-  // Fetch Settings
-  const { data: settingsData, isLoading } = useQuery({
+export default function AdminSettingsPage() {
+  const queryClient = useQueryClient();
+
+  // Fetch Current Settings
+  const { data: settingsData } = useQuery<StoreSettings>({
     queryKey: ['admin-settings'],
     queryFn: async () => {
       const res = await axios.get('/api/settings');
-      return res.data?.settings as StoreSettings;
+      return res.data?.settings;
     },
   });
 
   // State
   const [storeName, setStoreName] = useState('Subinyas');
-  const [storeNameBn, setStoreNameBn] = useState('সুবিন্যাস');
   const [metaPixelId, setMetaPixelId] = useState('');
   const [isPixelActive, setIsPixelActive] = useState(true);
   const [whatsappNumber, setWhatsappNumber] = useState('');
@@ -45,14 +44,13 @@ export default function SettingsPage() {
   useEffect(() => {
     if (settingsData) {
       setStoreName(settingsData.storeName || 'Subinyas');
-      setStoreNameBn(settingsData.storeNameBn || 'সুবিন্যাস');
       setMetaPixelId(settingsData.metaPixelId || '');
       setIsPixelActive(settingsData.isPixelActive !== false);
       setWhatsappNumber(settingsData.whatsappNumber || '');
       setPhone(settingsData.phone || '');
       setDeliveryInside(settingsData.deliveryInsideDhaka ?? 70);
       setDeliveryOutside(settingsData.deliveryOutsideDhaka ?? 130);
-      setAnnouncement(settingsData.announcementTextBn || '');
+      setAnnouncement(settingsData.announcementText || '');
     }
   }, [settingsData]);
 
@@ -65,7 +63,7 @@ export default function SettingsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
       queryClient.invalidateQueries({ queryKey: ['store-settings'] });
-      setSaveSuccess('স্টোর কনফিগারেশন সফলভাবে সংরক্ষিত হয়েছে!');
+      setSaveSuccess('Store configuration saved successfully!');
       setTimeout(() => setSaveSuccess(''), 3000);
     },
   });
@@ -74,14 +72,13 @@ export default function SettingsPage() {
     e.preventDefault();
     saveSettingsMutation.mutate({
       storeName,
-      storeNameBn,
       metaPixelId,
       isPixelActive,
       whatsappNumber,
       phone,
       deliveryInsideDhaka: Number(deliveryInside),
       deliveryOutsideDhaka: Number(deliveryOutside),
-      announcementTextBn: announcement,
+      announcementText: announcement,
       updatedAt: new Date().toISOString(),
     });
   };
@@ -180,7 +177,7 @@ export default function SettingsPage() {
                 type="text"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="e.g. 01800000000"
+                placeholder="e.g. 01700000000"
                 className="w-full bg-[#191520] border border-[#2E2733] focus:border-[#C4587A] text-xs text-white rounded-xl px-3 py-2.5 outline-none font-mono"
               />
             </div>
@@ -191,11 +188,11 @@ export default function SettingsPage() {
         <div className={`${cardCls} p-5 sm:p-6 space-y-4`}>
           <div className="border-b border-[#2E2733] pb-3">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <Truck className="w-4 h-4 text-[#8FC7A9]" />
-              <span>Standard Delivery Charges (Cash on Delivery)</span>
+              <Truck className="w-4 h-4 text-[#C4587A]" />
+              <span>Courier Delivery Fee Settings</span>
             </h3>
             <p className="text-xs text-[#8A7D97]">
-              Shipping charges calculated dynamically during checkout
+              Flat delivery rates automatically added during customer checkout
             </p>
           </div>
 
@@ -235,12 +232,12 @@ export default function SettingsPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-white">Announcement Text (Bengali)</label>
+            <label className="text-xs font-bold text-white">Announcement Text</label>
             <input
               type="text"
               value={announcement}
               onChange={(e) => setAnnouncement(e.target.value)}
-              placeholder="e.g. 🌸 স্পেশাল অফার! যেকোনো ২টি জুয়েলারি বক্স অর্ডারে ডেলিভারি সম্পূর্ণ ফ্রি!"
+              placeholder="e.g. 🚚 Fast Cash on Delivery Available Nationwide!"
               className="w-full bg-[#191520] border border-[#2E2733] focus:border-[#C4587A] text-xs text-white rounded-xl px-3 py-2.5 outline-none"
             />
           </div>

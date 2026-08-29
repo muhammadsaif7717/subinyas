@@ -175,13 +175,13 @@ export default function HomePage() {
               {/* Product Title */}
               <div className="space-y-2">
                 <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight drop-shadow-md">
-                  {activeProduct.name || activeProduct.nameBn}
+                  {activeProduct.name}
                 </h1>
               </div>
 
               {/* Tagline / Description */}
               <p className="text-sm sm:text-base text-slate-200 leading-relaxed max-w-lg drop-shadow">
-                {activeProduct.taglineBn || activeProduct.descriptionBn}
+                {activeProduct.subtitle || activeProduct.description}
               </p>
 
               {/* Price & Action Buttons */}
@@ -323,7 +323,6 @@ export default function HomePage() {
                               id: product.id,
                               productSlug: product.slug,
                               productName: product.name,
-                              productNameBn: product.nameBn,
                               image: product.images[0],
                               price: product.basePrice,
                               rating: product.rating,
@@ -373,10 +372,10 @@ export default function HomePage() {
                         </div>
                         <Link href={`/products/${product.slug}`}>
                           <h3 className="font-semibold text-slate-900 text-base group-hover:text-rose-600 transition-colors">
-                            {product.name || product.nameBn}
+                            {product.name}
                           </h3>
                         </Link>
-                        <p className="text-xs text-slate-500 line-clamp-2">{product.taglineBn}</p>
+                        <p className="text-xs text-slate-500 line-clamp-2">{product.subtitle}</p>
                       </div>
 
                       <div className="flex items-baseline justify-between pt-2 border-t border-slate-100">
@@ -393,13 +392,13 @@ export default function HomePage() {
                         <button
                           disabled={!inStock}
                           onClick={() => {
+                            const pkgs = product.packages || product.combos;
                             addToCart({
                               productSlug: product.slug,
                               productName: product.name,
-                              productNameBn: product.nameBn,
                               image: product.images[0],
-                              comboId: product.combos?.[0]?.id || 'combo-single',
-                              comboTitleBn: product.combos?.[0]?.title || '1 Piece Single Pack',
+                              comboId: pkgs?.[0]?.id || 'pkg-1',
+                              comboTitle: pkgs?.[0]?.title || '1 Piece (Single Pack)',
                               selectedVariants: [product.variants?.[0]?.name || 'Default'],
                               price: product.basePrice,
                               quantity: 1,

@@ -62,7 +62,7 @@ export function CartDrawer() {
                   <div className="flex-1 flex flex-col justify-between min-w-0">
                     <div>
                       <div className="flex items-start justify-between gap-2">
-                        <h4 className="text-xs font-bold text-slate-900 truncate">{item.productName || item.productNameBn}</h4>
+                        <h4 className="text-xs font-bold text-slate-900 truncate">{item.productName}</h4>
                         <button
                           onClick={() => removeFromCart(item.id)}
                           className="text-slate-400 hover:text-rose-500 p-0.5"
@@ -71,7 +71,7 @@ export function CartDrawer() {
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                      <p className="text-[11px] text-slate-500">{item.comboTitleBn}</p>
+                      <p className="text-[11px] text-slate-500">{item.comboTitle}</p>
                       <p className="text-[10px] text-rose-600 font-medium truncate">
                         {item.selectedVariants?.join(', ')}
                       </p>

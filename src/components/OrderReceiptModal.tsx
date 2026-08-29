@@ -26,7 +26,7 @@ export function OrderReceiptModal({ order, onClose }: OrderReceiptModalProps) {
   }, []);
 
   const whatsappConfirmMsg = encodeURIComponent(
-    `আসসালামু আলাইকুম! আমার অর্ডার আইডি ${order.orderId} (${order.productNameBn})। আমি অর্ডারটি কনফার্ম করতে মেসেজ দিচ্ছি।`
+    `Hello! My Order ID is ${order.orderId} (${order.productName || 'Order'}). I am messaging to confirm my order.`
   );
 
   return (
@@ -43,9 +43,9 @@ export function OrderReceiptModal({ order, onClose }: OrderReceiptModalProps) {
           <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-emerald-500 mx-auto mb-3 shadow-lg shadow-emerald-700/20 animate-bounce duration-700">
             <CheckCircle2 className="w-10 h-10" />
           </div>
-          <h3 className="text-xl sm:text-2xl font-bold tracking-tight">অভিনন্দন! অর্ডার সফল হয়েছে 🎉</h3>
+          <h3 className="text-xl sm:text-2xl font-bold tracking-tight">Order Placed Successfully! 🎉</h3>
           <p className="text-emerald-100 text-xs sm:text-sm mt-1">
-            আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে। অর্ডার আইডি: <span className="font-bold underline text-white">{order.orderId}</span>
+            Your order has been received. Order ID: <span className="font-bold underline text-white">{order.orderId}</span>
           </p>
         </div>
 
@@ -55,32 +55,32 @@ export function OrderReceiptModal({ order, onClose }: OrderReceiptModalProps) {
           <div className="bg-rose-50/60 rounded-2xl p-4 border border-rose-100/80">
             <div className="flex items-center gap-2 font-semibold text-rose-950 mb-2">
               <PackageCheck className="w-4 h-4 text-rose-600" />
-              <span>পণ্যের বিবরণ</span>
+              <span>Order Summary</span>
             </div>
             <div className="text-xs space-y-1.5 text-slate-600">
               {order.items && order.items.length > 0 ? (
                 <div className="space-y-2 pb-2">
                   {order.items.map((item, idx) => (
                     <div key={idx} className="flex justify-between font-medium text-slate-800">
-                      <span>{item.productNameBn || item.productName} ({item.quantity}x)</span>
-                      <span>৳{item.price * item.quantity}</span>
+                      <span>{item.productName} ({item.quantity}x)</span>
+                      <span>৳{item.totalPrice || item.unitPrice * item.quantity}</span>
                     </div>
                   ))}
                 </div>
               ) : (
                 <>
                   <div className="flex justify-between font-medium text-slate-800">
-                    <span>{order.productNameBn}</span>
+                    <span>{order.productName}</span>
                     <span>৳{order.subtotal}</span>
                   </div>
-                  {order.comboTitleBn && <div className="text-rose-600 font-medium">প্যাকেজ: {order.comboTitleBn}</div>}
+                  {order.comboTitle && <div className="text-rose-600 font-medium">Package: {order.comboTitle}</div>}
                   {order.selectedVariants && order.selectedVariants.length > 0 && (
-                    <div className="text-slate-500">কালার/ডিজাইন: {order.selectedVariants.join(', ')}</div>
+                    <div className="text-slate-500">Color/Variant: {order.selectedVariants.join(', ')}</div>
                   )}
                 </>
               )}
               <div className="flex justify-between pt-2 border-t border-rose-200/60 text-slate-700">
-                <span>ডেলিভারি চার্জ ({order.deliveryArea === 'inside_dhaka' ? 'ঢাকার ভেতরে' : 'ঢাকার বাইরে'}):</span>
+                <span>Delivery Charge ({order.deliveryArea === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka'}):</span>
                 <span>৳{order.deliveryCharge}</span>
               </div>
               <div className="flex justify-between pt-1 font-bold text-sm text-slate-900">

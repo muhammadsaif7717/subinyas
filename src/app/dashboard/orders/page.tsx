@@ -221,7 +221,7 @@ export default function OrdersPage() {
                           {order.items?.length || 1} item(s)
                         </p>
                         <p className="text-[11px] text-[#8A7D97] truncate max-w-[200px]">
-                          {order.items?.[0]?.productName || order.productNameBn || 'Jewelry Box'}
+                          {order.items?.[0]?.productName || order.productName || 'Product'}
                         </p>
                       </td>
 

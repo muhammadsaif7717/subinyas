@@ -7,11 +7,11 @@ import { useRouter } from 'next/navigation';
 import {
   Heart,
   Trash2,
-  ShoppingBag,
-  ArrowRight,
   Zap,
+  ArrowRight,
   Star,
   CheckCircle2,
+  ShoppingBag,
   ExternalLink,
   ShoppingBag as CartIcon,
 } from 'lucide-react';
@@ -26,10 +26,9 @@ export default function WishlistPage() {
     const added = addToCart({
       productSlug: item.productSlug,
       productName: item.productName,
-      productNameBn: item.productNameBn || item.productName,
       image: item.image,
-      comboId: 'combo-single',
-      comboTitleBn: '১টি বক্স (সিঙ্গেল প্যাক)',
+      comboId: 'pkg-1',
+      comboTitle: '1 Piece (Single Pack)',
       selectedVariants: ['Standard'],
       price: item.price,
       quantity: 1,
@@ -44,10 +43,9 @@ export default function WishlistPage() {
     addToCart({
       productSlug: item.productSlug,
       productName: item.productName,
-      productNameBn: item.productNameBn || item.productName,
       image: item.image,
-      comboId: 'combo-single',
-      comboTitleBn: '১টি বক্স (সিঙ্গেল প্যাক)',
+      comboId: 'pkg-1',
+      comboTitle: '1 Piece (Single Pack)',
       selectedVariants: ['Standard'],
       price: item.price,
       quantity: 1,
@@ -58,24 +56,26 @@ export default function WishlistPage() {
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-6">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-serif">Your Wishlist</h1>
-            {wishlist.length > 0 && (
-              <span className="bg-rose-50 text-rose-600 border border-rose-200 text-xs font-bold px-2.5 py-0.5 rounded-full">
-                {wishlist.length} item{wishlist.length > 1 ? 's' : ''}
-              </span>
-            )}
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 shadow-xs">
+              <Heart className="w-5 h-5 fill-rose-600" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                My Wishlist ({wishlist.length})
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-500">
+                Your saved favorite products for quick shopping and instant checkout
+              </p>
+            </div>
           </div>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Saved items you love and plan to order. Add them to cart or buy directly with cash on delivery.
-          </p>
         </div>
 
         {wishlist.length > 0 && (
           <Link
             href="/products"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50/80 hover:bg-rose-100/80 px-4 py-2 rounded-xl transition-all self-start sm:self-auto"
+            className="inline-flex items-center gap-2 text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100/70 border border-rose-200 px-4 py-2.5 rounded-xl transition-all w-fit"
           >
             <span>Explore More Products</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -83,29 +83,28 @@ export default function WishlistPage() {
         )}
       </div>
 
-      {/* Empty State */}
+      {/* Wishlist Items Grid or Empty State */}
       {wishlist.length === 0 ? (
-        <div className="bg-slate-50/80 rounded-3xl p-12 sm:p-16 text-center border border-slate-200/80 space-y-4 max-w-lg mx-auto shadow-xs">
-          <div className="w-16 h-16 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center mx-auto text-rose-400">
-            <Heart className="w-8 h-8 stroke-[1.5]" />
+        <div className="text-center py-20 px-4 bg-white rounded-3xl border border-slate-200/80 shadow-xs space-y-4 max-w-lg mx-auto">
+          <div className="w-16 h-16 rounded-full bg-rose-50 text-rose-400 flex items-center justify-center mx-auto">
+            <Heart className="w-8 h-8" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-lg font-bold text-slate-800">Your wishlist is empty</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Explore our premium jewelry boxes & organizers and tap the heart icon to save your favorites here.
+            <h3 className="text-lg font-bold text-slate-900">Your Wishlist is Empty</h3>
+            <p className="text-xs sm:text-sm text-slate-500 max-w-sm mx-auto">
+              You have not added any products to your wishlist yet. Tap the heart icon on any product to save it here.
             </p>
           </div>
           <Link
             href="/products"
-            className="inline-flex items-center gap-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all"
+            className="inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs px-5 py-3 rounded-xl shadow-md shadow-rose-600/20 transition-all cursor-pointer"
           >
-            <span>Browse Products Collection</span>
-            <ArrowRight className="w-4 h-4" />
+            <ShoppingBag className="w-4 h-4" />
+            <span>Browse Products</span>
           </Link>
         </div>
       ) : (
-        /* Wishlist Grid */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {wishlist.map((item) => (
             <div
               key={item.id || item.productSlug}
@@ -154,7 +153,7 @@ export default function WishlistPage() {
                   {/* Title */}
                   <Link href={`/products/${item.productSlug}`} className="block">
                     <h3 className="font-bold text-slate-900 text-sm sm:text-base group-hover:text-rose-600 transition-colors line-clamp-1">
-                      {item.productName || item.productNameBn}
+                      {item.productName}
                     </h3>
                   </Link>
 
@@ -177,16 +176,16 @@ export default function WishlistPage() {
                     className="w-full bg-slate-900 hover:bg-slate-800 active:scale-98 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
                   >
                     <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                    <span>Buy Now (অর্ডার করুন)</span>
+                    <span>Buy Now</span>
                   </button>
 
                   {/* Secondary Add to Cart Button */}
                   <button
                     type="button"
                     onClick={() => handleAddToCart(item)}
-                    className="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 font-semibold py-2 px-4 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    className="w-full bg-rose-50 hover:bg-rose-100 active:scale-98 text-rose-600 border border-rose-200 font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
-                    <ShoppingBag className="w-3.5 h-3.5 text-slate-500" />
+                    <CartIcon className="w-3.5 h-3.5" />
                     <span>Add to Cart</span>
                   </button>
                 </div>

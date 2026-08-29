@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getOrders, createOrder, getStoreSettings } from '@/lib/data-store';
+import { getOrders, createOrder, getSettings as getStoreSettings } from '@/lib/data-store';
 import { DeliveryArea, CartItem } from '@/lib/types';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status') || undefined;
-    const search = searchParams.get('search') || undefined;
-
-    const orders = await getOrders(status, search);
-    return NextResponse.json({ success: true, count: orders.length, orders });
+    const orders = await getOrders();
+    return NextResponse.json({ success: true, orders });
   } catch (error) {
     console.error('Error fetching orders:', error);
     return NextResponse.json({ success: false, message: 'Failed to load orders' }, { status: 500 });
@@ -24,30 +20,29 @@ export async function POST(request: NextRequest) {
       phone,
       address,
       deliveryArea,
-      items, // Multi-item cart from checkout
+      items,
       productSlug,
-      productNameBn,
+      productName,
       comboId,
-      comboTitleBn,
+      comboTitle,
       quantity,
       selectedVariants,
       subtotal,
       notes,
-      paymentMethod,
     } = body;
 
     // Validation
     if (!customerName || !customerName.trim()) {
-      return NextResponse.json({ success: false, message: 'অনুগ্রহ করে আপনার নাম লিখুন' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Please enter your name' }, { status: 400 });
     }
 
     const cleanPhone = (phone || '').replace(/[^0-9+]/g, '');
     if (!cleanPhone || cleanPhone.length < 11) {
-      return NextResponse.json({ success: false, message: 'অনুগ্রহ করে সঠিক ১১ ডিজিটের মোবাইল নাম্বার দিন' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Please enter a valid 11-digit phone number' }, { status: 400 });
     }
 
     if (!address || !address.trim()) {
-      return NextResponse.json({ success: false, message: 'অনুগ্রহ করে আপনার সম্পূর্ণ ঠিকানা লিখুন' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Please enter your complete address' }, { status: 400 });
     }
 
     const settings = await getStoreSettings();
@@ -71,11 +66,11 @@ export async function POST(request: NextRequest) {
       address: address.trim(),
       deliveryArea: area,
       deliveryCharge,
-      items: cartItems.length > 0 ? cartItems : undefined,
+      items: cartItems.length > 0 ? (cartItems as any) : undefined,
       productSlug: productSlug || (cartItems[0]?.productSlug ?? 'general-item'),
-      productNameBn: productNameBn || (cartItems[0]?.productNameBn ?? cartItems[0]?.productName ?? 'অর্ডারকৃত আইটেম'),
+      productName: productName || (cartItems[0]?.productName ?? 'Ordered Item'),
       comboId: comboId || (cartItems[0]?.comboId ?? 'standard'),
-      comboTitleBn: comboTitleBn || (cartItems[0]?.comboTitleBn ?? `${cartItems.length || 1}টি আইটেম`),
+      comboTitle: comboTitle || (cartItems[0]?.comboTitle ?? `${cartItems.length || 1} Item(s)`),
       quantity: Number(quantity) || (cartItems.reduce((sum, it) => sum + (it.quantity || 1), 0) || 1),
       selectedVariants: Array.isArray(selectedVariants) && selectedVariants.length > 0
         ? selectedVariants
@@ -83,16 +78,12 @@ export async function POST(request: NextRequest) {
       subtotal: calculatedSubtotal,
       totalAmount,
       notes: notes || '',
-      paymentMethod: paymentMethod || 'cod',
+      status: 'Pending',
     });
 
-    return NextResponse.json({
-      success: true,
-      message: 'আপনার অর্ডারটি সফলভাবে গ্রহণ করা হয়েছে!',
-      order: newOrder,
-    }, { status: 201 });
+    return NextResponse.json({ success: true, order: newOrder }, { status: 201 });
   } catch (error) {
     console.error('Error creating order:', error);
-    return NextResponse.json({ success: false, message: 'অর্ডার সম্পন্ন করতে ত্রুটি হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।' }, { status: 500 });
+    return NextResponse.json({ success: false, message: 'Failed to place order' }, { status: 500 });
   }
 }

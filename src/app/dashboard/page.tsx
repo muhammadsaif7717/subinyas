@@ -93,7 +93,7 @@ export default function DashboardOverviewPage() {
       const stockLevel = v.stock ?? v.stockCount ?? 50;
       if (stockLevel <= 5) {
         lowStockVariants.push({
-          productName: p.name || p.nameBn,
+          productName: p.name || 'Product',
           variantName: v.name,
           stock: stockLevel,
         });

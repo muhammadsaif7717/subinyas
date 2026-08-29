@@ -50,12 +50,12 @@ export default function ProductsPage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadingVariantIdx, setUploadingVariantIdx] = useState<number | null>(null);
 
-  // Form Fields (Clean unified schema)
+  // Form Fields Matching Clean Standardized Interface
   const [prodName, setProdName] = useState('');
   const [prodSlug, setProdSlug] = useState('');
   const [prodCategory, setProdCategory] = useState('Organizers');
-  const [prodTaglineBn, setProdTaglineBn] = useState('');
-  const [prodDescriptionBn, setProdDescriptionBn] = useState('');
+  const [prodSubtitle, setProdSubtitle] = useState('');
+  const [prodDescription, setProdDescription] = useState('');
   const [prodBasePrice, setProdBasePrice] = useState<number>(499);
   const [prodOriginalPrice, setProdOriginalPrice] = useState<number>(800);
   const [prodIsFeatured, setProdIsFeatured] = useState<boolean>(true);
@@ -64,9 +64,9 @@ export default function ProductsPage() {
   const [prodIsActive, setProdIsActive] = useState<boolean>(true);
   const [prodImages, setProdImages] = useState<string[]>([]);
   const [prodVariants, setProdVariants] = useState<ProductVariant[]>([]);
-  const [prodCombos, setProdCombos] = useState<ComboOption[]>([]);
-  const [prodFeaturesBn, setProdFeaturesBn] = useState<{ icon: string; title: string; description: string }[]>([]);
-  const [prodSpecificationsBn, setProdSpecificationsBn] = useState<{ key: string; value: string }[]>([]);
+  const [prodPackages, setProdPackages] = useState<ComboOption[]>([]);
+  const [prodFeatures, setProdFeatures] = useState<{ icon: string; title: string; description: string }[]>([]);
+  const [prodSpecifications, setProdSpecifications] = useState<{ key: string; value: string }[]>([]);
 
   // Fetch Products
   const {
@@ -119,9 +119,9 @@ export default function ProductsPage() {
   // Auto-detect color Hex from color name
   const detectColorHex = (name: string, fallbackHex = '#3B82F6') => {
     const lower = name.toLowerCase().trim();
-    if (lower.includes('pink') || lower.includes('rose') || lower.includes('গোলাপি')) return '#F9A8D4';
-    if (lower.includes('white') || lower.includes('pearl') || lower.includes('সাদা')) return '#F8FAFC';
     if (lower.includes('black') || lower.includes('matte') || lower.includes('কালো')) return '#1E293B';
+    if (lower.includes('white') || lower.includes('pearl') || lower.includes('সাদা')) return '#F8FAFC';
+    if (lower.includes('pink') || lower.includes('rose') || lower.includes('গোলাপি')) return '#F9A8D4';
     if (lower.includes('red') || lower.includes('লাল')) return '#EF4444';
     if (lower.includes('blue') || lower.includes('নীল')) return '#3B82F6';
     if (lower.includes('green') || lower.includes('সবুজ')) return '#10B981';
@@ -133,7 +133,7 @@ export default function ProductsPage() {
     return fallbackHex;
   };
 
-  // Open Modal for New Product
+  // Open Modal for New Product with English defaults
   const openNewProductModal = () => {
     setEditingSlug(null);
     setActiveTab('general');
@@ -142,8 +142,8 @@ export default function ProductsPage() {
     setProdName('');
     setProdSlug('');
     setProdCategory(categories[0]?.name || 'Organizers');
-    setProdTaglineBn('শখের গহনা ও প্রসাধন সুরক্ষিত রাখুন নিখুঁত পরিপাটীভাবে — যেকোনো ভ্রমণের সেরা সঙ্গী!');
-    setProdDescriptionBn('প্রিমিয়াম কোয়ালিটির দীর্ঘস্থায়ী ওয়াটারপ্রুফ মেটেরিয়াল দিয়ে তৈরি কম্প্যাক্ট ট্রাভেল জুয়েলারি বক্স।');
+    setProdSubtitle('Keep your jewelry and cosmetics organized — the ultimate travel companion!');
+    setProdDescription('High quality waterproof PU leather exterior with soft velvet interior lining to protect your valuables from scratches.');
     setProdBasePrice(499);
     setProdOriginalPrice(800);
     setProdIsFeatured(true);
@@ -153,11 +153,10 @@ export default function ProductsPage() {
     setProdImages(['/images/products/hello-kitty-pair.png', '/images/products/hello-kitty-open.png']);
     setProdVariants([
       {
-        id: 'var-1',
-        name: 'Soft Pink',
-        nameBn: 'Soft Pink',
-        color: 'Baby Pink',
-        colorHex: '#F9A8D4',
+        id: 'var-black',
+        name: 'Black',
+        color: 'Black',
+        colorHex: '#1E293B',
         image: '/images/products/hello-kitty-pair.png',
         inStock: true,
         stockCount: 50,
@@ -165,10 +164,9 @@ export default function ProductsPage() {
         isDefault: true,
       },
       {
-        id: 'var-2',
-        name: 'Pearl White',
-        nameBn: 'Pearl White',
-        color: 'Pearl White',
+        id: 'var-white',
+        name: 'White',
+        color: 'White',
         colorHex: '#F8FAFC',
         image: '/images/products/hello-kitty-open.png',
         inStock: true,
@@ -177,54 +175,41 @@ export default function ProductsPage() {
         isDefault: false,
       },
     ]);
-    setProdCombos([
+    setProdPackages([
       {
-        id: 'combo-single',
-        title: 'Single Box (1 Piece)',
-        titleBn: 'Single Box (1 Piece)',
-        subtitleBn: 'নিজের জন্য বা ছোট উপহারের জন্য',
-        quantity: 1,
-        price: 499,
-        originalPrice: 800,
-        savingsBn: 'Save ৳301',
-        isPopular: false,
-      },
-      {
-        id: 'combo-duo',
-        title: 'Bestie Combo (2 Pieces)',
-        titleBn: 'Bestie Combo (2 Pieces)',
-        subtitleBn: '১টি আপনার জন্য + ১টি প্রিয় বান্ধবীর জন্য',
+        id: 'pkg-2',
+        title: '2 Pieces (Best Deal)',
+        subtitle: '1 for you + 1 for your best friend',
         quantity: 2,
         price: 899,
         originalPrice: 1600,
-        badge: '🔥 Best Deal',
-        savingsBn: 'Save ৳701',
+        badge: 'Popular',
+        savings: 'Save ৳701',
         isPopular: true,
       },
       {
-        id: 'combo-trio',
-        title: 'Mega Gift Pack (3 Pieces)',
-        titleBn: 'Mega Gift Pack (3 Pieces)',
-        subtitleBn: 'গিফটিং ও ট্রাভেলের সেরা প্যাকেজ',
-        quantity: 3,
-        price: 1249,
-        originalPrice: 2400,
-        badge: '🎁 Mega Offer',
-        savingsBn: 'Save ৳1,151',
+        id: 'pkg-1',
+        title: '1 Piece (Single Pack)',
+        subtitle: 'Standard single pack',
+        quantity: 1,
+        price: 499,
+        originalPrice: 800,
+        badge: '',
+        savings: 'Save ৳301',
         isPopular: false,
       },
     ]);
-    setProdFeaturesBn([
-      { icon: 'Sparkles', title: 'কম্প্যাক্ট ও সহজে বহনযোগ্য', description: 'হাতের তালুর সমান সাইজ, ট্রাভেল ব্যাগে সহজেই জায়গা হয়ে যায়।' },
-      { icon: 'ShieldCheck', title: 'স্ক্র্যাচপ্রুফ সফট ভেলভেট লাইনিং', description: 'ভেতরের নরম ভেলভেট আপনার গহনাকে স্ক্র্যাচ থেকে সুরক্ষিত রাখে।' },
-      { icon: 'Layers', title: 'মাল্টি-কম্পার্টমেন্ট পার্টিশন', description: 'আংটির জন্য স্লট, নেকলেস হ্যাঙ্গার ও কানের দুলের ফ্লেক্সিবল চেম্বার।' },
-      { icon: 'Gift', title: 'অপূর্ব গিফট প্যাকেজিং', description: 'প্রিয় মানুষকে উপহার দেওয়ার মতো আকর্ষণীয় লুক ও ফিনিশিং।' },
+    setProdFeatures([
+      { icon: 'Sparkles', title: 'Compact & Portable', description: 'Palm-sized dimensions, easily fits into your bag.' },
+      { icon: 'ShieldCheck', title: 'Scratch-Proof Soft Velvet', description: 'Ultra-soft interior velvet protects your jewelry from scratches.' },
+      { icon: 'Layers', title: 'Multi-Compartment Organizer', description: 'Dedicated ring slots, necklace hooks, and removable dividers.' },
+      { icon: 'Gift', title: 'Luxury Gift Packaging', description: 'Premium aesthetic finish making it an ideal gift for any occasion.' },
     ]);
-    setProdSpecificationsBn([
-      { key: 'মেটেরিয়াল', value: 'প্রিমিয়াম ওয়াটারপ্রুফ PU লেদার + সফট ভেলভেট' },
-      { key: 'সাইজ', value: '১০ সেমি x ১০ সেমি x ৫ সেমি' },
-      { key: 'ওজন', value: '১৫০ গ্রাম (লাইটওয়েট)' },
-      { key: 'লক সিস্টেম', value: 'স্মুথ মেটাল জিপার সিকিউর লক' },
+    setProdSpecifications([
+      { key: 'Material', value: 'Waterproof PU Leather + Soft Velvet' },
+      { key: 'Size', value: '10 cm x 10 cm x 5 cm' },
+      { key: 'Weight', value: '150 grams (Ultra Lightweight)' },
+      { key: 'Lock System', value: 'Smooth Metal Zipper' },
     ]);
     setIsModalOpen(true);
   };
@@ -235,11 +220,11 @@ export default function ProductsPage() {
     setActiveTab('general');
     setFormError('');
     setFormSuccess('');
-    setProdName(p.name || p.nameBn || '');
+    setProdName(p.name || '');
     setProdSlug(p.slug || '');
     setProdCategory(p.category || 'Organizers');
-    setProdTaglineBn(p.taglineBn || '');
-    setProdDescriptionBn(p.descriptionBn || '');
+    setProdSubtitle(p.subtitle || '');
+    setProdDescription(p.description || '');
     setProdBasePrice(p.basePrice || 499);
     setProdOriginalPrice(p.originalPrice || 800);
     setProdIsFeatured(p.isFeatured !== false);
@@ -253,8 +238,8 @@ export default function ProductsPage() {
         : [
             {
               id: 'var-1',
-              name: 'Standard',
-              nameBn: 'Standard',
+              name: 'Black',
+              colorHex: '#1E293B',
               image: p.images?.[0] || '/images/products/hello-kitty-pair.png',
               inStock: true,
               stockCount: 50,
@@ -262,31 +247,40 @@ export default function ProductsPage() {
             },
           ]
     );
-    setProdCombos(
-      p.combos && p.combos.length > 0
-        ? p.combos
-        : [
-            {
-              id: 'combo-single',
-              title: 'Single Pack',
-              titleBn: 'Single Pack',
-              subtitleBn: 'Standard Package',
-              quantity: 1,
-              price: p.basePrice || 499,
-              originalPrice: p.originalPrice || 800,
-              savingsBn: `Save ৳${(p.originalPrice || 800) - (p.basePrice || 499)}`,
-            },
-          ]
+    const existingPkgs = (p.packages && p.packages.length > 0) ? p.packages : (p.combos && p.combos.length > 0) ? p.combos : null;
+    setProdPackages(
+      existingPkgs || [
+        {
+          id: 'pkg-2',
+          title: '2 Pieces (Best Deal)',
+          subtitle: 'Best deal combo',
+          quantity: 2,
+          price: (p.basePrice || 499) * 2 - 100,
+          originalPrice: (p.originalPrice || 800) * 2,
+          badge: 'Popular',
+          isPopular: true,
+          savings: 'Save ৳701',
+        },
+        {
+          id: 'pkg-1',
+          title: '1 Piece (Single Pack)',
+          subtitle: 'Standard single pack',
+          quantity: 1,
+          price: p.basePrice || 499,
+          originalPrice: p.originalPrice || 800,
+          badge: '',
+          isPopular: false,
+          savings: `Save ৳${(p.originalPrice || 800) - (p.basePrice || 499)}`,
+        },
+      ]
     );
-    setProdFeaturesBn(
-      p.featuresBn && p.featuresBn.length > 0
-        ? p.featuresBn
-        : [{ icon: 'Sparkles', title: 'প্রিমিয়াম কোয়ালিটি', description: 'দীর্ঘস্থায়ী উপাদান দিয়ে তৈরি।' }]
+    const existingFeatures = (p.features && p.features.length > 0) ? p.features : null;
+    setProdFeatures(
+      existingFeatures || [{ icon: 'Sparkles', title: 'Premium Quality', description: 'Built with long lasting materials.' }]
     );
-    setProdSpecificationsBn(
-      p.specificationsBn && p.specificationsBn.length > 0
-        ? p.specificationsBn
-        : [{ key: 'মেটেরিয়াল', value: 'প্রিমিয়াম PU লেদার' }]
+    const existingSpecs = (p.specifications && p.specifications.length > 0) ? p.specifications : null;
+    setProdSpecifications(
+      existingSpecs || [{ key: 'Material', value: 'Premium PU Leather' }]
     );
     setIsModalOpen(true);
   };
@@ -334,8 +328,8 @@ export default function ProductsPage() {
     prodCategory.trim().length > 0 &&
     Number(prodBasePrice) > 0 &&
     Number(prodOriginalPrice) > 0 &&
-    prodTaglineBn.trim().length > 0 &&
-    prodDescriptionBn.trim().length > 0;
+    prodSubtitle.trim().length > 0 &&
+    prodDescription.trim().length > 0;
 
   const isMediaValid = prodImages.length > 0;
 
@@ -343,8 +337,8 @@ export default function ProductsPage() {
     prodVariants.length > 0 && prodVariants.every((v) => v.name.trim().length > 0);
 
   const isCombosValid =
-    prodCombos.length > 0 &&
-    prodCombos.every((c) => c.title.trim().length > 0 && Number(c.price) > 0);
+    prodPackages.length > 0 &&
+    prodPackages.every((c) => c.title.trim().length > 0 && Number(c.price) > 0);
 
   const isFormValid = isGeneralValid && isMediaValid && isVariantsValid && isCombosValid;
 
@@ -363,17 +357,17 @@ export default function ProductsPage() {
     const parsedOrigPrice = Number(prodOriginalPrice) || 800;
     const finalName = prodName.trim();
 
-    // Auto-sync base price into the single pack combo if matching
-    const syncedCombos = prodCombos.map((c) => {
-      if (c.quantity === 1 || c.id === 'combo-single') {
+    // Auto-sync base price into single pack if matched
+    const syncedPackages = prodPackages.map((pkg) => {
+      if (pkg.quantity === 1 || pkg.id === 'pkg-1') {
         return {
-          ...c,
+          ...pkg,
           price: parsedBasePrice,
           originalPrice: parsedOrigPrice,
-          savingsBn: `Save ৳${Math.max(0, parsedOrigPrice - parsedBasePrice)}`,
+          savings: `Save ৳${Math.max(0, parsedOrigPrice - parsedBasePrice)}`,
         };
       }
-      return c;
+      return pkg;
     });
 
     const variantImages = prodVariants.map((v) => v.image).filter(Boolean) as string[];
@@ -381,11 +375,10 @@ export default function ProductsPage() {
 
     const payload: Partial<Product> = {
       name: finalName,
-      nameBn: finalName,
       slug: cleanSlug,
       category: prodCategory.trim(),
-      taglineBn: prodTaglineBn.trim() || finalName,
-      descriptionBn: prodDescriptionBn.trim() || finalName,
+      subtitle: prodSubtitle.trim() || finalName,
+      description: prodDescription.trim() || finalName,
       basePrice: parsedBasePrice,
       originalPrice: parsedOrigPrice,
       isFeatured: prodIsFeatured,
@@ -394,9 +387,10 @@ export default function ProductsPage() {
       isActive: prodIsActive,
       images: combinedImages.length > 0 ? combinedImages : ['/images/products/hello-kitty-pair.png'],
       variants: prodVariants,
-      combos: syncedCombos,
-      featuresBn: prodFeaturesBn,
-      specificationsBn: prodSpecificationsBn,
+      packages: syncedPackages,
+      combos: syncedPackages,
+      features: prodFeatures,
+      specifications: prodSpecifications,
       updatedAt: new Date().toISOString(),
     };
 
@@ -430,7 +424,6 @@ export default function ProductsPage() {
   const filteredProducts = products.filter((p) => {
     const matchSearch =
       (p.name && p.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (p.nameBn && p.nameBn.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (p.slug && p.slug.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchCat = categoryFilter === 'All' || p.category === categoryFilter;
     return matchSearch && matchCat;
@@ -443,7 +436,7 @@ export default function ProductsPage() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Products Management</h1>
           <p className="text-xs text-[#8A7D97] mt-1">
-            Create, edit, and manage your products, color variants, pricing combos, and media catalog
+            Create, edit, and manage your products, color variants, pricing packages, and media catalog
           </p>
         </div>
 
@@ -526,6 +519,7 @@ export default function ProductsPage() {
                 {filteredProducts.map((p) => {
                   const totalStock =
                     p.variants?.reduce((sum, v) => sum + (Number(v.stockCount ?? v.stock ?? 0)), 0) ?? 0;
+                  const pkgCount = p.packages?.length || p.combos?.length || 1;
 
                   return (
                     <tr key={p.slug} className="hover:bg-[#2A2332]/50 transition-colors">
@@ -541,7 +535,7 @@ export default function ProductsPage() {
                             />
                           </div>
                           <div>
-                            <p className="font-bold text-white text-sm">{p.name || p.nameBn}</p>
+                            <p className="font-bold text-white text-sm">{p.name}</p>
                             <span className="font-mono text-[10px] text-[#8A7D97]">/{p.slug}</span>
                           </div>
                         </div>
@@ -577,7 +571,7 @@ export default function ProductsPage() {
                             {totalStock} in stock
                           </span>
                           <p className="text-[10px] text-[#8A7D97]">
-                            {p.variants?.length || 1} variant(s) • {p.combos?.length || 1} package(s)
+                            {p.variants?.length || 1} variant(s) • {pkgCount} package(s)
                           </p>
                         </div>
                       </td>
@@ -645,7 +639,7 @@ export default function ProductsPage() {
         )}
       </div>
 
-      {/* FULL-FEATURED MODAL WITH TABBED STRUCTURE & STRICT VALIDATION */}
+      {/* FULL-FEATURED MODAL WITH STANDARDIZED INTERFACE & VALIDATION */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
           <div className={`${cardCls} w-full max-w-4xl p-5 sm:p-7 border border-[#2E2733] space-y-5 max-h-[94vh] flex flex-col`}>
@@ -737,7 +731,7 @@ export default function ProductsPage() {
                 }`}
               >
                 <Percent className="w-3.5 h-3.5" />
-                <span>4. Packages / Combos ({prodCombos.length})</span>
+                <span>4. Packages ({prodPackages.length})</span>
                 <span
                   className={`w-2 h-2 rounded-full ${
                     isCombosValid ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'
@@ -926,14 +920,14 @@ export default function ProductsPage() {
                   {/* Subtitle & Description */}
                   <div>
                     <label className={labelCls}>
-                      Subtitle / Tagline <span className="text-[#C4587A]">*</span>
+                      Subtitle <span className="text-[#C4587A]">*</span>
                     </label>
                     <input
                       type="text"
                       required
-                      value={prodTaglineBn}
-                      onChange={(e) => setProdTaglineBn(e.target.value)}
-                      placeholder="e.g. শখের গহনা ও প্রসাধন সুরক্ষিত রাখুন নিখুঁত পরিপাটীভাবে — যেকোনো ভ্রমণের সেরা সঙ্গী!"
+                      value={prodSubtitle}
+                      onChange={(e) => setProdSubtitle(e.target.value)}
+                      placeholder="e.g. Keep your jewelry and cosmetics organized — the ultimate travel companion!"
                       className={inputCls}
                     />
                   </div>
@@ -945,8 +939,8 @@ export default function ProductsPage() {
                     <textarea
                       rows={4}
                       required
-                      value={prodDescriptionBn}
-                      onChange={(e) => setProdDescriptionBn(e.target.value)}
+                      value={prodDescription}
+                      onChange={(e) => setProdDescription(e.target.value)}
                       placeholder="Write full product description, key features, and package benefits..."
                       className={`${inputCls} resize-none leading-relaxed`}
                     />
@@ -1005,7 +999,7 @@ export default function ProductsPage() {
                 </div>
               )}
 
-              {/* TAB 3: VARIANTS & STOCK */}
+              {/* TAB 3: VARIANTS & STOCK (Default Black & White) */}
               {activeTab === 'variants' && (
                 <div className="space-y-4 animate-in fade-in">
                   <div className="flex items-center justify-between">
@@ -1025,7 +1019,6 @@ export default function ProductsPage() {
                           {
                             id: newId,
                             name: 'New Color',
-                            nameBn: 'New Color',
                             color: 'Custom',
                             colorHex: '#3B82F6',
                             image: prodImages[0] || '/images/products/hello-kitty-pair.png',
@@ -1116,14 +1109,13 @@ export default function ProductsPage() {
                                       ? {
                                           ...item,
                                           name: val,
-                                          nameBn: val,
                                           colorHex: detectColorHex(val, item.colorHex),
                                         }
                                       : item
                                   )
                                 );
                               }}
-                              placeholder="e.g. Soft Pink"
+                              placeholder="e.g. Black"
                               className="w-full px-2.5 py-1.5 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs"
                             />
                           </div>
@@ -1134,7 +1126,7 @@ export default function ProductsPage() {
                             <div className="flex items-center gap-1.5">
                               <input
                                 type="color"
-                                value={v.colorHex || '#F9A8D4'}
+                                value={v.colorHex || '#1E293B'}
                                 onChange={(e) => {
                                   const hex = e.target.value;
                                   setProdVariants((prev) =>
@@ -1211,7 +1203,7 @@ export default function ProductsPage() {
                 </div>
               )}
 
-              {/* TAB 4: PACKAGES & COMBOS */}
+              {/* TAB 4: PACKAGES (Default 2 Pieces Popular & 1 Piece) */}
               {activeTab === 'combos' && (
                 <div className="space-y-4 animate-in fade-in">
                   <div className="flex items-center justify-between">
@@ -1224,19 +1216,19 @@ export default function ProductsPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        const count = prodCombos.length + 1;
-                        setProdCombos((prev) => [
+                        const count = prodPackages.length + 1;
+                        setProdPackages((prev) => [
                           ...prev,
                           {
-                            id: `combo-${count}`,
+                            id: `pkg-${count}`,
                             title: `${count} Pieces Pack`,
-                            titleBn: `${count} Pieces Pack`,
-                            subtitleBn: `${count} Pieces • Mega Saver Deal`,
+                            subtitle: `${count} Pieces • Deal`,
                             quantity: count,
                             price: prodBasePrice * count - 100,
                             originalPrice: prodOriginalPrice * count,
-                            savingsBn: `Save ৳${prodOriginalPrice * count - (prodBasePrice * count - 100)}`,
-                            badge: 'Special Offer',
+                            savings: `Save ৳${prodOriginalPrice * count - (prodBasePrice * count - 100)}`,
+                            badge: '',
+                            isPopular: false,
                           },
                         ]);
                       }}
@@ -1247,22 +1239,22 @@ export default function ProductsPage() {
                     </button>
                   </div>
 
-                  {prodCombos.length === 0 ? (
+                  {prodPackages.length === 0 ? (
                     <div className="p-8 border border-dashed border-[#3E3447] rounded-2xl text-center space-y-2">
                       <Percent className="w-8 h-8 text-[#6E6278] mx-auto" />
-                      <p className="text-xs text-[#8A7D97]">No combo packages created yet.</p>
+                      <p className="text-xs text-[#8A7D97]">No packages created yet.</p>
                       <p className="text-[11px] text-amber-400">At least 1 pricing package is required.</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {prodCombos.map((c, idx) => (
+                      {prodPackages.map((c, idx) => (
                         <div
                           key={c.id || idx}
                           className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-[#1C1821] border border-[#2E2733] items-center text-xs"
                         >
                           <div className="sm:col-span-4">
                             <label className="text-[10px] text-[#8A7D97] block">
-                              Combo Title <span className="text-[#C4587A]">*</span>
+                              Package Title <span className="text-[#C4587A]">*</span>
                             </label>
                             <input
                               type="text"
@@ -1270,8 +1262,8 @@ export default function ProductsPage() {
                               value={c.title}
                               onChange={(e) => {
                                 const val = e.target.value;
-                                setProdCombos((prev) =>
-                                  prev.map((item, i) => (i === idx ? { ...item, title: val, titleBn: val } : item))
+                                setProdPackages((prev) =>
+                                  prev.map((item, i) => (i === idx ? { ...item, title: val } : item))
                                 );
                               }}
                               className="w-full px-2 py-1 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs"
@@ -1289,7 +1281,7 @@ export default function ProductsPage() {
                               value={c.quantity}
                               onChange={(e) => {
                                 const val = Number(e.target.value);
-                                setProdCombos((prev) =>
+                                setProdPackages((prev) =>
                                   prev.map((item, i) => (i === idx ? { ...item, quantity: val } : item))
                                 );
                               }}
@@ -1308,7 +1300,7 @@ export default function ProductsPage() {
                               value={c.price}
                               onChange={(e) => {
                                 const val = Number(e.target.value);
-                                setProdCombos((prev) =>
+                                setProdPackages((prev) =>
                                   prev.map((item, i) => (i === idx ? { ...item, price: val } : item))
                                 );
                               }}
@@ -1325,18 +1317,18 @@ export default function ProductsPage() {
                                 placeholder="e.g. Popular"
                                 onChange={(e) => {
                                   const val = e.target.value;
-                                  setProdCombos((prev) =>
-                                    prev.map((item, i) => (i === idx ? { ...item, badge: val } : item))
+                                  setProdPackages((prev) =>
+                                    prev.map((item, i) => (i === idx ? { ...item, badge: val, isPopular: !!val } : item))
                                   );
                                 }}
                                 className="w-full px-2 py-1 bg-[#14111A] border border-[#2E2733] rounded-lg text-white text-xs"
                               />
                             </div>
 
-                            {prodCombos.length > 1 && (
+                            {prodPackages.length > 1 && (
                               <button
                                 type="button"
-                                onClick={() => setProdCombos((prev) => prev.filter((_, i) => i !== idx))}
+                                onClick={() => setProdPackages((prev) => prev.filter((_, i) => i !== idx))}
                                 className="p-1 text-[#6E6278] hover:text-[#DD8A94] mt-3 cursor-pointer"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -1350,7 +1342,7 @@ export default function ProductsPage() {
                 </div>
               )}
 
-              {/* TAB 5: FEATURES & SPECIFICATIONS */}
+              {/* TAB 5: FEATURES & SPECIFICATIONS (English) */}
               {activeTab === 'features' && (
                 <div className="space-y-6 animate-in fade-in">
                   {/* Features Highlights */}
@@ -1363,7 +1355,7 @@ export default function ProductsPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          setProdFeaturesBn((prev) => [
+                          setProdFeatures((prev) => [
                             ...prev,
                             { icon: 'Sparkles', title: 'Feature Title', description: 'Feature description' },
                           ]);
@@ -1376,7 +1368,7 @@ export default function ProductsPage() {
                     </div>
 
                     <div className="space-y-2">
-                      {prodFeaturesBn.map((f, idx) => (
+                      {prodFeatures.map((f, idx) => (
                         <div
                           key={idx}
                           className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-[#1C1821] border border-[#2E2733] items-center text-xs"
@@ -1385,10 +1377,10 @@ export default function ProductsPage() {
                             <input
                               type="text"
                               value={f.title}
-                              placeholder="Title (e.g. ওয়াটারপ্রুফ লেদার)"
+                              placeholder="Title (e.g. Waterproof Leather)"
                               onChange={(e) => {
                                 const val = e.target.value;
-                                setProdFeaturesBn((prev) =>
+                                setProdFeatures((prev) =>
                                   prev.map((item, i) => (i === idx ? { ...item, title: val } : item))
                                 );
                               }}
@@ -1400,10 +1392,10 @@ export default function ProductsPage() {
                             <input
                               type="text"
                               value={f.description}
-                              placeholder="Description (e.g. দীর্ঘস্থায়ী ওয়াটারপ্রুফ সুরক্ষা)"
+                              placeholder="Description (e.g. Long-lasting protection)"
                               onChange={(e) => {
                                 const val = e.target.value;
-                                setProdFeaturesBn((prev) =>
+                                setProdFeatures((prev) =>
                                   prev.map((item, i) => (i === idx ? { ...item, description: val } : item))
                                 );
                               }}
@@ -1414,7 +1406,7 @@ export default function ProductsPage() {
                           <div className="sm:col-span-1 text-right">
                             <button
                               type="button"
-                              onClick={() => setProdFeaturesBn((prev) => prev.filter((_, i) => i !== idx))}
+                              onClick={() => setProdFeatures((prev) => prev.filter((_, i) => i !== idx))}
                               className="p-1 text-[#6E6278] hover:text-[#DD8A94] cursor-pointer"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -1435,9 +1427,9 @@ export default function ProductsPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          setProdSpecificationsBn((prev) => [
+                          setProdSpecifications((prev) => [
                             ...prev,
-                            { key: 'বৈশিষ্ট্য', value: 'মান' },
+                            { key: 'Specification', value: 'Value' },
                           ]);
                         }}
                         className="bg-[#211C28] hover:bg-[#2A2430] text-[#D8CFE0] text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-[#2E2733]"
@@ -1448,7 +1440,7 @@ export default function ProductsPage() {
                     </div>
 
                     <div className="space-y-2">
-                      {prodSpecificationsBn.map((s, idx) => (
+                      {prodSpecifications.map((s, idx) => (
                         <div
                           key={idx}
                           className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2.5 rounded-xl bg-[#1C1821] border border-[#2E2733] items-center text-xs"
@@ -1457,10 +1449,10 @@ export default function ProductsPage() {
                             <input
                               type="text"
                               value={s.key}
-                              placeholder="Key (e.g. মেটেরিয়াল)"
+                              placeholder="Key (e.g. Material)"
                               onChange={(e) => {
                                 const val = e.target.value;
-                                setProdSpecificationsBn((prev) =>
+                                setProdSpecifications((prev) =>
                                   prev.map((item, i) => (i === idx ? { ...item, key: val } : item))
                                 );
                               }}
@@ -1472,10 +1464,10 @@ export default function ProductsPage() {
                             <input
                               type="text"
                               value={s.value}
-                              placeholder="Value (e.g. প্রিমিয়াম PU লেদার)"
+                              placeholder="Value (e.g. Waterproof PU Leather)"
                               onChange={(e) => {
                                 const val = e.target.value;
-                                setProdSpecificationsBn((prev) =>
+                                setProdSpecifications((prev) =>
                                   prev.map((item, i) => (i === idx ? { ...item, value: val } : item))
                                 );
                               }}
@@ -1486,7 +1478,7 @@ export default function ProductsPage() {
                           <div className="sm:col-span-1 text-right">
                             <button
                               type="button"
-                              onClick={() => setProdSpecificationsBn((prev) => prev.filter((_, i) => i !== idx))}
+                              onClick={() => setProdSpecifications((prev) => prev.filter((_, i) => i !== idx))}
                               className="p-1 text-[#6E6278] hover:text-[#DD8A94] cursor-pointer"
                             >
                               <Trash2 className="w-3.5 h-3.5" />

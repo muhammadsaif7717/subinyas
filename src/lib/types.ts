@@ -5,7 +5,6 @@ export type DeliveryArea = 'inside_dhaka' | 'outside_dhaka';
 export interface ProductVariant {
   id: string;
   name: string;
-  nameBn?: string;
   color?: string;
   colorHex?: string;
   colorCode?: string;
@@ -19,14 +18,13 @@ export interface ProductVariant {
 export interface ComboOption {
   id: string;
   title: string;
-  titleBn: string;
-  subtitleBn: string;
+  subtitle?: string;
   quantity: number;
   price: number;
   originalPrice: number;
   badge?: string;
   isPopular?: boolean;
-  savingsBn: string;
+  savings?: string;
 }
 
 export interface Product {
@@ -34,9 +32,8 @@ export interface Product {
   id: string;
   slug: string;
   name: string;
-  nameBn: string;
-  taglineBn: string;
-  descriptionBn: string;
+  subtitle: string;
+  description: string;
   category: string;
   rating: number;
   reviewCount: number;
@@ -44,13 +41,14 @@ export interface Product {
   originalPrice: number;
   images: string[];
   variants: ProductVariant[];
-  combos: ComboOption[];
-  featuresBn: {
+  packages: ComboOption[];
+  combos?: ComboOption[];
+  features: {
     icon: string;
     title: string;
     description: string;
   }[];
-  specificationsBn: {
+  specifications: {
     key: string;
     value: string;
   }[];
@@ -78,17 +76,35 @@ export interface Review {
   _id?: string;
   id: string;
   productId?: string;
-  productSlug: string;
-  userId: string;
-  userName: string;
+  productSlug?: string;
+  userId?: string;
+  userName?: string;
   userAvatar?: string;
+  customerName?: string;
   rating: number;
   comment: string;
+  photos?: string[];
   mediaUrls?: string[];
   isVerifiedPurchase?: boolean;
+  verifiedPurchase?: boolean;
   status: 'Pending' | 'Approved' | 'Declined' | 'pending' | 'approved' | 'rejected';
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface OrderItem {
+  productId: string;
+  productSlug: string;
+  productName: string;
+  productImage: string;
+  variantId?: string;
+  variantName?: string;
+  variantColor?: string;
+  comboId?: string;
+  comboTitle?: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
 }
 
 export interface Order {
@@ -103,17 +119,17 @@ export interface Order {
   deliveryArea: DeliveryArea;
   deliveryCharge: number;
   deliveryFee?: number;
-  items?: any[];
+  items?: OrderItem[];
   productSlug?: string;
   productName?: string;
-  productNameBn?: string;
   comboId?: string;
-  comboTitleBn?: string;
+  comboTitle?: string;
   quantity?: number;
-  selectedVariant?: any;
+  selectedVariant?: ProductVariant;
   selectedVariants?: string[];
   subtotal: number;
   total?: number;
+  discount?: number;
   totalAmount: number;
   status: OrderStatus;
   notes?: string;
@@ -122,17 +138,16 @@ export interface Order {
   advancePaid?: number;
   transactionId?: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 export interface CartItem {
   id: string;
   productSlug: string;
   productName: string;
-  productNameBn?: string;
   image: string;
   comboId: string;
-  comboTitleBn: string;
+  comboTitle: string;
   selectedVariants: string[];
   price: number;
   quantity: number;
@@ -142,7 +157,6 @@ export interface WishlistItem {
   id: string;
   productSlug: string;
   productName: string;
-  productNameBn?: string;
   image: string;
   price: number;
   rating?: number;
@@ -151,13 +165,12 @@ export interface WishlistItem {
 export interface StoreSettings {
   _id?: string;
   storeName: string;
-  storeNameBn: string;
   phone: string;
   whatsappNumber: string;
   metaPixelId: string;
   deliveryInsideDhaka: number;
   deliveryOutsideDhaka: number;
-  announcementTextBn: string;
+  announcementText: string;
   isPixelActive: boolean;
   heroBannerSlugs?: string[];
   updatedAt?: string;

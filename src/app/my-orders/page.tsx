@@ -101,8 +101,8 @@ export default function MyOrdersPage() {
               {/* Order Content */}
               <div className="flex flex-col sm:flex-row justify-between gap-4 text-xs">
                 <div className="space-y-1">
-                  <h4 className="font-bold text-slate-900 text-sm">{order.productNameBn}</h4>
-                  <p className="text-slate-600">Package: {order.comboTitleBn}</p>
+                  <h4 className="font-bold text-slate-900 text-sm">{order.productName}</h4>
+                  <p className="text-slate-600">Package: {order.comboTitle}</p>
                   <p className="text-slate-500">Colors: {order.selectedVariants?.join(', ')}</p>
                   <p className="text-slate-400 text-[11px] mt-1">Delivery to: {order.address}</p>
                 </div>

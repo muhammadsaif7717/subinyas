@@ -195,10 +195,11 @@ export default function ProductDetailPage() {
         setSelectedImage(product.images?.[0] || '/images/products/hello-kitty-pair.png');
       }
 
-      if (product.combos?.length > 0) {
-        setSelectedCombo(product.combos[0]);
+      const pkgs = product.packages || product.combos;
+      if (pkgs && pkgs.length > 0) {
+        setSelectedCombo(pkgs[0]);
       }
-      trackViewContent(product.nameBn, product.category, product.basePrice);
+      trackViewContent(product.name, product.category, product.basePrice);
     }
   }, [product]);
 
@@ -282,14 +283,14 @@ export default function ProductDetailPage() {
   const handleAddToCart = () => {
     if (isVariantOutOfStock) return;
 
+    const pkgs = product.packages || product.combos;
     const added = addToCart({
       productSlug: product.slug,
       productName: product.name,
-      productNameBn: product.nameBn,
       image: selectedImage || product.images[0],
-      comboId: selectedCombo?.id || 'standard',
-      comboTitleBn: selectedCombo?.titleBn || 'Single Pack',
-      selectedVariants: selectedVariant ? [selectedVariant.name || selectedVariant.nameBn || 'Standard'] : ['Standard'],
+      comboId: selectedCombo?.id || pkgs?.[0]?.id || 'pkg-1',
+      comboTitle: selectedCombo?.title || pkgs?.[0]?.title || 'Single Pack',
+      selectedVariants: selectedVariant ? [selectedVariant.name || 'Standard'] : ['Standard'],
       price: currentPrice,
       quantity,
     });
@@ -304,14 +305,14 @@ export default function ProductDetailPage() {
   const handleBuyNow = () => {
     if (isVariantOutOfStock) return;
 
+    const pkgs = product.packages || product.combos;
     const added = addToCart({
       productSlug: product.slug,
       productName: product.name,
-      productNameBn: product.nameBn,
       image: selectedImage || product.images[0],
-      comboId: selectedCombo?.id || 'standard',
-      comboTitleBn: selectedCombo?.titleBn || 'Single Pack',
-      selectedVariants: selectedVariant ? [selectedVariant.name || selectedVariant.nameBn || 'Standard'] : ['Standard'],
+      comboId: selectedCombo?.id || pkgs?.[0]?.id || 'pkg-1',
+      comboTitle: selectedCombo?.title || pkgs?.[0]?.title || 'Single Pack',
+      selectedVariants: selectedVariant ? [selectedVariant.name || 'Standard'] : ['Standard'],
       price: currentPrice,
       quantity,
     });
@@ -417,7 +418,6 @@ export default function ProductDetailPage() {
                       id: `wish-${Date.now()}`,
                       productSlug: product.slug,
                       productName: product.name,
-                      productNameBn: product.nameBn,
                       image: selectedImage || product.images[0],
                       price: currentPrice,
                     });
@@ -529,11 +529,11 @@ export default function ProductDetailPage() {
               </div>
 
               <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-3">
-                {product.name || product.nameBn}
+                {product.name}
               </h1>
-              {product.taglineBn && product.taglineBn !== product.name && (
+              {product.subtitle && product.subtitle !== product.name && (
                 <p className="text-xs sm:text-sm font-medium text-slate-500 mt-1">
-                  {product.taglineBn}
+                  {product.subtitle}
                 </p>
               )}
             </div>
@@ -591,7 +591,7 @@ export default function ProductDetailPage() {
                           style={{ backgroundColor: v.colorHex || '#ddd' }}
                         />
 
-                        <span>{v.name || v.nameBn}</span>
+                        <span>{v.name}</span>
 
                         {isOutOfStock && (
                           <span className="text-[10px] text-slate-400 font-normal">
@@ -606,13 +606,13 @@ export default function ProductDetailPage() {
             )}
 
             {/* Combo / Package Deals */}
-            {product.combos && product.combos.length > 1 && (
+            {((product.packages && product.packages.length > 1) || (product.combos && product.combos.length > 1)) && (
               <div className="space-y-2.5">
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  Select Combo Package:
+                  Select Package Deal:
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {product.combos.map((combo) => (
+                  {(product.packages || product.combos || []).map((combo) => (
                     <button
                       key={combo.id}
                       type="button"
@@ -624,10 +624,10 @@ export default function ProductDetailPage() {
                       }`}
                     >
                       <div className="flex justify-between items-center">
-                        <span className="text-xs font-bold text-slate-900">{combo.titleBn}</span>
-                        {combo.isPopular && (
+                        <span className="text-xs font-bold text-slate-900">{combo.title}</span>
+                        {combo.badge && (
                           <span className="bg-rose-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
-                            Popular
+                            {combo.badge}
                           </span>
                         )}
                       </div>
@@ -635,7 +635,9 @@ export default function ProductDetailPage() {
                         <span className="text-sm font-extrabold text-slate-900 font-mono">
                           ৳{combo.price}
                         </span>
-                        <span className="text-[10px] text-emerald-600 font-bold">{combo.savingsBn}</span>
+                        {combo.savings && (
+                          <span className="text-[10px] text-emerald-600 font-bold">{combo.savings}</span>
+                        )}
                       </div>
                     </button>
                   ))}
@@ -682,19 +684,19 @@ export default function ProductDetailPage() {
             <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100">
               <div className="flex items-center gap-2.5 text-xs text-slate-600">
                 <Truck className="w-4 h-4 text-orange-500 shrink-0" />
-                <span>সারা দেশে ক্যাশ অন ডেলিভারি</span>
+                <span>Fast Nationwide Delivery</span>
               </div>
               <div className="flex items-center gap-2.5 text-xs text-slate-600">
                 <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-                <span>১০০% আসল প্রোডাক্টের নিশ্চয়তা</span>
+                <span>100% Authentic Product</span>
               </div>
               <div className="flex items-center gap-2.5 text-xs text-slate-600">
                 <RefreshCw className="w-4 h-4 text-blue-500 shrink-0" />
-                <span>৭ দিনের সহজ রিটার্ন পলিসি</span>
+                <span>7 Days Easy Return Policy</span>
               </div>
               <div className="flex items-center gap-2.5 text-xs text-slate-600">
                 <Award className="w-4 h-4 text-amber-500 shrink-0" />
-                <span>প্রিমিয়াম কোয়ালিটি গ্যারান্টি</span>
+                <span>Premium Quality Guaranteed</span>
               </div>
             </div>
           </div>
@@ -705,8 +707,8 @@ export default function ProductDetailPage() {
           <div className="flex items-center gap-2 border-b border-slate-200 overflow-x-auto pb-px">
             {[
               { key: 'description', label: 'DESCRIPTION' },
-              { key: 'features', label: `FEATURES (${product.featuresBn?.length || 0})` },
-              { key: 'specifications', label: `SPECIFICATIONS (${product.specificationsBn?.length || 0})` },
+              { key: 'features', label: `FEATURES (${product.features?.length || 0})` },
+              { key: 'specifications', label: `SPECIFICATIONS (${product.specifications?.length || 0})` },
               { key: 'reviews', label: `REVIEWS (${product.reviewCount || 0})` },
               { key: 'shipping', label: 'SHIPPING & DELIVERY' },
             ].map((tab) => (
@@ -729,16 +731,16 @@ export default function ProductDetailPage() {
             {/* Tab 1: Description */}
             {activeTab === 'description' && (
               <div className="max-w-3xl space-y-4 text-slate-700 leading-relaxed text-sm">
-                <p className="text-base font-semibold text-slate-900">{product.taglineBn}</p>
-                <div className="whitespace-pre-line">{product.descriptionBn}</div>
+                <p className="text-base font-semibold text-slate-900">{product.subtitle}</p>
+                <div className="whitespace-pre-line">{product.description}</div>
               </div>
             )}
 
             {/* Tab 2: Features */}
             {activeTab === 'features' && (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {product.featuresBn && product.featuresBn.length > 0 ? (
-                  product.featuresBn.map((f, i) => (
+                {product.features && product.features.length > 0 ? (
+                  product.features.map((f, i) => (
                     <div key={i} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
                       <div className="w-8 h-8 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
                         <Sparkles className="w-4 h-4" />
@@ -756,10 +758,10 @@ export default function ProductDetailPage() {
             {/* Tab 3: Specifications */}
             {activeTab === 'specifications' && (
               <div className="max-w-xl bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden text-xs">
-                {product.specificationsBn && product.specificationsBn.length > 0 ? (
+                {product.specifications && product.specifications.length > 0 ? (
                   <table className="w-full text-left">
                     <tbody>
-                      {product.specificationsBn.map((spec, i) => (
+                      {product.specifications.map((spec, i) => (
                         <tr key={i} className="border-b border-slate-200 last:border-0">
                           <td className="py-3 px-4 font-bold text-slate-700 bg-slate-100/70 w-1/3">
                             {spec.key}
@@ -785,19 +787,19 @@ export default function ProductDetailPage() {
             {/* Tab 5: Shipping & Delivery Policy */}
             {activeTab === 'shipping' && (
               <div className="max-w-2xl bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-4 text-xs text-slate-700">
-                <h3 className="text-sm font-bold text-slate-900">ডেলিভারি সংক্রান্ত নিয়মাবলী</h3>
+                <h3 className="text-sm font-bold text-slate-900">Shipping & Delivery Policy</h3>
                 <ul className="space-y-2 list-disc list-inside leading-relaxed">
                   <li>
-                    <strong>ঢাকা সিটির ভেতরে:</strong> ডেলিভারি চার্জ ৳৭০ (২৪ থেকে ৪৮ ঘণ্টার মধ্যে ডেলিভারি)।
+                    <strong>Inside Dhaka:</strong> Delivery charge ৳70 (Delivery within 24 to 48 hours).
                   </li>
                   <li>
-                    <strong>ঢাকা সিটির বাইরে:</strong> ডেলিভারি চার্জ ৳১৩০ (২ থেকে ৪ কার্যদিবসের মধ্যে ডেলিভারি)।
+                    <strong>Outside Dhaka:</strong> Delivery charge ৳130 (Delivery within 2 to 4 business days).
                   </li>
                   <li>
-                    <strong>পেমেন্ট পদ্ধতি:</strong> সারা দেশে সম্পূর্ণ ক্যাশ অন ডেলিভারি (Cash on Delivery)। প্রোডাক্ট হাতে পেয়ে চেক করে মূল্য পরিশোধ করবেন।
+                    <strong>Payment Method:</strong> Cash on Delivery available nationwide. Check product on delivery and pay.
                   </li>
                   <li>
-                    <strong>রিটার্ন পলিসি:</strong> প্রোডাক্টে কোনো ত্রুটি থাকলে ডেলিভারি ম্যানের সামনেই চেক করে রিটার্ন করতে পারবেন অথবা আমাদের কাস্টমার সার্ভিসে যোগাযোগ করতে পারবেন।
+                    <strong>Return Policy:</strong> 7 days hassle-free return policy if any defects are found.
                   </li>
                 </ul>
               </div>
@@ -832,7 +834,7 @@ export default function ProductDetailPage() {
                   <div className="relative aspect-square bg-slate-50 overflow-hidden">
                     <Image
                       src={rel.images[0] || '/images/products/hello-kitty-pair.png'}
-                      alt={rel.nameBn}
+                      alt={rel.name}
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
@@ -843,7 +845,7 @@ export default function ProductDetailPage() {
                         {rel.category}
                       </span>
                       <h4 className="text-xs font-bold text-slate-900 line-clamp-2 mt-0.5">
-                        {rel.nameBn}
+                        {rel.name}
                       </h4>
                     </div>
                     <div className="flex items-baseline gap-2 pt-1">
