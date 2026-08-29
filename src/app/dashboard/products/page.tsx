@@ -237,9 +237,7 @@ export default function ProductsPage() {
         if (parsed.slug && !editingSlug) {
           setProdSlug(String(parsed.slug).trim());
         }
-        if (parsed.category) {
-          setProdCategory(String(parsed.category).trim());
-        }
+        // Category, isFeatured, isHeroSlider, isActive are intentionally skipped
         if (parsed.subtitle !== undefined) {
           setProdSubtitle(String(parsed.subtitle).trim());
         }
@@ -543,10 +541,10 @@ export default function ProductsPage() {
     setProdDescription('');
     setProdBasePrice(499);
     setProdOriginalPrice(800);
-    setProdIsFeatured(true);
+    setProdIsFeatured(false);
     setProdIsHeroSlider(false);
     setProdHeroOrder(1);
-    setProdIsActive(true);
+    setProdIsActive(false);
     setProdImages(['/images/products/hello-kitty-pair.png']);
     setProdVariants([
       {
