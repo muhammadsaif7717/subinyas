@@ -144,37 +144,32 @@ Output every individual section in its own distinct Markdown Code Block (copy bo
 [Enter Catchy, Clear Product Title in English (e.g., Portable Mini Travel Jewelry Box)]
 \`\`\`
 
-### 2. URL SLUG
-\`\`\`text
-[Enter clean kebab-case URL slug (e.g., portable-mini-travel-jewelry-box)]
-\`\`\`
-
-### 3. CATEGORY
+### 2. CATEGORY
 \`\`\`text
 [Enter single primary category name (e.g., Travel Organizers, Vanity Accessories, Jewelry Box)]
 \`\`\`
 
-### 4. SUBTITLE
+### 3. SUBTITLE
 \`\`\`text
 [Enter 1-line captivating marketing hook / subtitle in English]
 \`\`\`
 
-### 5. DESCRIPTION
+### 4. DESCRIPTION
 \`\`\`text
 [Enter multi-line detailed product description in English highlighting materials, craftsmanship, organization compartments, and customer benefits]
 \`\`\`
 
-### 6. BASE PRICE (BDT)
+### 5. BASE PRICE (BDT)
 \`\`\`text
 499
 \`\`\`
 
-### 7. ORIGINAL / REGULAR PRICE (BDT)
+### 6. ORIGINAL / REGULAR PRICE (BDT)
 \`\`\`text
 799
 \`\`\`
 
-### 8. COLOR VARIANTS (JSON format)
+### 7. COLOR VARIANTS (JSON format)
 \`\`\`json
 [
   {
@@ -194,7 +189,7 @@ Output every individual section in its own distinct Markdown Code Block (copy bo
 ]
 \`\`\`
 
-### 9. PACKAGE DEALS (JSON format)
+### 8. PACKAGE DEALS (JSON format)
 \`\`\`json
 [
   {
@@ -220,7 +215,7 @@ Output every individual section in its own distinct Markdown Code Block (copy bo
 ]
 \`\`\`
 
-### 10. KEY FEATURES (JSON format)
+### 9. KEY FEATURES (JSON format)
 \`\`\`json
 [
   {
@@ -247,7 +242,7 @@ Output every individual section in its own distinct Markdown Code Block (copy bo
 \`\`\`
 *(Supported Lucide icons: Sparkles, ShieldCheck, Layers, Gift, Truck, Award, Zap, Heart, Check, Star)*
 
-### 11. SPECIFICATIONS (JSON format)
+### 10. SPECIFICATIONS (JSON format)
 \`\`\`json
 [
   { "key": "Material", "value": "Waterproof PU Leather + Soft Velvet Lining" },
@@ -262,7 +257,6 @@ Output every individual section in its own distinct Markdown Code Block (copy bo
 \`\`\`json
 {
   "name": "...",
-  "slug": "...",
   "category": "...",
   "subtitle": "...",
   "description": "...",
